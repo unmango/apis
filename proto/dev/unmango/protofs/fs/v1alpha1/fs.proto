@@ -31,8 +31,8 @@ message ChmodResponse {}
 
 message ChownRequest {
   string name = 1;
-  int32 uid = 2;
-  int32 gid = 3;
+  uint32 uid = 2;
+  uint32 gid = 3;
 }
 
 message ChownResponse {}
@@ -54,7 +54,7 @@ message CreateResponse {
 }
 
 message MkdirAllRequest {
-  string path = 1;
+  string name = 1;
   file.v1alpha1.FileMode perm = 2;
 }
 
@@ -77,7 +77,7 @@ message OpenResponse {
 
 message OpenFileRequest {
   string name = 1;
-  int64 flag = 2;
+  int64 flag = 2; // os.O_RDONLY, os.O_WRONLY, os.O_RDWR etc. (platform-specific)
   file.v1alpha1.FileMode perm = 3;
 }
 
@@ -100,7 +100,7 @@ message RemoveRequest {
 message RemoveResponse {}
 
 message RemoveAllRequest {
-  string path = 1;
+  string name = 1;
 }
 
 message RemoveAllResponse {}
@@ -121,8 +121,12 @@ message StatResponse {
 }
 
 message WriteRequest {
-  string name = 1;
-  bytes data = 2;
+  oneof payload {
+    string name = 1; // first message only
+    bytes data = 2;  // subsequent messages
+  }
 }
 
-message WriteResponse {}
+message WriteResponse {
+  int64 bytes_written = 1;
+}

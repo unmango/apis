@@ -9,7 +9,6 @@ import "google/protobuf/timestamp.proto";
 
 enum FileMode {
   FILE_MODE_UNSPECIFIED = 0;
-  FILE_MODE_DIR = -2147483648;
   FILE_MODE_APPEND = 1073741824;
   FILE_MODE_EXCLUSIVE = 536870912;
   FILE_MODE_TEMPORARY = 268435456;
@@ -22,13 +21,14 @@ enum FileMode {
   FILE_MODE_CHAR_DEVICE = 2097152;
   FILE_MODE_STICKY = 1048576;
   FILE_MODE_IRREGULAR = 524288;
-  FILE_MODE_PERM = 511;
+  FILE_MODE_PERM = 511; // bitmask, not a mode value
 }
 
 message File {
-  string name = 1;
-  int64 flag = 2 [features.field_presence = EXPLICIT];
-  FileMode perm = 3 [features.field_presence = EXPLICIT];
+  string id = 1; // server-issued handle, set by Open/Create responses
+  string name = 2;
+  int64 flag = 3 [features.field_presence = EXPLICIT];
+  FileMode perm = 4 [features.field_presence = EXPLICIT];
 }
 
 message FileInfo {
@@ -37,14 +37,14 @@ message FileInfo {
   FileMode mode = 3;
   google.protobuf.Timestamp mod_time = 4;
   bool is_dir = 5;
-  google.protobuf.Any sys = 6;
+  google.protobuf.Any sys = 6; // platform-specific underlying data; type URL must be agreed out-of-band
 }
 
 service FileService {
   rpc Read(ReadRequest) returns (ReadResponse);
   rpc ReadAt(ReadAtRequest) returns (ReadAtResponse);
-  rpc Readdir(ReaddirRequest) returns (ReaddirResponse);
-  rpc ReaddirNames(ReaddirNamesRequest) returns (ReaddirNamesResponse);
+  rpc Readdir(ReaddirRequest) returns (stream ReaddirResponse);
+  rpc ReaddirNames(ReaddirNamesRequest) returns (stream ReaddirNamesResponse);
   rpc Stat(StatRequest) returns (StatResponse);
   rpc Truncate(TruncateRequest) returns (TruncateResponse);
   rpc Write(WriteRequest) returns (WriteResponse);
@@ -72,6 +72,7 @@ message ReaddirNamesResponse {
 message ReadAtRequest {
   File file = 1;
   int64 offset = 2;
+  int64 length = 3;
 }
 
 message ReadAtResponse {
@@ -106,7 +107,9 @@ message WriteRequest {
   bytes data = 2;
 }
 
-message WriteResponse {}
+message WriteResponse {
+  int64 bytes_written = 1;
+}
 
 message WriteAtRequest {
   File file = 1;
