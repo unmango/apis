@@ -1,0 +1,128 @@
+edition = "2023";
+
+package dev.unmango.protofs.fs.v1alpha1;
+
+import "dev/unmango/protofs/file/v1alpha1/file.proto";
+import "google/protobuf/timestamp.proto";
+
+service FsService {
+  rpc Chmod(ChmodRequest) returns (ChmodResponse);
+  rpc Chown(ChownRequest) returns (ChownResponse);
+  rpc Chtimes(ChtimesRequest) returns (ChtimesResponse);
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Mkdir(MkdirRequest) returns (MkdirResponse);
+  rpc MkdirAll(MkdirAllRequest) returns (MkdirAllResponse);
+  rpc Open(OpenRequest) returns (OpenResponse);
+  rpc OpenFile(OpenFileRequest) returns (OpenFileResponse);
+  rpc Read(ReadRequest) returns (stream ReadResponse);
+  rpc Remove(RemoveRequest) returns (RemoveResponse);
+  rpc RemoveAll(RemoveAllRequest) returns (RemoveAllResponse);
+  rpc Rename(RenameRequest) returns (RenameResponse);
+  rpc Stat(StatRequest) returns (StatResponse);
+  rpc Write(stream WriteRequest) returns (WriteResponse);
+}
+
+message ChmodRequest {
+  string name = 1;
+  file.v1alpha1.FileMode mode = 2;
+}
+
+message ChmodResponse {}
+
+message ChownRequest {
+  string name = 1;
+  int32 uid = 2;
+  int32 gid = 3;
+}
+
+message ChownResponse {}
+
+message ChtimesRequest {
+  string name = 1;
+  google.protobuf.Timestamp atime = 2;
+  google.protobuf.Timestamp mtime = 3;
+}
+
+message ChtimesResponse {}
+
+message CreateRequest {
+  string name = 1;
+}
+
+message CreateResponse {
+  file.v1alpha1.File file = 1;
+}
+
+message MkdirAllRequest {
+  string path = 1;
+  file.v1alpha1.FileMode perm = 2;
+}
+
+message MkdirAllResponse {}
+
+message MkdirRequest {
+  string name = 1;
+  file.v1alpha1.FileMode perm = 2;
+}
+
+message MkdirResponse {}
+
+message OpenRequest {
+  string name = 1;
+}
+
+message OpenResponse {
+  file.v1alpha1.File file = 1;
+}
+
+message OpenFileRequest {
+  string name = 1;
+  int64 flag = 2;
+  file.v1alpha1.FileMode perm = 3;
+}
+
+message OpenFileResponse {
+  file.v1alpha1.File file = 1;
+}
+
+message ReadRequest {
+  string name = 1;
+}
+
+message ReadResponse {
+  bytes data = 1;
+}
+
+message RemoveRequest {
+  string name = 1;
+}
+
+message RemoveResponse {}
+
+message RemoveAllRequest {
+  string path = 1;
+}
+
+message RemoveAllResponse {}
+
+message RenameRequest {
+  string oldname = 1;
+  string newname = 2;
+}
+
+message RenameResponse {}
+
+message StatRequest {
+  string name = 1;
+}
+
+message StatResponse {
+  file.v1alpha1.FileInfo file_info = 1;
+}
+
+message WriteRequest {
+  string name = 1;
+  bytes data = 2;
+}
+
+message WriteResponse {}
