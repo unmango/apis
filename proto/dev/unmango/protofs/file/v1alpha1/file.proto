@@ -5,36 +5,17 @@ package dev.unmango.protofs.file.v1alpha1;
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 
-// https://pkg.go.dev/io/fs#FileMode
-
-enum FileMode {
-  FILE_MODE_UNSPECIFIED = 0;
-  FILE_MODE_APPEND = 1073741824;
-  FILE_MODE_EXCLUSIVE = 536870912;
-  FILE_MODE_TEMPORARY = 268435456;
-  FILE_MODE_SYMLINK = 134217728;
-  FILE_MODE_DEVICE = 67108864;
-  FILE_MODE_NAMED_PIPE = 33554432;
-  FILE_MODE_SOCKET = 16777216;
-  FILE_MODE_SETUID = 8388608;
-  FILE_MODE_SETGID = 4194304;
-  FILE_MODE_CHAR_DEVICE = 2097152;
-  FILE_MODE_STICKY = 1048576;
-  FILE_MODE_IRREGULAR = 524288;
-  FILE_MODE_PERM = 511; // bitmask, not a mode value
-}
-
 message File {
   string id = 1; // server-issued handle, set by Open/Create responses
   string name = 2;
   int64 flag = 3 [features.field_presence = EXPLICIT];
-  FileMode perm = 4 [features.field_presence = EXPLICIT];
+  uint32 perm = 4 [features.field_presence = EXPLICIT]; // bitmask
 }
 
 message FileInfo {
   string name = 1;
   int64 size = 2;
-  FileMode mode = 3;
+  uint32 mode = 3; // bitmask
   google.protobuf.Timestamp mod_time = 4;
   bool is_dir = 5;
   google.protobuf.Any sys = 6; // platform-specific underlying data; type URL must be agreed out-of-band

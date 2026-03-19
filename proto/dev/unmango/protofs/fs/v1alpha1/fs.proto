@@ -24,7 +24,7 @@ service FsService {
 
 message ChmodRequest {
   string name = 1;
-  file.v1alpha1.FileMode mode = 2;
+  uint32 mode = 2; // bitmask; see file.v1alpha1.FileModeConst
 }
 
 message ChmodResponse {}
@@ -55,14 +55,14 @@ message CreateResponse {
 
 message MkdirAllRequest {
   string name = 1;
-  file.v1alpha1.FileMode perm = 2;
+  uint32 perm = 2; // bitmask; see file.v1alpha1.FileModeConst
 }
 
 message MkdirAllResponse {}
 
 message MkdirRequest {
   string name = 1;
-  file.v1alpha1.FileMode perm = 2;
+  uint32 perm = 2; // bitmask; see file.v1alpha1.FileModeConst
 }
 
 message MkdirResponse {}
@@ -78,7 +78,7 @@ message OpenResponse {
 message OpenFileRequest {
   string name = 1;
   int64 flag = 2; // os.O_RDONLY, os.O_WRONLY, os.O_RDWR etc. (platform-specific)
-  file.v1alpha1.FileMode perm = 3;
+  uint32 perm = 3; // bitmask; see file.v1alpha1.FileModeConst
 }
 
 message OpenFileResponse {

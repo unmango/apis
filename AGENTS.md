@@ -33,8 +33,8 @@ Available tools in the dev shell: `buf`, `gnumake`.
 
 All proto definitions live under `proto/` and follow the `dev.unmango.*` package namespace:
 
-- `proto/dev/unmango/protofs/file/v1alpha1/file.proto` — `FileService` and supporting types (`File`, `FileInfo`, `FileMode` enum). Models the Go `io/fs.File` interface over gRPC.
-- `proto/dev/unmango/protofs/fs/v1alpha1/fs.proto` — `FsService` with filesystem-level RPCs (Chmod, Create, Open, Remove, Rename, etc.). Read/Write use server-streaming for large data transfers.
+- `proto/dev/unmango/protofs/file/v1alpha1/file.proto` — `FileService` and supporting types (`File`, `FileInfo`, `FileModeConst` enum). Models the Go `io/fs.File` interface over gRPC. Mode/perm fields are `uint32` bitmasks; `FileModeConst` documents the named bit constants.
+- `proto/dev/unmango/protofs/fs/v1alpha1/fs.proto` — `FsService` with filesystem-level RPCs (Chmod, Create, Open, Remove, Rename, etc.). `Read` uses server-streaming and `Write` uses client-streaming for large data transfers.
 
 ### Buf configuration
 
