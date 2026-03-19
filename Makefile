@@ -1,3 +1,5 @@
+.PHONY: build check update format fmt clean
+
 build:
 	nix build
 

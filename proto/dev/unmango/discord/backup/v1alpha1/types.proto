@@ -2,6 +2,14 @@ edition = "2023";
 
 package dev.unmango.discord.backup.v1alpha1;
 
+import "google/protobuf/timestamp.proto";
+
+// Note: proto enum integer values in this file do NOT match Discord's raw API
+// integers. Discord uses 0 for real values (e.g. GUILD_TEXT=0, NONE=0) which
+// conflicts with the buf STANDARD requirement for an _UNSPECIFIED=0 zero value.
+// Backup tools must map between Discord's raw integers and these enum values by
+// name, not by number.
+
 // ChannelType represents the type of a Discord channel.
 enum ChannelType {
   CHANNEL_TYPE_UNSPECIFIED = 0;
@@ -238,8 +246,8 @@ message RoleTag {
 message ThreadMetadata {
   bool archived = 1;
   int32 auto_archive_duration = 2; // minutes: 60, 1440, 4320, or 10080
-  string archive_timestamp = 3; // ISO8601 timestamp when thread was archived
+  google.protobuf.Timestamp archive_timestamp = 3;
   bool locked = 4;
   bool invitable = 5 [features.field_presence = EXPLICIT]; // only present on private threads
-  string create_timestamp = 6; // ISO8601 timestamp when thread was created
+  google.protobuf.Timestamp create_timestamp = 6;
 }
