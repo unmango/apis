@@ -2,3 +2,4 @@
 .envrc
 bin/
 /result
+.claude/*
