@@ -1,0 +1,101 @@
+edition = "2023";
+
+package dev.unmango.protofs.file.v1alpha1;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+message File {
+  string id = 1; // server-issued handle, set by Open/Create responses
+  string name = 2;
+  int64 flag = 3 [features.field_presence = EXPLICIT];
+  uint32 perm = 4 [features.field_presence = EXPLICIT]; // bitmask
+}
+
+message FileInfo {
+  string name = 1;
+  int64 size = 2;
+  uint32 mode = 3; // bitmask
+  google.protobuf.Timestamp mod_time = 4;
+  bool is_dir = 5;
+  google.protobuf.Any sys = 6; // platform-specific underlying data; type URL must be agreed out-of-band
+}
+
+service FileService {
+  rpc Read(ReadRequest) returns (ReadResponse);
+  rpc ReadAt(ReadAtRequest) returns (ReadAtResponse);
+  rpc Readdir(ReaddirRequest) returns (stream ReaddirResponse);
+  rpc ReaddirNames(ReaddirNamesRequest) returns (stream ReaddirNamesResponse);
+  rpc Stat(StatRequest) returns (StatResponse);
+  rpc Truncate(TruncateRequest) returns (TruncateResponse);
+  rpc Write(WriteRequest) returns (WriteResponse);
+  rpc WriteAt(WriteAtRequest) returns (WriteAtResponse);
+}
+
+message ReaddirRequest {
+  File file = 1;
+  int32 count = 2;
+}
+
+message ReaddirResponse {
+  repeated FileInfo file_infos = 1;
+}
+
+message ReaddirNamesRequest {
+  File file = 1;
+  int32 count = 2;
+}
+
+message ReaddirNamesResponse {
+  repeated string names = 1;
+}
+
+message ReadAtRequest {
+  File file = 1;
+  int64 offset = 2;
+  int64 length = 3;
+}
+
+message ReadAtResponse {
+  bytes data = 1;
+}
+
+message ReadRequest {
+  File file = 1;
+}
+
+message ReadResponse {
+  bytes data = 1;
+}
+
+message StatRequest {
+  File file = 1;
+}
+
+message StatResponse {
+  FileInfo file_info = 1;
+}
+
+message TruncateRequest {
+  File file = 1;
+  int64 size = 2;
+}
+
+message TruncateResponse {}
+
+message WriteRequest {
+  File file = 1;
+  bytes data = 2;
+}
+
+message WriteResponse {
+  int64 bytes_written = 1;
+}
+
+message WriteAtRequest {
+  File file = 1;
+  bytes data = 2;
+  int64 offset = 3;
+}
+
+message WriteAtResponse {}

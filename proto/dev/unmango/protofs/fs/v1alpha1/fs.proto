@@ -1,0 +1,132 @@
+edition = "2023";
+
+package dev.unmango.protofs.fs.v1alpha1;
+
+import "dev/unmango/protofs/file/v1alpha1/file.proto";
+import "google/protobuf/timestamp.proto";
+
+service FsService {
+  rpc Chmod(ChmodRequest) returns (ChmodResponse);
+  rpc Chown(ChownRequest) returns (ChownResponse);
+  rpc Chtimes(ChtimesRequest) returns (ChtimesResponse);
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Mkdir(MkdirRequest) returns (MkdirResponse);
+  rpc MkdirAll(MkdirAllRequest) returns (MkdirAllResponse);
+  rpc Open(OpenRequest) returns (OpenResponse);
+  rpc OpenFile(OpenFileRequest) returns (OpenFileResponse);
+  rpc Read(ReadRequest) returns (stream ReadResponse);
+  rpc Remove(RemoveRequest) returns (RemoveResponse);
+  rpc RemoveAll(RemoveAllRequest) returns (RemoveAllResponse);
+  rpc Rename(RenameRequest) returns (RenameResponse);
+  rpc Stat(StatRequest) returns (StatResponse);
+  rpc Write(stream WriteRequest) returns (WriteResponse);
+}
+
+message ChmodRequest {
+  string name = 1;
+  uint32 mode = 2; // bitmask; see file.v1alpha1.FileModeConst
+}
+
+message ChmodResponse {}
+
+message ChownRequest {
+  string name = 1;
+  uint32 uid = 2;
+  uint32 gid = 3;
+}
+
+message ChownResponse {}
+
+message ChtimesRequest {
+  string name = 1;
+  google.protobuf.Timestamp atime = 2;
+  google.protobuf.Timestamp mtime = 3;
+}
+
+message ChtimesResponse {}
+
+message CreateRequest {
+  string name = 1;
+}
+
+message CreateResponse {
+  file.v1alpha1.File file = 1;
+}
+
+message MkdirAllRequest {
+  string name = 1;
+  uint32 perm = 2; // bitmask; see file.v1alpha1.FileModeConst
+}
+
+message MkdirAllResponse {}
+
+message MkdirRequest {
+  string name = 1;
+  uint32 perm = 2; // bitmask; see file.v1alpha1.FileModeConst
+}
+
+message MkdirResponse {}
+
+message OpenRequest {
+  string name = 1;
+}
+
+message OpenResponse {
+  file.v1alpha1.File file = 1;
+}
+
+message OpenFileRequest {
+  string name = 1;
+  int64 flag = 2; // os.O_RDONLY, os.O_WRONLY, os.O_RDWR etc. (platform-specific)
+  uint32 perm = 3; // bitmask; see file.v1alpha1.FileModeConst
+}
+
+message OpenFileResponse {
+  file.v1alpha1.File file = 1;
+}
+
+message ReadRequest {
+  string name = 1;
+}
+
+message ReadResponse {
+  bytes data = 1;
+}
+
+message RemoveRequest {
+  string name = 1;
+}
+
+message RemoveResponse {}
+
+message RemoveAllRequest {
+  string name = 1;
+}
+
+message RemoveAllResponse {}
+
+message RenameRequest {
+  string oldname = 1;
+  string newname = 2;
+}
+
+message RenameResponse {}
+
+message StatRequest {
+  string name = 1;
+}
+
+message StatResponse {
+  file.v1alpha1.FileInfo file_info = 1;
+}
+
+message WriteRequest {
+  oneof payload {
+    string name = 1; // first message only
+    bytes data = 2; // subsequent messages
+  }
+}
+
+message WriteResponse {
+  int64 bytes_written = 1;
+}
