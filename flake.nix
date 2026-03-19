@@ -19,8 +19,31 @@
       imports = [ inputs.treefmt-nix.flakeModule ];
 
       perSystem =
-        { pkgs, ... }:
+        { pkgs, lib, ... }:
+        let
+          protoapis = pkgs.stdenv.mkDerivation {
+            pname = "protoapis";
+            version = "0.0.1";
+            src = lib.cleanSource ./.;
+
+            nativeBuildInputs = [ pkgs.buf ];
+
+            buildPhase = ''
+              HOME="$PWD" buf build . --output apis.binpb
+            '';
+
+            installPhase = ''
+              mkdir -p $out
+              cp apis.binpb $out/
+            '';
+          };
+        in
         {
+          packages = {
+            inherit protoapis;
+            default = protoapis;
+          };
+
           devShells.default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               buf
@@ -28,9 +51,16 @@
             ];
           };
 
-          treefmt = {
-            programs.buf.enable = true;
-            programs.nixfmt.enable = true;
+          treefmt.programs = {
+            actionlint.enable = true;
+            buf.enable = true;
+            mdformat.enable = true;
+            nixfmt.enable = true;
+
+            yamllint = {
+              enable = true;
+              settings.document-start = "disable";
+            };
           };
         };
     };

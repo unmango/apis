@@ -123,7 +123,7 @@ message StatResponse {
 message WriteRequest {
   oneof payload {
     string name = 1; // first message only
-    bytes data = 2;  // subsequent messages
+    bytes data = 2; // subsequent messages
   }
 }
 

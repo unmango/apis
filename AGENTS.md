@@ -39,6 +39,7 @@ All proto definitions live under `proto/` and follow the `dev.unmango.*` package
 ### Buf configuration
 
 `buf.yaml` defines the module at `buf.build/unmango/apis` with:
+
 - Linting: `STANDARD` ruleset
 - Breaking change detection: `FILE` ruleset
 - Module root: `proto/`
