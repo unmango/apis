@@ -3,3 +3,4 @@
 bin/
 /result
 .claude/*
+*.binpb

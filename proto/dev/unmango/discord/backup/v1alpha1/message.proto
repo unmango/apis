@@ -1,0 +1,149 @@
+edition = "2023";
+
+package dev.unmango.discord.backup.v1alpha1;
+
+import "dev/unmango/discord/backup/v1alpha1/types.proto";
+import "google/protobuf/timestamp.proto";
+
+// Attachment represents a file attached to a message.
+message Attachment {
+  string id = 1;
+  string filename = 2;
+  string description = 3 [features.field_presence = EXPLICIT];
+  string content_type = 4 [features.field_presence = EXPLICIT];
+  int64 size = 5; // bytes
+  string url = 6;
+  string proxy_url = 7;
+  int32 height = 8 [features.field_presence = EXPLICIT];
+  int32 width = 9 [features.field_presence = EXPLICIT];
+  bool ephemeral = 10;
+  float duration_secs = 11 [features.field_presence = EXPLICIT];
+  string waveform = 12 [features.field_presence = EXPLICIT]; // base64-encoded waveform for voice messages
+  int64 flags = 13; // bitmask
+}
+
+// EmbedFooter represents the footer of a message embed.
+message EmbedFooter {
+  string text = 1;
+  string icon_url = 2 [features.field_presence = EXPLICIT];
+  string proxy_icon_url = 3 [features.field_presence = EXPLICIT];
+}
+
+// EmbedImage represents the image of a message embed.
+message EmbedImage {
+  string url = 1;
+  string proxy_url = 2 [features.field_presence = EXPLICIT];
+  int32 height = 3 [features.field_presence = EXPLICIT];
+  int32 width = 4 [features.field_presence = EXPLICIT];
+}
+
+// EmbedThumbnail represents the thumbnail of a message embed.
+message EmbedThumbnail {
+  string url = 1;
+  string proxy_url = 2 [features.field_presence = EXPLICIT];
+  int32 height = 3 [features.field_presence = EXPLICIT];
+  int32 width = 4 [features.field_presence = EXPLICIT];
+}
+
+// EmbedVideo represents the video of a message embed.
+message EmbedVideo {
+  string url = 1 [features.field_presence = EXPLICIT];
+  string proxy_url = 2 [features.field_presence = EXPLICIT];
+  int32 height = 3 [features.field_presence = EXPLICIT];
+  int32 width = 4 [features.field_presence = EXPLICIT];
+}
+
+// EmbedProvider represents the provider of a message embed.
+message EmbedProvider {
+  string name = 1 [features.field_presence = EXPLICIT];
+  string url = 2 [features.field_presence = EXPLICIT];
+}
+
+// EmbedAuthor represents the author of a message embed.
+message EmbedAuthor {
+  string name = 1;
+  string url = 2 [features.field_presence = EXPLICIT];
+  string icon_url = 3 [features.field_presence = EXPLICIT];
+  string proxy_icon_url = 4 [features.field_presence = EXPLICIT];
+}
+
+// EmbedField represents a field within a message embed.
+message EmbedField {
+  string name = 1;
+  string value = 2;
+  bool inline = 3;
+}
+
+// Embed represents a rich embed attached to a message.
+message Embed {
+  string title = 1 [features.field_presence = EXPLICIT];
+  EmbedType type = 2;
+  string description = 3 [features.field_presence = EXPLICIT];
+  string url = 4 [features.field_presence = EXPLICIT];
+  google.protobuf.Timestamp timestamp = 5;
+  uint32 color = 6; // RGB color value in low 24 bits
+  EmbedFooter footer = 7;
+  EmbedImage image = 8;
+  EmbedThumbnail thumbnail = 9;
+  EmbedVideo video = 10;
+  EmbedProvider provider = 11;
+  EmbedAuthor author = 12;
+  repeated EmbedField fields = 13;
+}
+
+// ReactionEmoji represents the emoji used in a reaction.
+message ReactionEmoji {
+  string id = 1 [features.field_presence = EXPLICIT]; // empty for unicode emoji
+  string name = 2 [features.field_presence = EXPLICIT]; // unicode character or custom emoji name
+  bool animated = 3;
+}
+
+// Reaction represents a reaction on a message.
+message Reaction {
+  ReactionEmoji emoji = 1;
+  int32 count = 2;
+  bool me = 3;
+  int32 count_details_burst = 4;
+  int32 count_details_normal = 5;
+  repeated string burst_colors = 6; // hex color strings for super-reaction burst colors
+}
+
+// MentionChannel represents a channel referenced in a message.
+message MentionChannel {
+  string id = 1;
+  string guild_id = 2;
+  ChannelType type = 3;
+  string name = 4;
+}
+
+// Message represents a Discord message.
+message Message {
+  string id = 1;
+  string channel_id = 2;
+  string author_id = 3;
+  string content = 4;
+  google.protobuf.Timestamp timestamp = 5;
+  google.protobuf.Timestamp edited_timestamp = 6 [features.field_presence = EXPLICIT];
+  bool tts = 7;
+  bool mention_everyone = 8;
+  repeated string mention_user_ids = 9;
+  repeated string mention_role_ids = 10;
+  repeated MentionChannel mention_channels = 11;
+  repeated Attachment attachments = 12;
+  repeated Embed embeds = 13;
+  repeated Reaction reactions = 14;
+  bool pinned = 15;
+  MessageType type = 16;
+  string webhook_id = 17 [features.field_presence = EXPLICIT];
+  string application_id = 18 [features.field_presence = EXPLICIT];
+  string referenced_message_id = 19 [features.field_presence = EXPLICIT];
+  int64 flags = 20; // bitmask
+  string thread_id = 21 [features.field_presence = EXPLICIT];
+  int32 position = 22;
+}
+
+// ChannelMessages groups messages belonging to a single channel.
+message ChannelMessages {
+  string channel_id = 1;
+  repeated Message messages = 2;
+}

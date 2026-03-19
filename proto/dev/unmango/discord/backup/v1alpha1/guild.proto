@@ -1,0 +1,223 @@
+edition = "2023";
+
+package dev.unmango.discord.backup.v1alpha1;
+
+import "dev/unmango/discord/backup/v1alpha1/types.proto";
+import "google/protobuf/timestamp.proto";
+
+// Guild represents a Discord guild (server) and its configuration.
+message Guild {
+  string id = 1;
+  string name = 2;
+  string description = 3 [features.field_presence = EXPLICIT];
+  string icon_url = 4 [features.field_presence = EXPLICIT];
+  string banner_url = 5 [features.field_presence = EXPLICIT];
+  string splash_url = 6 [features.field_presence = EXPLICIT];
+  string discovery_splash_url = 7 [features.field_presence = EXPLICIT];
+  string region = 8 [features.field_presence = EXPLICIT]; // deprecated but may still appear in backups
+  repeated string features = 9;
+  VerificationLevel verification_level = 10;
+  ExplicitContentFilter explicit_content_filter = 11;
+  DefaultMessageNotifications default_message_notifications = 12;
+  int64 system_channel_flags = 13; // bitmask
+  string preferred_locale = 14;
+  NsfwLevel nsfw_level = 15;
+  PremiumTier premium_tier = 16;
+  int32 premium_subscription_count = 17 [features.field_presence = EXPLICIT];
+  string vanity_url_code = 18 [features.field_presence = EXPLICIT];
+  string owner_id = 19;
+  string afk_channel_id = 20 [features.field_presence = EXPLICIT];
+  int32 afk_timeout = 21; // seconds
+  string system_channel_id = 22 [features.field_presence = EXPLICIT];
+  string rules_channel_id = 23 [features.field_presence = EXPLICIT];
+  string public_updates_channel_id = 24 [features.field_presence = EXPLICIT];
+  string safety_alerts_channel_id = 25 [features.field_presence = EXPLICIT];
+  int32 max_members = 26 [features.field_presence = EXPLICIT];
+  int32 max_presences = 27 [features.field_presence = EXPLICIT];
+  int32 max_video_channel_users = 28 [features.field_presence = EXPLICIT];
+  bool widget_enabled = 29;
+  string widget_channel_id = 30 [features.field_presence = EXPLICIT];
+  int32 approximate_member_count = 31 [features.field_presence = EXPLICIT];
+  int32 approximate_presence_count = 32 [features.field_presence = EXPLICIT];
+  google.protobuf.Timestamp joined_at = 33;
+}
+
+// Channel represents a Discord channel of any type.
+message Channel {
+  string id = 1;
+  ChannelType type = 2;
+  string name = 3 [features.field_presence = EXPLICIT];
+  int32 position = 4;
+  string topic = 5 [features.field_presence = EXPLICIT];
+  bool nsfw = 6;
+  string parent_id = 7 [features.field_presence = EXPLICIT];
+  int32 bitrate = 8;
+  int32 user_limit = 9;
+  int32 rate_limit_per_user = 10;
+  repeated PermissionOverwrite permission_overwrites = 11;
+  int32 default_auto_archive_duration = 12; // minutes
+  int64 flags = 13; // bitmask
+  ForumLayout default_forum_layout = 14;
+  SortOrder default_sort_order = 15;
+  repeated ForumTag available_tags = 16;
+  DefaultReaction default_reaction_emoji = 17;
+  VideoQualityMode video_quality_mode = 18;
+  int32 default_thread_rate_limit_per_user = 19;
+  ThreadMetadata thread_metadata = 20;
+}
+
+// Role represents a Discord role within a guild.
+message Role {
+  string id = 1;
+  string name = 2;
+  uint32 color = 3; // RGB color value in low 24 bits
+  bool hoist = 4;
+  string icon_url = 5 [features.field_presence = EXPLICIT];
+  string unicode_emoji = 6 [features.field_presence = EXPLICIT];
+  int32 position = 7;
+  int64 permissions = 8; // bitmask; use int64 for bit 48+
+  bool managed = 9;
+  bool mentionable = 10;
+  RoleTag tags = 11;
+  int64 flags = 12; // bitmask
+}
+
+// User represents a Discord user account.
+message User {
+  string id = 1;
+  string username = 2;
+  string discriminator = 3 [features.field_presence = EXPLICIT]; // legacy four-digit tag; "0" for new usernames
+  string global_name = 4 [features.field_presence = EXPLICIT];
+  string avatar_url = 5 [features.field_presence = EXPLICIT];
+  bool bot = 6;
+  bool system = 7;
+}
+
+// Member represents a guild member (user + guild-specific metadata).
+message Member {
+  string user_id = 1;
+  string nickname = 2 [features.field_presence = EXPLICIT];
+  string guild_avatar_url = 3 [features.field_presence = EXPLICIT];
+  repeated string role_ids = 4;
+  google.protobuf.Timestamp joined_at = 5;
+  google.protobuf.Timestamp premium_since = 6 [features.field_presence = EXPLICIT];
+  bool deaf = 7;
+  bool mute = 8;
+  bool pending = 9;
+  int64 flags = 10; // bitmask
+  google.protobuf.Timestamp communication_disabled_until = 11 [features.field_presence = EXPLICIT];
+}
+
+// Emoji represents a custom guild emoji.
+message Emoji {
+  string id = 1;
+  string name = 2;
+  repeated string role_ids = 3;
+  string user_id = 4 [features.field_presence = EXPLICIT];
+  bool require_colons = 5;
+  bool managed = 6;
+  bool animated = 7;
+  bool available = 8;
+}
+
+// Sticker represents a guild sticker.
+message Sticker {
+  string id = 1;
+  string pack_id = 2 [features.field_presence = EXPLICIT];
+  string name = 3;
+  string description = 4 [features.field_presence = EXPLICIT];
+  string tags = 5; // comma-separated list of tags
+  StickerFormatType format_type = 6;
+  bool available = 7;
+  string guild_id = 8 [features.field_presence = EXPLICIT];
+  string user_id = 9 [features.field_presence = EXPLICIT];
+  int32 sort_value = 10;
+}
+
+// Webhook represents a Discord webhook.
+message Webhook {
+  string id = 1;
+  WebhookType type = 2;
+  string guild_id = 3 [features.field_presence = EXPLICIT];
+  string channel_id = 4 [features.field_presence = EXPLICIT];
+  string user_id = 5 [features.field_presence = EXPLICIT];
+  string name = 6 [features.field_presence = EXPLICIT];
+  string avatar_url = 7 [features.field_presence = EXPLICIT];
+  // WARNING: This field contains a webhook credential. Backups with this field
+  // populated must be treated as sensitive and stored encrypted.
+  string token = 8 [features.field_presence = EXPLICIT];
+  string application_id = 9 [features.field_presence = EXPLICIT];
+  string url = 10 [features.field_presence = EXPLICIT];
+  string source_guild_id = 11 [features.field_presence = EXPLICIT];
+  string source_channel_id = 12 [features.field_presence = EXPLICIT];
+}
+
+// ScheduledEventEntityMetadata holds location data for external scheduled events.
+message ScheduledEventEntityMetadata {
+  string location = 1 [features.field_presence = EXPLICIT];
+}
+
+// ScheduledEvent represents a Discord guild scheduled event.
+message ScheduledEvent {
+  string id = 1;
+  string guild_id = 2;
+  string channel_id = 3 [features.field_presence = EXPLICIT];
+  string creator_id = 4 [features.field_presence = EXPLICIT];
+  string name = 5;
+  string description = 6 [features.field_presence = EXPLICIT];
+  google.protobuf.Timestamp scheduled_start_time = 7;
+  google.protobuf.Timestamp scheduled_end_time = 8 [features.field_presence = EXPLICIT];
+  PrivacyLevel privacy_level = 9;
+  ScheduledEventStatus status = 10;
+  ScheduledEventEntityType entity_type = 11;
+  string entity_id = 12 [features.field_presence = EXPLICIT];
+  ScheduledEventEntityMetadata entity_metadata = 13;
+  int32 user_count = 14;
+  string image_url = 15 [features.field_presence = EXPLICIT];
+}
+
+// AutoModTriggerMetadata holds trigger configuration for an auto-moderation rule.
+message AutoModTriggerMetadata {
+  repeated string keyword_filter = 1;
+  repeated string regex_patterns = 2;
+  repeated int32 presets = 3; // AutoMod keyword preset values
+  repeated string allow_list = 4;
+  int32 mention_total_limit = 5;
+  bool mention_raid_protection_enabled = 6;
+}
+
+// AutoModAction represents an action taken when an auto-moderation rule is triggered.
+message AutoModAction {
+  AutoModActionType type = 1;
+  string channel_id = 2 [features.field_presence = EXPLICIT]; // for SEND_ALERT_MESSAGE actions
+  int32 duration_seconds = 3; // for TIMEOUT actions
+  string custom_message = 4 [features.field_presence = EXPLICIT]; // for BLOCK_MESSAGE actions
+}
+
+// AutoModRule represents an auto-moderation rule.
+message AutoModRule {
+  string id = 1;
+  string guild_id = 2;
+  string name = 3;
+  string creator_id = 4;
+  AutoModEventType event_type = 5;
+  AutoModTriggerType trigger_type = 6;
+  AutoModTriggerMetadata trigger_metadata = 7;
+  repeated AutoModAction actions = 8;
+  bool enabled = 9;
+  repeated string exempt_role_ids = 10;
+  repeated string exempt_channel_ids = 11;
+}
+
+// Invite represents a Discord guild invite.
+message Invite {
+  string code = 1;
+  string channel_id = 2;
+  string inviter_id = 3 [features.field_presence = EXPLICIT];
+  int32 max_age = 4; // seconds; 0 = never expires
+  int32 max_uses = 5; // 0 = unlimited
+  bool temporary = 6;
+  int32 uses = 7;
+  google.protobuf.Timestamp created_at = 8;
+  bool revoked = 9;
+}

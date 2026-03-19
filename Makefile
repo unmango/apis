@@ -1,3 +1,5 @@
+.PHONY: build check update format fmt clean
+
 build:
 	nix build
 
@@ -9,3 +11,6 @@ update:
 
 format fmt:
 	nix fmt
+
+clean:
+	rm -f result *.binpb
