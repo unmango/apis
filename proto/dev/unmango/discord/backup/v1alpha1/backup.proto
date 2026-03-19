@@ -1,0 +1,33 @@
+edition = "2023";
+
+package dev.unmango.discord.backup.v1alpha1;
+
+import "dev/unmango/discord/backup/v1alpha1/guild.proto";
+import "dev/unmango/discord/backup/v1alpha1/message.proto";
+import "google/protobuf/timestamp.proto";
+
+// BackupMetadata holds information about a backup snapshot itself.
+message BackupMetadata {
+  string backup_id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  string guild_id = 3;
+  string schema_version = 4;
+  string tool_version = 5 [features.field_presence = EXPLICIT];
+}
+
+// ServerBackup is a complete snapshot of a Discord guild.
+message ServerBackup {
+  BackupMetadata metadata = 1;
+  Guild guild = 2;
+  repeated Channel channels = 3;
+  repeated Role roles = 4;
+  repeated Member members = 5;
+  repeated User users = 6; // deduplicated roster; all other messages reference by user_id
+  repeated Emoji emojis = 7;
+  repeated Sticker stickers = 8;
+  repeated Webhook webhooks = 9;
+  repeated ScheduledEvent scheduled_events = 10;
+  repeated AutoModRule auto_mod_rules = 11;
+  repeated Invite invites = 12;
+  repeated ChannelMessages channel_messages = 13;
+}

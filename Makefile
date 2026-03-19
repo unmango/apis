@@ -9,3 +9,6 @@ update:
 
 format fmt:
 	nix fmt
+
+clean:
+	rm -f result *.binpb
