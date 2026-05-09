@@ -1,8 +1,8 @@
-edition = "2023";
+edition = "2024";
 
-package dev.unmango.protofs.fs.v1alpha1;
+package dev.unmango.protofs.fs.v1alpha2;
 
-import "dev/unmango/protofs/file/v1alpha1/file.proto";
+import "dev/unmango/protofs/file/v1alpha2/file.proto";
 import "google/protobuf/timestamp.proto";
 
 service FsService {
@@ -24,7 +24,7 @@ service FsService {
 
 message ChmodRequest {
   string name = 1;
-  uint32 mode = 2; // bitmask; see file.v1alpha1.FileModeConst
+  uint32 mode = 2; // bitmask; see file.v1alpha2.FileModeConst
 }
 
 message ChmodResponse {}
@@ -50,19 +50,19 @@ message CreateRequest {
 }
 
 message CreateResponse {
-  file.v1alpha1.File file = 1;
+  file.v1alpha2.File file = 1;
 }
 
 message MkdirAllRequest {
   string name = 1;
-  uint32 perm = 2; // bitmask; see file.v1alpha1.FileModeConst
+  uint32 perm = 2; // bitmask; see file.v1alpha2.FileModeConst
 }
 
 message MkdirAllResponse {}
 
 message MkdirRequest {
   string name = 1;
-  uint32 perm = 2; // bitmask; see file.v1alpha1.FileModeConst
+  uint32 perm = 2; // bitmask; see file.v1alpha2.FileModeConst
 }
 
 message MkdirResponse {}
@@ -72,17 +72,17 @@ message OpenRequest {
 }
 
 message OpenResponse {
-  file.v1alpha1.File file = 1;
+  file.v1alpha2.File file = 1;
 }
 
 message OpenFileRequest {
   string name = 1;
   int64 flag = 2; // os.O_RDONLY, os.O_WRONLY, os.O_RDWR etc. (platform-specific)
-  uint32 perm = 3; // bitmask; see file.v1alpha1.FileModeConst
+  uint32 perm = 3; // bitmask; see file.v1alpha2.FileModeConst
 }
 
 message OpenFileResponse {
-  file.v1alpha1.File file = 1;
+  file.v1alpha2.File file = 1;
 }
 
 message ReadRequest {
@@ -117,7 +117,7 @@ message StatRequest {
 }
 
 message StatResponse {
-  file.v1alpha1.FileInfo file_info = 1;
+  file.v1alpha2.FileInfo file_info = 1;
 }
 
 message WriteRequest {
