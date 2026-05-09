@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/unmango/apis/actions/workflows/ci.yml/badge.svg)](https://github.com/unmango/apis/actions/workflows/ci.yml)
 [![Buf CI](https://github.com/unmango/apis/actions/workflows/buf.yml/badge.svg)](https://github.com/unmango/apis/actions/workflows/buf.yml)
-[![protobuf](https://img.shields.io/badge/protobuf-edition%202023-4285F4)](https://protobuf.dev)
+[![protobuf](https://img.shields.io/badge/protobuf-edition%202024-4285F4)](https://protobuf.dev)
 [![buf.build](https://img.shields.io/badge/buf.build-unmango%2Fapis-0C3CF5)](https://buf.build/unmango/apis)
 
 Public API definitions. Published at [`buf.build/unmango/apis`](https://buf.build/unmango/apis).
