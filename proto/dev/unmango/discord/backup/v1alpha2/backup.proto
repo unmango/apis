@@ -1,9 +1,9 @@
-edition = "2023";
+edition = "2024";
 
-package dev.unmango.discord.backup.v1alpha1;
+package dev.unmango.discord.backup.v1alpha2;
 
-import "dev/unmango/discord/backup/v1alpha1/guild.proto";
-import "dev/unmango/discord/backup/v1alpha1/message.proto";
+import "dev/unmango/discord/backup/v1alpha2/guild.proto";
+import "dev/unmango/discord/backup/v1alpha2/message.proto";
 import "google/protobuf/timestamp.proto";
 
 // BackupMetadata holds information about a backup snapshot itself.

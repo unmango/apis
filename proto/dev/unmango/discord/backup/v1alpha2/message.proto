@@ -1,8 +1,8 @@
-edition = "2023";
+edition = "2024";
 
-package dev.unmango.discord.backup.v1alpha1;
+package dev.unmango.discord.backup.v1alpha2;
 
-import "dev/unmango/discord/backup/v1alpha1/types.proto";
+import "dev/unmango/discord/backup/v1alpha2/types.proto";
 import "google/protobuf/timestamp.proto";
 
 // Attachment represents a file attached to a message.

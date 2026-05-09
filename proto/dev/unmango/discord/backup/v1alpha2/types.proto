@@ -1,6 +1,6 @@
-edition = "2023";
+edition = "2024";
 
-package dev.unmango.discord.backup.v1alpha1;
+package dev.unmango.discord.backup.v1alpha2;
 
 import "google/protobuf/timestamp.proto";
 
@@ -66,9 +66,9 @@ enum NsfwLevel {
 enum PremiumTier {
   PREMIUM_TIER_UNSPECIFIED = 0;
   PREMIUM_TIER_NONE = 1;
-  PREMIUM_TIER_TIER_1 = 2;
-  PREMIUM_TIER_TIER_2 = 3;
-  PREMIUM_TIER_TIER_3 = 4;
+  PREMIUM_TIER_TIER1 = 2;
+  PREMIUM_TIER_TIER2 = 3;
+  PREMIUM_TIER_TIER3 = 4;
 }
 
 // OverwriteType represents the type of a permission overwrite target.
@@ -176,9 +176,9 @@ enum MessageType {
   MESSAGE_TYPE_GUILD_BOOST = 4;
   MESSAGE_TYPE_THREAD_CREATED = 5;
   MESSAGE_TYPE_CHANNEL_PINNED_MESSAGE = 6;
-  MESSAGE_TYPE_GUILD_BOOST_TIER_1 = 7;
-  MESSAGE_TYPE_GUILD_BOOST_TIER_2 = 8;
-  MESSAGE_TYPE_GUILD_BOOST_TIER_3 = 9;
+  MESSAGE_TYPE_GUILD_BOOST_TIER1 = 7;
+  MESSAGE_TYPE_GUILD_BOOST_TIER2 = 8;
+  MESSAGE_TYPE_GUILD_BOOST_TIER3 = 9;
   MESSAGE_TYPE_CHANNEL_FOLLOW_ADD = 10;
   MESSAGE_TYPE_GUILD_DISCOVERY_DISQUALIFIED = 11;
   MESSAGE_TYPE_GUILD_DISCOVERY_REQUALIFIED = 12;
