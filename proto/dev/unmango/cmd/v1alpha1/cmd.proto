@@ -1,0 +1,123 @@
+edition = "2024";
+
+package dev.unmango.cmd.v1alpha1;
+
+service CommandService {
+  rpc Run(RunRequest) returns (RunResponse);
+  rpc Exec(ExecRequest) returns (stream ExecResponse);
+  rpc Start(StartRequest) returns (StartResponse);
+  rpc Wait(WaitRequest) returns (WaitResponse);
+  rpc Signal(SignalRequest) returns (SignalResponse);
+}
+
+message RunRequest {
+  Process process = 1;
+}
+
+message RunResponse {
+  bytes stdout = 1;
+  bytes stderr = 2;
+  int32 exit_code = 3;
+}
+
+message ExecRequest {
+  Process process = 1;
+}
+
+message ExecResponse {
+  oneof payload {
+    bytes stdout = 1;
+    bytes stderr = 2;
+    ExitResult exit = 3;
+  }
+}
+
+message ExitResult {
+  int32 code = 1;
+}
+
+message StartRequest {
+  Process process = 1;
+}
+
+message StartResponse {
+  string id = 1; // opaque process handle
+}
+
+message WaitRequest {
+  string id = 1;
+}
+
+message WaitResponse {
+  int32 exit_code = 1;
+}
+
+message SignalRequest {
+  string id = 1;
+  Signal signal = 2;
+}
+
+message SignalResponse {}
+
+message Process {
+  string path = 1; // executable path or name; resolved via $PATH if not absolute
+  repeated string args = 2; // arguments; does not include argv[0]
+  repeated string env = 3; // KEY=VALUE pairs
+  string cwd = 4; // working directory; empty = inherit from parent
+  Stdio stdio = 5;
+  User user = 6;
+  bool terminal = 7; // allocate a PTY
+}
+
+message Stdio {
+  Stream stdin = 1;
+  Stream stdout = 2;
+  Stream stderr = 3;
+}
+
+message Stream {
+  oneof kind {
+    Inherit inherit = 1;
+    Null null = 2;
+    Pipe pipe = 3;
+    File file = 4;
+  }
+}
+
+message Inherit {}
+
+message Null {}
+
+message Pipe {}
+
+message File {
+  string path = 1;
+  OpenMode mode = 2;
+}
+
+message User {
+  uint32 uid = 1 [features.field_presence = EXPLICIT];
+  uint32 gid = 2 [features.field_presence = EXPLICIT];
+  repeated uint32 additional_gids = 3;
+  string username = 4 [features.field_presence = EXPLICIT]; // alternative to uid/gid
+}
+
+enum OpenMode {
+  OPEN_MODE_UNSPECIFIED = 0;
+  OPEN_MODE_READ = 1;
+  OPEN_MODE_WRITE = 2;
+  OPEN_MODE_APPEND = 3;
+}
+
+enum Signal {
+  SIGNAL_UNSPECIFIED = 0;
+  SIGNAL_HUP = 1;
+  SIGNAL_INT = 2;
+  SIGNAL_QUIT = 3;
+  SIGNAL_KILL = 4;
+  SIGNAL_TERM = 5;
+  SIGNAL_USR1 = 6;
+  SIGNAL_USR2 = 7;
+  SIGNAL_CONT = 8;
+  SIGNAL_STOP = 9;
+}
