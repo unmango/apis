@@ -14,3 +14,6 @@ format fmt:
 
 clean:
 	rm -f result *.binpb
+
+breaking:
+	buf breaking --against .git#branch=main

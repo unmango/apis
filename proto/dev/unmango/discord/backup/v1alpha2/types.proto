@@ -1,0 +1,253 @@
+edition = "2024";
+
+package dev.unmango.discord.backup.v1alpha2;
+
+import "google/protobuf/timestamp.proto";
+
+// Note: proto enum integer values in this file do NOT match Discord's raw API
+// integers. Discord uses 0 for real values (e.g. GUILD_TEXT=0, NONE=0) which
+// conflicts with the buf STANDARD requirement for an _UNSPECIFIED=0 zero value.
+// Backup tools must map between Discord's raw integers and these enum values by
+// name, not by number.
+
+// ChannelType represents the type of a Discord channel.
+enum ChannelType {
+  CHANNEL_TYPE_UNSPECIFIED = 0;
+  CHANNEL_TYPE_GUILD_TEXT = 1;
+  CHANNEL_TYPE_DM = 2;
+  CHANNEL_TYPE_GUILD_VOICE = 3;
+  CHANNEL_TYPE_GROUP_DM = 4;
+  CHANNEL_TYPE_GUILD_CATEGORY = 5;
+  CHANNEL_TYPE_GUILD_ANNOUNCEMENT = 6;
+  CHANNEL_TYPE_ANNOUNCEMENT_THREAD = 10;
+  CHANNEL_TYPE_PUBLIC_THREAD = 11;
+  CHANNEL_TYPE_PRIVATE_THREAD = 12;
+  CHANNEL_TYPE_GUILD_STAGE_VOICE = 13;
+  CHANNEL_TYPE_GUILD_DIRECTORY = 14;
+  CHANNEL_TYPE_GUILD_FORUM = 15;
+  CHANNEL_TYPE_GUILD_MEDIA = 16;
+}
+
+// VerificationLevel represents the verification level required for a guild.
+enum VerificationLevel {
+  VERIFICATION_LEVEL_UNSPECIFIED = 0;
+  VERIFICATION_LEVEL_NONE = 1;
+  VERIFICATION_LEVEL_LOW = 2;
+  VERIFICATION_LEVEL_MEDIUM = 3;
+  VERIFICATION_LEVEL_HIGH = 4;
+  VERIFICATION_LEVEL_VERY_HIGH = 5;
+}
+
+// ExplicitContentFilter represents the explicit content filter level for a guild.
+enum ExplicitContentFilter {
+  EXPLICIT_CONTENT_FILTER_UNSPECIFIED = 0;
+  EXPLICIT_CONTENT_FILTER_DISABLED = 1;
+  EXPLICIT_CONTENT_FILTER_MEMBERS_WITHOUT_ROLES = 2;
+  EXPLICIT_CONTENT_FILTER_ALL_MEMBERS = 3;
+}
+
+// DefaultMessageNotifications represents the default notification level for a guild.
+enum DefaultMessageNotifications {
+  DEFAULT_MESSAGE_NOTIFICATIONS_UNSPECIFIED = 0;
+  DEFAULT_MESSAGE_NOTIFICATIONS_ALL_MESSAGES = 1;
+  DEFAULT_MESSAGE_NOTIFICATIONS_ONLY_MENTIONS = 2;
+}
+
+// NsfwLevel represents the NSFW level of a guild.
+enum NsfwLevel {
+  NSFW_LEVEL_UNSPECIFIED = 0;
+  NSFW_LEVEL_DEFAULT = 1;
+  NSFW_LEVEL_EXPLICIT = 2;
+  NSFW_LEVEL_SAFE = 3;
+  NSFW_LEVEL_AGE_RESTRICTED = 4;
+}
+
+// PremiumTier represents the guild's Nitro boost tier.
+enum PremiumTier {
+  PREMIUM_TIER_UNSPECIFIED = 0;
+  PREMIUM_TIER_NONE = 1;
+  PREMIUM_TIER_TIER1 = 2;
+  PREMIUM_TIER_TIER2 = 3;
+  PREMIUM_TIER_TIER3 = 4;
+}
+
+// OverwriteType represents the type of a permission overwrite target.
+enum OverwriteType {
+  OVERWRITE_TYPE_UNSPECIFIED = 0;
+  OVERWRITE_TYPE_ROLE = 1;
+  OVERWRITE_TYPE_MEMBER = 2;
+}
+
+// ForumLayout represents the layout of a forum channel.
+enum ForumLayout {
+  FORUM_LAYOUT_UNSPECIFIED = 0;
+  FORUM_LAYOUT_NOT_SET = 1;
+  FORUM_LAYOUT_LIST_VIEW = 2;
+  FORUM_LAYOUT_GALLERY_VIEW = 3;
+}
+
+// SortOrder represents the sort order of a forum or media channel.
+enum SortOrder {
+  SORT_ORDER_UNSPECIFIED = 0;
+  SORT_ORDER_LATEST_ACTIVITY = 1;
+  SORT_ORDER_CREATION_DATE = 2;
+}
+
+// VideoQualityMode represents the video quality mode of a voice channel.
+enum VideoQualityMode {
+  VIDEO_QUALITY_MODE_UNSPECIFIED = 0;
+  VIDEO_QUALITY_MODE_AUTO = 1;
+  VIDEO_QUALITY_MODE_FULL = 2;
+}
+
+// PrivacyLevel represents the privacy level of a scheduled event or stage instance.
+enum PrivacyLevel {
+  PRIVACY_LEVEL_UNSPECIFIED = 0;
+  PRIVACY_LEVEL_PUBLIC = 1;
+  PRIVACY_LEVEL_GUILD_ONLY = 2;
+}
+
+// ScheduledEventStatus represents the status of a scheduled event.
+enum ScheduledEventStatus {
+  SCHEDULED_EVENT_STATUS_UNSPECIFIED = 0;
+  SCHEDULED_EVENT_STATUS_SCHEDULED = 1;
+  SCHEDULED_EVENT_STATUS_ACTIVE = 2;
+  SCHEDULED_EVENT_STATUS_COMPLETED = 3;
+  SCHEDULED_EVENT_STATUS_CANCELED = 4;
+}
+
+// ScheduledEventEntityType represents the entity type of a scheduled event.
+enum ScheduledEventEntityType {
+  SCHEDULED_EVENT_ENTITY_TYPE_UNSPECIFIED = 0;
+  SCHEDULED_EVENT_ENTITY_TYPE_STAGE_INSTANCE = 1;
+  SCHEDULED_EVENT_ENTITY_TYPE_VOICE = 2;
+  SCHEDULED_EVENT_ENTITY_TYPE_EXTERNAL = 3;
+}
+
+// AutoModEventType represents the event type that triggers an auto-moderation rule.
+enum AutoModEventType {
+  AUTO_MOD_EVENT_TYPE_UNSPECIFIED = 0;
+  AUTO_MOD_EVENT_TYPE_MESSAGE_SEND = 1;
+  AUTO_MOD_EVENT_TYPE_MEMBER_UPDATE = 2;
+}
+
+// AutoModTriggerType represents what triggers an auto-moderation rule.
+enum AutoModTriggerType {
+  AUTO_MOD_TRIGGER_TYPE_UNSPECIFIED = 0;
+  AUTO_MOD_TRIGGER_TYPE_KEYWORD = 1;
+  AUTO_MOD_TRIGGER_TYPE_SPAM = 2;
+  AUTO_MOD_TRIGGER_TYPE_KEYWORD_PRESET = 3;
+  AUTO_MOD_TRIGGER_TYPE_MENTION_SPAM = 4;
+  AUTO_MOD_TRIGGER_TYPE_MEMBER_PROFILE = 5;
+}
+
+// AutoModActionType represents the action taken by an auto-moderation rule.
+enum AutoModActionType {
+  AUTO_MOD_ACTION_TYPE_UNSPECIFIED = 0;
+  AUTO_MOD_ACTION_TYPE_BLOCK_MESSAGE = 1;
+  AUTO_MOD_ACTION_TYPE_SEND_ALERT_MESSAGE = 2;
+  AUTO_MOD_ACTION_TYPE_TIMEOUT = 3;
+  AUTO_MOD_ACTION_TYPE_BLOCK_MEMBER_INTERACTION = 4;
+}
+
+// StickerFormatType represents the format of a sticker.
+enum StickerFormatType {
+  STICKER_FORMAT_TYPE_UNSPECIFIED = 0;
+  STICKER_FORMAT_TYPE_PNG = 1;
+  STICKER_FORMAT_TYPE_APNG = 2;
+  STICKER_FORMAT_TYPE_LOTTIE = 3;
+  STICKER_FORMAT_TYPE_GIF = 4;
+}
+
+// WebhookType represents the type of a webhook.
+enum WebhookType {
+  WEBHOOK_TYPE_UNSPECIFIED = 0;
+  WEBHOOK_TYPE_INCOMING = 1;
+  WEBHOOK_TYPE_CHANNEL_FOLLOWER = 2;
+  WEBHOOK_TYPE_APPLICATION = 3;
+}
+
+// MessageType represents the type of a message.
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  MESSAGE_TYPE_DEFAULT = 1;
+  MESSAGE_TYPE_REPLY = 2;
+  MESSAGE_TYPE_USER_JOIN = 3;
+  MESSAGE_TYPE_GUILD_BOOST = 4;
+  MESSAGE_TYPE_THREAD_CREATED = 5;
+  MESSAGE_TYPE_CHANNEL_PINNED_MESSAGE = 6;
+  MESSAGE_TYPE_GUILD_BOOST_TIER1 = 7;
+  MESSAGE_TYPE_GUILD_BOOST_TIER2 = 8;
+  MESSAGE_TYPE_GUILD_BOOST_TIER3 = 9;
+  MESSAGE_TYPE_CHANNEL_FOLLOW_ADD = 10;
+  MESSAGE_TYPE_GUILD_DISCOVERY_DISQUALIFIED = 11;
+  MESSAGE_TYPE_GUILD_DISCOVERY_REQUALIFIED = 12;
+  MESSAGE_TYPE_GUILD_DISCOVERY_GRACE_PERIOD_INITIAL_WARNING = 13;
+  MESSAGE_TYPE_GUILD_DISCOVERY_GRACE_PERIOD_FINAL_WARNING = 14;
+  MESSAGE_TYPE_THREAD_STARTER_MESSAGE = 15;
+  MESSAGE_TYPE_GUILD_INVITE_REMINDER = 16;
+  MESSAGE_TYPE_CONTEXT_MENU_COMMAND = 17;
+  MESSAGE_TYPE_AUTO_MODERATION_ACTION = 18;
+  MESSAGE_TYPE_ROLE_SUBSCRIPTION_PURCHASE = 19;
+  MESSAGE_TYPE_INTERACTION_PREMIUM_UPSELL = 20;
+  MESSAGE_TYPE_STAGE_START = 21;
+  MESSAGE_TYPE_STAGE_END = 22;
+  MESSAGE_TYPE_STAGE_SPEAKER = 23;
+  MESSAGE_TYPE_STAGE_TOPIC = 24;
+  MESSAGE_TYPE_GUILD_APPLICATION_PREMIUM_SUBSCRIPTION = 25;
+}
+
+// EmbedType represents the type of a message embed.
+enum EmbedType {
+  EMBED_TYPE_UNSPECIFIED = 0;
+  EMBED_TYPE_RICH = 1;
+  EMBED_TYPE_IMAGE = 2;
+  EMBED_TYPE_VIDEO = 3;
+  EMBED_TYPE_GIFV = 4;
+  EMBED_TYPE_ARTICLE = 5;
+  EMBED_TYPE_LINK = 6;
+  EMBED_TYPE_POLL_RESULT = 7;
+}
+
+// PermissionOverwrite represents a role or member permission overwrite on a channel.
+message PermissionOverwrite {
+  string id = 1;
+  OverwriteType type = 2;
+  int64 allow = 3; // bitmask of allowed permissions
+  int64 deny = 4; // bitmask of denied permissions
+}
+
+// ForumTag represents a tag that can be applied to threads in a forum channel.
+message ForumTag {
+  string id = 1;
+  string name = 2;
+  bool moderated = 3;
+  string emoji_id = 4 [features.field_presence = EXPLICIT]; // set for custom emoji
+  string emoji_name = 5 [features.field_presence = EXPLICIT]; // set for unicode emoji
+}
+
+// DefaultReaction represents the default emoji reaction for a forum channel post.
+message DefaultReaction {
+  string emoji_id = 1 [features.field_presence = EXPLICIT]; // set for custom emoji
+  string emoji_name = 2 [features.field_presence = EXPLICIT]; // set for unicode emoji
+}
+
+// RoleTag holds metadata about special role types.
+message RoleTag {
+  string bot_id = 1 [features.field_presence = EXPLICIT]; // role is managed by this bot
+  string integration_id = 2 [features.field_presence = EXPLICIT]; // role is managed by this integration
+  string subscription_listing_id = 3 [features.field_presence = EXPLICIT]; // role is available for purchase
+  bool premium_subscriber = 4; // role is the guild's premium subscriber (booster) role
+  bool available_for_purchase = 5; // role can be purchased
+  bool guild_connections = 6; // role is a guild's linked role
+}
+
+// ThreadMetadata holds archival and locking state for thread channels.
+message ThreadMetadata {
+  bool archived = 1;
+  int32 auto_archive_duration = 2; // minutes: 60, 1440, 4320, or 10080
+  google.protobuf.Timestamp archive_timestamp = 3;
+  bool locked = 4;
+  bool invitable = 5 [features.field_presence = EXPLICIT]; // only present on private threads
+  google.protobuf.Timestamp create_timestamp = 6;
+}
