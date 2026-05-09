@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
 
-      - uses: cachix/install-nix-action@v31.10.1
+      - uses: cachix/install-nix-action@v31.10.6
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
