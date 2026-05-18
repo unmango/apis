@@ -1,9 +1,9 @@
-.PHONY: build check update format fmt clean
+.PHONY: build check update format fmt clean lint
 
 build:
 	nix build
 
-check:
+check lint:
 	nix flake check
 
 update:

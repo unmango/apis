@@ -2,12 +2,26 @@ edition = "2024";
 
 package dev.unmango.cmd.v1alpha1;
 
+import "google/protobuf/any.proto";
+
+service ConversionService {
+  rpc Args(ArgsRequest) returns (ArgsResponse);
+}
+
 service CommandService {
   rpc Run(RunRequest) returns (RunResponse);
   rpc Exec(ExecRequest) returns (stream ExecResponse);
   rpc Start(StartRequest) returns (StartResponse);
   rpc Wait(WaitRequest) returns (WaitResponse);
   rpc Signal(SignalRequest) returns (SignalResponse);
+}
+
+message ArgsRequest {
+  google.protobuf.Any spec = 1;
+}
+
+message ArgsResponse {
+  repeated string args = 1;
 }
 
 message RunRequest {
