@@ -25,5 +25,5 @@ message Option {
 message Utility {
   string name = 1;
   repeated Option options = 2;
-  repeated string operand = 3;
+  repeated string operands = 3;
 }
