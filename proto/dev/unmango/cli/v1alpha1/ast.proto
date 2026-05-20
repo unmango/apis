@@ -1,0 +1,29 @@
+edition = "2024";
+
+package dev.unmango.cli.v1alpha1;
+
+// https://stackoverflow.com/questions/8957222/are-there-standards-for-linux-command-line-switches-and-arguments
+// - http://www.gnu.org/prep/standards/html_node/Command_002dLine-Interfaces.html
+// - http://catb.org/~esr/writings/taoup/html/ch10s05.html
+// - http://pubs.opengroup.org/onlinepubs/7908799/xbd/utilconv.html
+// - http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html
+// - http://www.gnu.org/software/libc/manual/html_node/Getopt-Long-Options.html
+
+enum Convention {
+  CONVENTION_UNSPECIFIED = 0;
+  CONVENTION_IEEE = 1;
+  CONVENTION_GNU = 2;
+  CONVENTION_UNIX = 3;
+  CONVENTION_XT = 4;
+}
+
+message Option {
+  string name = 1;
+  string argument = 2;
+}
+
+message Utility {
+  string name = 1;
+  repeated Option options = 2;
+  repeated string operands = 3;
+}
