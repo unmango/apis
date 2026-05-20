@@ -36,7 +36,8 @@ message RunRequest {
 message RunResponse {
   bytes stdout = 1;
   bytes stderr = 2;
-  ExitResult exit = 3;
+  int32 exit_code = 3; // deprecated: use exit
+  ExitResult exit = 4;
 }
 
 message ExecRequest {
@@ -71,7 +72,8 @@ message WaitRequest {
 }
 
 message WaitResponse {
-  ExitResult exit = 1;
+  int32 exit_code = 1; // deprecated: use exit
+  ExitResult exit = 2;
 }
 
 message SignalRequest {
@@ -88,7 +90,8 @@ message Process {
   string cwd = 4; // working directory; empty = inherit from parent
   Stdio stdio = 5;
   User user = 6;
-  Terminal terminal = 7; // if set, allocate a PTY with the given dimensions
+  bool terminal = 7; // deprecated: use pty
+  Terminal pty = 8; // if set, allocate a PTY with the given dimensions
 }
 
 message Terminal {
