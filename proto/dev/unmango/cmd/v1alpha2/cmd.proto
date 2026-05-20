@@ -13,8 +13,9 @@ service BuilderService {
   rpc FromProto(FromProtoRequest) returns (FromProtoResponse);
 }
 
-/// Deprecated, use BuilderService. This was a naming error.
+// Deprecated: use BuilderService. This was a naming error.
 service ConversionService {
+  option deprecated = true;
   // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
   rpc FromJson(FromJsonRequest) returns (FromJsonResponse);
   // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
