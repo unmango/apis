@@ -4,9 +4,23 @@ package dev.unmango.cmd.v1alpha2;
 
 import "google/protobuf/any.proto";
 
-service ConversionService {
+service BuilderService {
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
   rpc FromJson(FromJsonRequest) returns (FromJsonResponse);
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
   rpc FromYaml(FromYamlRequest) returns (FromYamlResponse);
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  rpc FromProto(FromProtoRequest) returns (FromProtoResponse);
+}
+
+// Deprecated: use BuilderService. This was a naming error.
+service ConversionService {
+  option deprecated = true;
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  rpc FromJson(FromJsonRequest) returns (FromJsonResponse);
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  rpc FromYaml(FromYamlRequest) returns (FromYamlResponse);
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
   rpc FromProto(FromProtoRequest) returns (FromProtoResponse);
 }
 
