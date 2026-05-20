@@ -3,8 +3,12 @@ edition = "2024";
 package dev.unmango.cmd.v1alpha1;
 
 import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
 
 service ConversionService {
+  // Args converts a typed spec to a command-line argument list.
+  // Pack the spec message using google.protobuf.Any before sending.
+  // Example (Go): anypb.New(&MySpec{...})
   rpc Args(ArgsRequest) returns (ArgsResponse);
 }
 
@@ -26,16 +30,19 @@ message ArgsResponse {
 
 message RunRequest {
   Process process = 1;
+  bytes stdin = 2; // piped stdin content provided upfront; ignored if process.stdio.stdin is set
 }
 
 message RunResponse {
   bytes stdout = 1;
   bytes stderr = 2;
-  int32 exit_code = 3;
+  int32 exit_code = 3; // deprecated: use exit
+  ExitResult exit = 4;
 }
 
 message ExecRequest {
   Process process = 1;
+  bytes stdin = 2; // piped stdin content provided upfront; interactive stdin unsupported
 }
 
 message ExecResponse {
@@ -52,6 +59,7 @@ message ExitResult {
 
 message StartRequest {
   Process process = 1;
+  // stdio fields in process that are unset default to discard for background processes.
 }
 
 message StartResponse {
@@ -60,10 +68,12 @@ message StartResponse {
 
 message WaitRequest {
   string id = 1;
+  google.protobuf.Duration timeout = 2; // if unset, wait indefinitely
 }
 
 message WaitResponse {
-  int32 exit_code = 1;
+  int32 exit_code = 1; // deprecated: use exit
+  ExitResult exit = 2;
 }
 
 message SignalRequest {
@@ -80,7 +90,13 @@ message Process {
   string cwd = 4; // working directory; empty = inherit from parent
   Stdio stdio = 5;
   User user = 6;
-  bool terminal = 7; // allocate a PTY
+  bool terminal = 7; // deprecated: use pty
+  Terminal pty = 8; // if set, allocate a PTY with the given dimensions
+}
+
+message Terminal {
+  uint32 rows = 1;
+  uint32 cols = 2;
 }
 
 message Stdio {
