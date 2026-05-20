@@ -1,0 +1,63 @@
+edition = "2024";
+
+package dev.unmango.cmd.v1alpha2;
+
+import "google/protobuf/any.proto";
+
+service ConversionService {
+  rpc FromJson(FromJsonRequest) returns (FromJsonResponse);
+  rpc FromYaml(FromYamlRequest) returns (FromYamlResponse);
+  rpc FromProto(FromProtoRequest) returns (FromProtoResponse);
+}
+
+service ExecutionService {
+  rpc Run(RunRequest) returns (RunResponse);
+}
+
+message FromJsonRequest {
+  string type_url = 1;
+  bytes payload = 2;
+}
+
+message FromYamlRequest {
+  string type_url = 1;
+  bytes payload = 2;
+}
+
+message FromProtoRequest {
+  google.protobuf.Any spec = 1;
+}
+
+message FromJsonResponse {
+  Process process = 1;
+}
+
+message FromYamlResponse {
+  Process process = 1;
+}
+
+message FromProtoResponse {
+  Process process = 1;
+}
+
+message RunRequest {
+  Process process = 1;
+  bytes stdin = 2;
+}
+
+message RunResponse {
+  bytes stdout = 1;
+  bytes stderr = 2;
+  ExitResult exit = 3;
+}
+
+message ExitResult {
+  int32 code = 1;
+}
+
+message Process {
+  string path = 1; // executable path or name; resolved via $PATH if not absolute
+  repeated string args = 2; // does not include argv[0]
+  repeated string env = 3; // KEY=VALUE pairs
+  string cwd = 4; // working directory; empty = inherit from parent
+}
