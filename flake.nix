@@ -26,6 +26,7 @@
         in
         {
           packages.default = unmangoApis.generated;
+          packages.update = pkgs.callPackage ./nix/update.nix { };
           legacyPackages.unmangoApis = recurseIntoAttrs unmangoApis;
 
           devShells.default = pkgs.mkShellNoCC {
