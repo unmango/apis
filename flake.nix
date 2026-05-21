@@ -21,33 +21,20 @@
       perSystem =
         { pkgs, lib, ... }:
         let
-          protoapis = pkgs.stdenv.mkDerivation {
-            pname = "protoapis";
-            version = "0.0.1";
-            src = lib.cleanSource ./.;
-
-            nativeBuildInputs = [ pkgs.buf ];
-
-            buildPhase = ''
-              HOME="$PWD" buf build . --output apis.binpb
-            '';
-
-            installPhase = ''
-              mkdir -p $out
-              cp apis.binpb $out/
-            '';
-          };
+          inherit (lib.attrsets) recurseIntoAttrs;
+          unmangoApis = pkgs.callPackage ./nix { };
         in
         {
           packages = {
-            inherit protoapis;
-            default = protoapis;
+            unmangoApis = recurseIntoAttrs unmangoApis;
+            default = unmangoApis.proto;
           };
 
           devShells.default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               buf
               gnumake
+              nixfmt
             ];
           };
 
