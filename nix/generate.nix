@@ -1,16 +1,22 @@
 {
   buf,
   lib,
-  stdenvNoCC,
+  protoc-gen-go,
+  runCommand,
 }:
-stdenvNoCC.mkDerivation {
-  pname = "generated";
-  version = "0.0.1";
+let
   src = lib.cleanSource ../.;
-
-  nativeBuildInputs = [ buf ];
-
-  buildPhase = ''
-    HOME="$PWD" buf generate --output "$out"
-  '';
-}
+in
+runCommand "generated"
+  {
+    nativeBuildInputs = [
+      buf
+      protoc-gen-go
+    ];
+  }
+  ''
+    mkdir -p "$out"
+    HOME="$PWD" buf generate ${src} \
+      --template ${../buf.gen.yaml} \
+      --output "$out"
+  ''

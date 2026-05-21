@@ -25,10 +25,8 @@
           unmangoApis = pkgs.callPackage ./nix { };
         in
         {
-          packages = {
-            unmangoApis = recurseIntoAttrs unmangoApis;
-            default = unmangoApis.proto;
-          };
+          packages.default = unmangoApis.generated;
+          legacyPackages.unmangoApis = recurseIntoAttrs unmangoApis;
 
           devShells.default = pkgs.mkShellNoCC {
             packages = with pkgs; [
