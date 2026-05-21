@@ -1,0 +1,24 @@
+edition = "2024";
+
+package unmango.cmd.v1alpha1;
+
+import "unmango/cli/v1alpha1/cli.proto";
+
+service ExecutionService {
+  rpc Run(RunRequest) returns (RunResponse);
+}
+
+message RunRequest {
+  unmango.cli.v1alpha1.Utility utility = 1;
+  bytes stdin = 2;
+}
+
+message RunResponse {
+  bytes stdout = 1;
+  bytes stderr = 2;
+  ExitResult exit = 3;
+}
+
+message ExitResult {
+  int32 code = 1;
+}
