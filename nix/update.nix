@@ -1,8 +1,15 @@
-{ gnumake, nix, writeShellApplication }:
+{
+  gnumake,
+  nix,
+  writeShellApplication,
+}:
 writeShellApplication {
   name = "update";
 
-  runtimeInputs = [ gnumake nix ];
+  runtimeInputs = [
+    gnumake
+    nix
+  ];
 
   text = ''
     make update
