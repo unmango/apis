@@ -57,7 +57,7 @@ enum QuoteStyle {
 
 enum AssignmentStyle {
   ASSIGNMENT_STYLE_UNSPECIFIED = 0;
-  ASSIGNMENT_STYLE_INLINE = 1;   // --flag=value or -f=value
-  ASSIGNMENT_STYLE_SPACE = 2;    // --flag value or -f value
+  ASSIGNMENT_STYLE_INLINE = 1; // --flag=value or -f=value
+  ASSIGNMENT_STYLE_SPACE = 2; // --flag value or -f value
   ASSIGNMENT_STYLE_ADJACENT = 3; // -fvalue (POSIX short-flag adjacent)
 }
