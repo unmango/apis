@@ -1,0 +1,63 @@
+edition = "2024";
+
+package unmango.cli.v1alpha1;
+
+// Root CST node for a single command-line invocation.
+message CommandLine {
+  string raw = 1;
+  repeated Token tokens = 2;
+}
+
+// One syntactic unit in the token stream, in source order.
+message Token {
+  oneof kind {
+    Word word = 1;
+    ShortFlag short_flag = 2;
+    LongFlag long_flag = 3;
+    EndOfOptions end_of_options = 4;
+  }
+}
+
+// Bare word: program name, positional argument, or any token not starting with '-'.
+// Consumers assign semantic meaning (e.g. subcommand, path).
+message Word {
+  string value = 1;
+  QuoteStyle quote_style = 2;
+}
+
+// Single-dash flag. Supports clusters (-abc) and value assignment.
+message ShortFlag {
+  // One element for a single flag (-f), multiple for a cluster (-abc).
+  repeated string names = 1;
+  FlagAssignment assignment = 2;
+}
+
+// Double-dash flag: --flag, --flag=value, or --flag value.
+message LongFlag {
+  string name = 1;
+  FlagAssignment assignment = 2;
+}
+
+// The '--' end-of-options sentinel. All tokens after this are Words.
+message EndOfOptions {}
+
+// Syntactic binding of a flag to its value.
+message FlagAssignment {
+  string value = 1;
+  QuoteStyle quote_style = 2;
+  AssignmentStyle style = 3;
+}
+
+enum QuoteStyle {
+  QUOTE_STYLE_UNSPECIFIED = 0;
+  QUOTE_STYLE_NONE = 1;
+  QUOTE_STYLE_SINGLE = 2;
+  QUOTE_STYLE_DOUBLE = 3;
+}
+
+enum AssignmentStyle {
+  ASSIGNMENT_STYLE_UNSPECIFIED = 0;
+  ASSIGNMENT_STYLE_INLINE = 1;   // --flag=value or -f=value
+  ASSIGNMENT_STYLE_SPACE = 2;    // --flag value or -f value
+  ASSIGNMENT_STYLE_ADJACENT = 3; // -fvalue (POSIX short-flag adjacent)
+}
