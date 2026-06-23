@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   buf:
-    runs-on: unmango-runners
+    runs-on: ubuntu-latest
     env:
       # renovate: dataSource=github-tags depName=bufbuild/buf extractVersion=^v(?<version>.*)$
       BUF_VERSION: 1.68.4
