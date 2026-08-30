@@ -87,16 +87,13 @@ message PlaylistEntry {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The media.title Title, normally one of kind TRACK.
@@ -111,14 +108,14 @@ message PlaylistEntry {
   // A specific media.title Edition to play, when the release matters. Unset
   // means any edition of the Title will do.
   ref.v1alpha1.ObjectReference prefer_edition = 12 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.media.title/Edition"
   ];
 
   // Why this track is here.
-  string note = 13 [features.field_presence = EXPLICIT];
+  string note = 13 [(google.api.field_behavior) = OPTIONAL];
 
-  google.protobuf.Timestamp added_time = 14 [features.field_presence = EXPLICIT];
+  google.protobuf.Timestamp added_time = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -150,7 +147,7 @@ message Playlist {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -160,22 +157,19 @@ message Playlist {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  string description = 10 [features.field_presence = EXPLICIT];
+  string description = 10 [(google.api.field_behavior) = OPTIONAL];
 
   // Generates entries. Unset means every entry was added by hand.
-  PlaylistSource source = 11 [features.field_presence = EXPLICIT];
+  PlaylistSource source = 11 [(google.api.field_behavior) = OPTIONAL];
 
   OrderingStrategy ordering = 12;
 
   // Artwork. A plain string so it can address a dev.unmango.protofs path
   // without coupling the packages.
-  string image_uri = 13 [features.field_presence = EXPLICIT];
+  string image_uri = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Shared beyond its owner.
   bool published = 14;

@@ -88,7 +88,7 @@ message Branch {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -97,10 +97,7 @@ message Branch {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Ref name as the underlying VCS spells it: "main", "feat/life-domain-apis".
@@ -111,18 +108,18 @@ message Branch {
 
   // Rules enforced against changes targeting this branch. Unset means
   // unprotected.
-  Protection protection = 12 [features.field_presence = EXPLICIT];
+  Protection protection = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Branch this one is compared and merged against. Unset means the
   // repository default.
-  string base_ref_name = 13 [features.field_presence = EXPLICIT];
+  string base_ref_name = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Remote-tracking counterpart, when this branch tracks one.
   ref.v1alpha1.ObjectReference upstream_remote = 14 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.vcs.repository/Remote"
   ];
-  string upstream_ref_name = 15 [features.field_presence = EXPLICIT];
+  string upstream_ref_name = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Delete automatically once a change merges it.
   bool delete_on_merge = 16;
@@ -136,14 +133,10 @@ message Branch {
   string head_revision = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   string head_message = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   ref.v1alpha1.ObjectReference head_author = 55 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
-  google.protobuf.Timestamp head_commit_time = 56 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp head_commit_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Commits this branch has that its base does not, and the reverse.
   int32 ahead_count = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -190,16 +183,13 @@ message Tag {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Ref name as the underlying VCS spells it: "v0.36.4".
@@ -210,18 +200,18 @@ message Tag {
   string target_revision = 11 [(google.api.field_behavior) = IMMUTABLE];
 
   TagType type = 12;
-  string message = 13 [features.field_presence = EXPLICIT];
+  string message = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // people.contact Contact who created it.
   ref.v1alpha1.ObjectReference tagger = 14 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   // Marks a published release rather than an internal marker.
   bool release = 15;
 
-  string release_notes = 16 [features.field_presence = EXPLICIT];
+  string release_notes = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Not yet ready for general use.
   bool prerelease = 17;
@@ -229,10 +219,7 @@ message Tag {
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp tagged_time = 52 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp tagged_time = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   bool signature_verified = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The declared target no longer resolves, or resolves to a different commit
@@ -242,8 +229,5 @@ message Tag {
   // Commits between this tag and the previous one, so release size is visible.
   int32 commits_since_previous = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string previous_ref_name = 56 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string previous_ref_name = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

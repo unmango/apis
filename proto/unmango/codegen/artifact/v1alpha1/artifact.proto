@@ -112,7 +112,7 @@ message Artifact {
 
   // Narrows the format, as Port.qualifier does: a Go module path, a Nix
   // attribute path.
-  string qualifier = 15 [features.field_presence = EXPLICIT];
+  string qualifier = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // A dev.unmango.protofs root holding the generated tree.
   string tree_uri = 16;
@@ -139,10 +139,7 @@ message Artifact {
   repeated string published_uris = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.protobuf.Timestamp first_seen_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp last_produced_time = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_produced_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // More than one independent run reached this digest, which is the only
   // evidence that a Converter's declared determinism holds.
@@ -191,19 +188,19 @@ message ListArtifactsRequest {
   // every mutable kind. An artifact has no owner reference to list by; the
   // converter is provenance, not ownership.
   ref.v1alpha1.ObjectReference converter = 4 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.codegen.converter/Converter"
   ];
 
   // Restricts results to artifacts in this output format.
-  string format = 5 [features.field_presence = EXPLICIT];
+  string format = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Restricts results to artifacts first seen within this window.
   google.type.Interval window = 6;
 
   // Restricts results to artifacts consuming this input, by digest or by
   // source reference. Only one level deep; WalkConsumers goes transitive.
-  ArtifactInput consumes = 7 [features.field_presence = EXPLICIT];
+  ArtifactInput consumes = 7 [(google.api.field_behavior) = OPTIONAL];
 
   // Exclude artifacts nothing consumes and nothing published.
   bool reachable_only = 8;
@@ -217,14 +214,14 @@ message ListArtifactsResponse {
 message WatchArtifactsRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1;
   ref.v1alpha1.ObjectReference converter = 2 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.codegen.converter/Converter"
   ];
 
   // Resume from this point instead of the current state, so a client that
   // drops the stream does not have to replay from nothing. Unset starts
   // from now.
-  string resource_version = 3 [features.field_presence = EXPLICIT];
+  string resource_version = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message WatchArtifactsResponse {
@@ -319,7 +316,7 @@ message ResolveInputDigestRequest {
 
   // Restricts the lookup to one output format, for a converter declaring more
   // than one output Port.
-  string format = 2 [features.field_presence = EXPLICIT];
+  string format = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message ResolveInputDigestResponse {

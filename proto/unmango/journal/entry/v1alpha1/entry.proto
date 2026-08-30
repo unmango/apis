@@ -97,17 +97,14 @@ message Entry {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
   reserved 6, 7; // owner_refs, generation: nothing owns or reconciles an entry
 
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
 
@@ -117,7 +114,7 @@ message Entry {
   // record.note allows more than one note in a day.
   google.type.Date entry_date = 10;
 
-  string title = 11 [features.field_presence = EXPLICIT];
+  string title = 11 [(google.api.field_behavior) = OPTIONAL];
   string body = 12;
   ContentFormat format = 13;
   Mood mood = 14;
@@ -133,14 +130,14 @@ message Entry {
   // Optional pointer at a people.contact Contact. Unset means single-user.
   // A plain reference, not a ~> attachment: nothing admits or rejects it.
   ref.v1alpha1.ObjectReference author = 17 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   // Optional pointer at a health.measurement Measurement for a quantified
   // mood or anxiety reading behind the coarse mood scale.
   ref.v1alpha1.ObjectReference mood_measurement = 18 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.health.measurement/Measurement"
   ];
 
@@ -151,8 +148,5 @@ message Entry {
   reserved 50, 51; // observed_generation, conditions: nothing reconciles an entry
 
   int32 word_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp last_edited_time = 53 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_edited_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

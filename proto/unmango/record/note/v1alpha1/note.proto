@@ -50,10 +50,10 @@ message Link {
   LinkRelation relation = 2;
 
   // Human-readable label, so a link survives its target being deleted.
-  string label = 3 [features.field_presence = EXPLICIT];
+  string label = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Set only when relation is LINK_RELATION_OTHER.
-  string custom_relation = 4 [features.field_presence = EXPLICIT];
+  string custom_relation = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 enum LinkRelation {
@@ -90,7 +90,7 @@ message Note {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Also the surface a Notebook selector matches against.
   map<string, string> labels = 4;
@@ -103,10 +103,7 @@ message Note {
   reserved 7; // generation: nothing reconciles a Note toward a declared state
 
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   string title = 10;
@@ -120,7 +117,7 @@ message Note {
 
   // Where the note came from, when it was captured rather than written: a URL,
   // a clipping, an imported file.
-  string source_uri = 15 [features.field_presence = EXPLICIT];
+  string source_uri = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Which sub-notes this Note claims.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
@@ -154,10 +151,7 @@ message Note {
   int32 broken_link_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   int32 word_count = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp last_edited_time = 58 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_edited_time = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ---------------------------------------------------------------------------
@@ -174,22 +168,19 @@ message Notebook {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which Notes belong. An empty selector claims nothing, never everything.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
 
-  string summary = 11 [features.field_presence = EXPLICIT];
+  string summary = 11 [(google.api.field_behavior) = OPTIONAL];
 
   // Stamped onto notes created through this notebook, which is how a new note
   // ends up matching the selector.
@@ -200,7 +191,7 @@ message Notebook {
   // The domain this notebook documents, when it is scoped to one: a Vehicle, a
   // Pipeline, a Property.
   ref.v1alpha1.ObjectReference subject = 14 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "*"
   ];
 
@@ -209,8 +200,5 @@ message Notebook {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 note_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 archived_note_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp last_edited_time = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_edited_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

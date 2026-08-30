@@ -102,28 +102,25 @@ message CertificateRequest {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The pki.issuer Issuer to request from.
   ref.v1alpha1.ObjectReference issuer = 10 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
 
   repeated string dns_names = 11;
-  string common_name = 12 [features.field_presence = EXPLICIT];
+  string common_name = 12 [(google.api.field_behavior) = OPTIONAL];
   repeated string ip_addresses = 13;
   KeyAlgorithm key_algorithm = 14;
 
   // Bits, meaningful only for KEY_ALGORITHM_RSA.
-  int32 key_size = 15 [features.field_presence = EXPLICIT];
+  int32 key_size = 15 [(google.api.field_behavior) = OPTIONAL];
 
   google.protobuf.Duration duration = 16;
 
@@ -138,32 +135,22 @@ message CertificateRequest {
   bool is_ca = 19;
 
   // A dev.unmango.protofs path the issued material is written to.
-  string output_uri = 20 [features.field_presence = EXPLICIT];
+  string output_uri = 20 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   ref.v1alpha1.ObjectReference latest_issuance = 52 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.pki.certificate/CertificateIssuance"
   ];
 
   // Fingerprint of the Certificate the latest successful issuance produced.
-  string current_certificate_fingerprint = 53 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string current_certificate_fingerprint = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   int32 issuance_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp last_issuance_time = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp next_renewal_time = 56 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_issuance_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp next_renewal_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // current_certificate_fingerprint has crossed renew_before, or does not yet
   // exist.
@@ -184,7 +171,7 @@ message CertificateIssuance {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -193,29 +180,25 @@ message CertificateIssuance {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state, snapshotted from the CertificateRequest at creation so the
   // issuance stays reproducible after the request is edited.
   ref.v1alpha1.ObjectReference issuer = 10 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
   repeated string dns_names = 11;
-  string common_name = 12 [features.field_presence = EXPLICIT];
+  string common_name = 12 [(google.api.field_behavior) = OPTIONAL];
   repeated string ip_addresses = 13;
   KeyAlgorithm key_algorithm = 14;
-  int32 key_size = 15 [features.field_presence = EXPLICIT];
+  int32 key_size = 15 [(google.api.field_behavior) = OPTIONAL];
   google.protobuf.Duration duration = 16;
   repeated CertificateUsage usages = 17;
   bool is_ca = 18;
-  string output_uri = 19 [features.field_presence = EXPLICIT];
+  string output_uri = 19 [(google.api.field_behavior) = OPTIONAL];
 
   // Assigned desired state.
   // The ci.job JobRun executing this issuance. Unset while pending, exactly
   // as an unscheduled Pod has no node.
   ref.v1alpha1.ObjectReference job_run = 40 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.ci.job/JobRun"
   ];
@@ -224,28 +207,16 @@ message CertificateIssuance {
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   CertificateIssuancePhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp start_time = 53 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp completion_time = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp start_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp completion_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Fingerprint of the Certificate this issuance produced.
-  string certificate_fingerprint = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string certificate_fingerprint = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   int32 attempt = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Detail on failure: an ACME challenge rejection, a Vault error.
-  string error_reason = 57 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string error_reason = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ---------------------------------------------------------------------------
@@ -274,7 +245,7 @@ message Certificate {
   // Content, fixed at creation and covered by the fingerprint.
   string serial_number = 10;
   repeated string dns_names = 11;
-  string common_name = 12 [features.field_presence = EXPLICIT];
+  string common_name = 12 [(google.api.field_behavior) = OPTIONAL];
   repeated string ip_addresses = 13;
   KeyAlgorithm key_algorithm = 14;
   repeated CertificateUsage usages = 15;
@@ -288,10 +259,10 @@ message Certificate {
   // Fingerprint of the Certificate that signed this one. The `>>` edge,
   // fixed at creation because the signer's identity is part of what a
   // conforming chain-of-trust covers. Unset for a self-signed root.
-  string issuer_fingerprint = 20 [features.field_presence = EXPLICIT];
+  string issuer_fingerprint = 20 [(google.api.field_behavior) = OPTIONAL];
 
   // A dev.unmango.protofs root holding the issued material.
-  string material_uri = 21 [features.field_presence = EXPLICIT];
+  string material_uri = 21 [(google.api.field_behavior) = OPTIONAL];
 
   // Derived, computed by whoever indexes the graph.
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -307,14 +278,8 @@ message Certificate {
   ];
 
   bool revoked = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp revoke_time = 53 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  string revocation_reason = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp revoke_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string revocation_reason = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // not_after has passed.
   bool expired = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -355,7 +320,7 @@ message ListCertificatesRequest {
   // mutable kind. A certificate has no owner reference to list by; the
   // issuer is provenance, not ownership.
   ref.v1alpha1.ObjectReference issuer = 4 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.pki.issuer/Issuer"
   ];
 
@@ -377,14 +342,14 @@ message ListCertificatesResponse {
 message WatchCertificatesRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1;
   ref.v1alpha1.ObjectReference issuer = 2 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.pki.issuer/Issuer"
   ];
 
   // Resume from this point instead of the current state, so a client that
   // drops the stream does not have to replay from nothing. Unset starts from
   // now.
-  string resource_version = 3 [features.field_presence = EXPLICIT];
+  string resource_version = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message WatchCertificatesResponse {

@@ -80,22 +80,19 @@ message OdometerReading {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   uom.v1alpha1.Quantity reading = 10;
   google.type.Date observed_date = 11;
   OdometerSource source = 12;
-  string note = 13 [features.field_presence = EXPLICIT];
+  string note = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -135,28 +132,25 @@ message Vehicle {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   VehicleType type = 10;
   string make = 11;
   string model = 12;
-  string trim = 13 [features.field_presence = EXPLICIT];
-  int32 model_year = 14 [features.field_presence = EXPLICIT];
+  string trim = 13 [(google.api.field_behavior) = OPTIONAL];
+  int32 model_year = 14 [(google.api.field_behavior) = OPTIONAL];
   FuelType fuel_type = 15;
-  string vin = 16 [features.field_presence = EXPLICIT];
-  string license_plate = 17 [features.field_presence = EXPLICIT];
-  string color = 18 [features.field_presence = EXPLICIT];
-  google.type.Date acquired_date = 19 [features.field_presence = EXPLICIT];
+  string vin = 16 [(google.api.field_behavior) = OPTIONAL];
+  string license_plate = 17 [(google.api.field_behavior) = OPTIONAL];
+  string color = 18 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date acquired_date = 19 [(google.api.field_behavior) = OPTIONAL];
   google.type.Money purchase_price = 20;
 
   // Distance unit this vehicle's readings and service intervals use.
@@ -167,19 +161,18 @@ message Vehicle {
 
   // Registration and insurance renewal dates, surfaced so a
   // asset.maintenance plan can act on them.
-  google.type.Date registration_expiry = 23 [features.field_presence = EXPLICIT];
-  google.type.Date insurance_expiry = 24 [features.field_presence = EXPLICIT];
+  google.type.Date registration_expiry = 23 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date insurance_expiry = 24 [(google.api.field_behavior) = OPTIONAL];
 
   // The finance.account Account carrying its loan or lease.
   ref.v1alpha1.ObjectReference finance_account = 25 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.finance.account/Account"
   ];
 
   // Assigned desired state.
   // The asset.property Space it is kept in. Unset means unassigned.
   ref.v1alpha1.ObjectReference parked_at = 40 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.asset.property/Space"
   ];
@@ -192,10 +185,7 @@ message Vehicle {
   // From the most recent OdometerReading.
   uom.v1alpha1.Quantity current_odometer = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.type.Date last_reading_date = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.type.Date last_reading_date = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 reading_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Mean distance per day across the reading history, used to forecast when a

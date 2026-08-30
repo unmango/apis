@@ -45,7 +45,7 @@ message Signature {
 
   // The people.contact Contact this resolves to, when the address is known.
   ref.v1alpha1.ObjectReference contact = 4 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 }
@@ -149,10 +149,10 @@ message Commit {
   // A dev.unmango.protofs root for browsing this commit's tree. A plain
   // string so the packages stay uncoupled: open it with FsService and walk it
   // like any other filesystem.
-  string tree_uri = 16 [features.field_presence = EXPLICIT];
+  string tree_uri = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Detached signature, when the commit carries one.
-  string signature = 17 [features.field_presence = EXPLICIT];
+  string signature = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // Derived. Computed by whoever indexes the graph, not part of the hash.
   // First line of message.
@@ -244,7 +244,7 @@ message ListCommitsRequest {
 
   // Restricts results to commits authored by this people.contact Contact.
   ref.v1alpha1.ObjectReference author = 6 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
@@ -269,7 +269,7 @@ message WatchCommitsRequest {
   // Resume from this point instead of the current state, so a client that
   // drops the stream does not have to replay from nothing. Unset starts
   // from now.
-  string resource_version = 4 [features.field_presence = EXPLICIT];
+  string resource_version = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message WatchCommitsResponse {
@@ -315,12 +315,12 @@ message WalkCommitsRequest {
 
   google.type.Interval window = 10;
   ref.v1alpha1.ObjectReference author = 11 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   // Substring match against message.
-  string query = 12 [features.field_presence = EXPLICIT];
+  string query = 12 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message WalkCommitsResponse {

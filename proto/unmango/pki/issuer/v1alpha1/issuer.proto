@@ -56,12 +56,12 @@ message AcmeConfig {
   // The compute.platform Platform for the ACME server: Let's Encrypt,
   // ZeroSSL, Google Trust Services.
   ref.v1alpha1.ObjectReference platform = 1 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.compute.platform/Platform"
   ];
 
   // Directory URL, when platform is absent or does not resolve to one.
-  string directory_url = 2 [features.field_presence = EXPLICIT];
+  string directory_url = 2 [(google.api.field_behavior) = OPTIONAL];
 
   string account_email = 3;
   AcmeChallengeKind challenge_kind = 4;
@@ -70,7 +70,7 @@ message AcmeConfig {
   // DNS-01. Absent for HTTP-01, solved by whatever already serves the
   // requested domain.
   ref.v1alpha1.ObjectReference challenge_solver = 5 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.compute.platform/Platform"
   ];
 }
@@ -99,16 +99,13 @@ message Issuer {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   oneof config {
@@ -125,10 +122,7 @@ message Issuer {
   // This issuer's own signing credential, set once self_signed or ca has
   // minted it. Absent for acme and vault, which sign against a certificate
   // this API does not hold.
-  string ca_certificate_fingerprint = 52 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string ca_certificate_fingerprint = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // pki.certificate CertificateRequests naming this issuer.
   int32 certificate_request_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];

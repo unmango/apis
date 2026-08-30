@@ -53,7 +53,7 @@ message Project {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -62,22 +62,19 @@ message Project {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   string summary = 10;
-  string notes = 11 [features.field_presence = EXPLICIT];
+  string notes = 11 [(google.api.field_behavior) = OPTIONAL];
 
   // Which Tasks belong. An empty selector claims nothing, never everything.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
 
-  google.type.Date start_date = 13 [features.field_presence = EXPLICIT];
+  google.type.Date start_date = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Unset means open-ended.
-  google.type.Date target_date = 14 [features.field_presence = EXPLICIT];
+  google.type.Date target_date = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Paused organizationally. Does not affect the underlying Tasks.
   bool on_hold = 15;
@@ -93,8 +90,5 @@ message Project {
   // completed_task_count / task_count.
   double completion_rate = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp last_activity_time = 57 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_activity_time = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

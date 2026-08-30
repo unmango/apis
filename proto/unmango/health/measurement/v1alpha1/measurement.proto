@@ -56,11 +56,11 @@ message Component {
   uom.v1alpha1.Unit unit = 3;
 
   // Set only when unit is UNIT_CUSTOM.
-  string custom_unit = 6 [features.field_presence = EXPLICIT];
+  string custom_unit = 6 [(google.api.field_behavior) = OPTIONAL];
 
   // Healthy range for this component, when one is known.
-  double reference_low = 4 [features.field_presence = EXPLICIT];
-  double reference_high = 5 [features.field_presence = EXPLICIT];
+  double reference_low = 4 [(google.api.field_behavior) = OPTIONAL];
+  double reference_high = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 
 enum GoalDirection {
@@ -107,7 +107,7 @@ message Measurement {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Also the surface a Goal selector matches against.
   map<string, string> labels = 4;
@@ -116,10 +116,7 @@ message Measurement {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state. Recorded facts, since a Measurement is authored after the
   // observation.
@@ -133,10 +130,10 @@ message Measurement {
   string source = 13;
 
   ref.v1alpha1.ObjectReference source_device = 14 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "*"
   ];
-  string notes = 15 [features.field_presence = EXPLICIT];
+  string notes = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Conditions the reading was taken under, which determine whether two
   // readings are comparable: "fasted", "post-workout", "morning".
@@ -177,16 +174,13 @@ message Goal {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which Measurements count toward this goal. Selection rather than
@@ -210,16 +204,16 @@ message Goal {
   uom.v1alpha1.Unit unit = 16;
 
   // Set only when unit is UNIT_CUSTOM.
-  string custom_unit = 21 [features.field_presence = EXPLICIT];
+  string custom_unit = 21 [(google.api.field_behavior) = OPTIONAL];
 
   // Value at the time the goal was set, so progress is measurable rather than
   // only distance-to-target.
-  double baseline_value = 17 [features.field_presence = EXPLICIT];
+  double baseline_value = 17 [(google.api.field_behavior) = OPTIONAL];
 
   google.type.Date start_date = 18;
 
   // Unset means open-ended.
-  google.type.Date target_date = 19 [features.field_presence = EXPLICIT];
+  google.type.Date target_date = 19 [(google.api.field_behavior) = OPTIONAL];
 
   // Readings to average before comparing against the target, which keeps day
   // to day noise from flipping the phase.
@@ -237,10 +231,7 @@ message Goal {
   // Smoothed over the window.
   double smoothed_value = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp last_measured_time = 56 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_measured_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Distance travelled from baseline toward target, 0.0 to 1.0. Above 1.0
   // means overshot.
@@ -252,8 +243,5 @@ message Goal {
 
   // When the current rate would reach the target. Unset if moving away from
   // it.
-  google.type.Date projected_date = 59 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.type.Date projected_date = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

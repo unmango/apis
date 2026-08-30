@@ -2,6 +2,7 @@ edition = "2024";
 
 package dev.unmango.discord.backup.v1alpha2;
 
+import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 
 // Note: proto enum integer values in this file do NOT match Discord's raw API
@@ -222,21 +223,21 @@ message ForumTag {
   string id = 1;
   string name = 2;
   bool moderated = 3;
-  string emoji_id = 4 [features.field_presence = EXPLICIT]; // set for custom emoji
-  string emoji_name = 5 [features.field_presence = EXPLICIT]; // set for unicode emoji
+  string emoji_id = 4 [(google.api.field_behavior) = OPTIONAL]; // set for custom emoji
+  string emoji_name = 5 [(google.api.field_behavior) = OPTIONAL]; // set for unicode emoji
 }
 
 // DefaultReaction represents the default emoji reaction for a forum channel post.
 message DefaultReaction {
-  string emoji_id = 1 [features.field_presence = EXPLICIT]; // set for custom emoji
-  string emoji_name = 2 [features.field_presence = EXPLICIT]; // set for unicode emoji
+  string emoji_id = 1 [(google.api.field_behavior) = OPTIONAL]; // set for custom emoji
+  string emoji_name = 2 [(google.api.field_behavior) = OPTIONAL]; // set for unicode emoji
 }
 
 // RoleTag holds metadata about special role types.
 message RoleTag {
-  string bot_id = 1 [features.field_presence = EXPLICIT]; // role is managed by this bot
-  string integration_id = 2 [features.field_presence = EXPLICIT]; // role is managed by this integration
-  string subscription_listing_id = 3 [features.field_presence = EXPLICIT]; // role is available for purchase
+  string bot_id = 1 [(google.api.field_behavior) = OPTIONAL]; // role is managed by this bot
+  string integration_id = 2 [(google.api.field_behavior) = OPTIONAL]; // role is managed by this integration
+  string subscription_listing_id = 3 [(google.api.field_behavior) = OPTIONAL]; // role is available for purchase
   bool premium_subscriber = 4; // role is the guild's premium subscriber (booster) role
   bool available_for_purchase = 5; // role can be purchased
   bool guild_connections = 6; // role is a guild's linked role
@@ -248,6 +249,6 @@ message ThreadMetadata {
   int32 auto_archive_duration = 2; // minutes: 60, 1440, 4320, or 10080
   google.protobuf.Timestamp archive_timestamp = 3;
   bool locked = 4;
-  bool invitable = 5 [features.field_presence = EXPLICIT]; // only present on private threads
+  bool invitable = 5 [(google.api.field_behavior) = OPTIONAL]; // only present on private threads
   google.protobuf.Timestamp create_timestamp = 6;
 }
