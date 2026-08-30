@@ -6,6 +6,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
+import "unmango/uom/v1alpha1/uom.proto";
 
 // Machines that run work, and the groupings that claim them:
 //
@@ -100,7 +101,7 @@ message Host {
 
   // Capacity held back for the operating system, subtracted from observed
   // capacity to yield allocatable.
-  ref.v1alpha1.ResourceQuantity reserved = 14;
+  uom.v1alpha1.ResourceQuantity reserved = 14;
 
   // The asset.property Space this machine physically sits in.
   ref.v1alpha1.ObjectReference location = 15 [features.field_presence = EXPLICIT];
@@ -113,13 +114,13 @@ message Host {
   SystemInfo system_info = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Total compute the machine reports.
-  ref.v1alpha1.ResourceQuantity capacity = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  uom.v1alpha1.ResourceQuantity capacity = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Capacity minus reserved. What work can actually be bound against.
-  ref.v1alpha1.ResourceQuantity allocatable = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+  uom.v1alpha1.ResourceQuantity allocatable = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Sum of the requests of everything currently bound here.
-  ref.v1alpha1.ResourceQuantity allocated = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+  uom.v1alpha1.ResourceQuantity allocated = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.protobuf.Timestamp boot_time = 58 [
     features.field_presence = EXPLICIT,
@@ -183,9 +184,9 @@ message Cluster {
   int32 ready_member_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Summed across members.
-  ref.v1alpha1.ResourceQuantity capacity = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
-  ref.v1alpha1.ResourceQuantity allocatable = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
-  ref.v1alpha1.ResourceQuantity allocated = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  uom.v1alpha1.ResourceQuantity capacity = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  uom.v1alpha1.ResourceQuantity allocatable = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  uom.v1alpha1.ResourceQuantity allocated = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

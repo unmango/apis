@@ -2,11 +2,16 @@ edition = "2024";
 
 package unmango.uom.v1alpha1;
 
-// Shared unit-of-measure vocabulary, so a value's unit is comparable across
+// Shared measurement vocabulary, so a value's unit is comparable across
 // domains instead of being a free-text string each package invents its own
 // convention for. Kept separate from unmango.ref: ref addresses relationships
 // between resources, uom carries the values attached to them, and the two
 // vocabularies grow independently.
+//
+// Two shapes live here. Quantity carries its unit, for a value whose unit is
+// a choice the caller makes. ResourceQuantity fixes its units in the field
+// names, for the one value whose four components are always the same four
+// components.
 
 // UNIT_CUSTOM pairs with a sibling custom_unit string on the message carrying
 // the Quantity, for a portion size no fixed unit covers: "medium", "slice".
@@ -51,4 +56,19 @@ message Quantity {
 
   // Set only when unit is UNIT_CUSTOM.
   string custom_unit = 3 [features.field_presence = EXPLICIT];
+}
+
+// Compute available on, or requested from, a capacity provider. Shared by
+// compute.host Host and ci.runner Runner rather than each declaring its own
+// copy, since the two describe the same four numbers.
+//
+// Its units are fixed in the field names rather than carried as a Unit,
+// because nobody asks for memory in pounds: the shape is closed and the four
+// components are always present together, which is what separates it from
+// Quantity.
+message ResourceQuantity {
+  int64 cpu_millicores = 1;
+  int64 memory_bytes = 2;
+  int64 storage_bytes = 3;
+  int32 gpu_count = 4;
 }
