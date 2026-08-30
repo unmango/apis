@@ -99,20 +99,22 @@ message Space {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  SpaceType type = 10;
-  Area area = 11;
+  SpaceType type = 11;
+  Area area = 12;
 
   // Storey the space is on. Zero is ground level, negative is below it.
-  int32 floor = 12;
+  int32 floor = 13;
 
   // People or things that can occupy it at once. Zero means unbounded.
-  int32 capacity = 13;
+  int32 capacity = 14;
 
   // Available for calendar.event Events to be held in.
-  bool bookable = 14;
+  bool bookable = 15;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -155,33 +157,35 @@ message Property {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  PropertyType type = 10;
-  google.type.PostalAddress address = 11;
-  google.type.LatLng location = 12;
-  TenureType tenure = 13;
+  PropertyType type = 11;
+  google.type.PostalAddress address = 12;
+  google.type.LatLng location = 13;
+  TenureType tenure = 14;
 
   // Spaces to materialize. Editing this adds or removes rooms.
-  repeated SpaceTemplate spaces = 14;
+  repeated SpaceTemplate spaces = 15;
 
   // Which Spaces this Property claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 15;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
 
-  int32 year_built = 16 [(google.api.field_behavior) = OPTIONAL];
-  Area total_area = 17;
-  google.type.Date acquired_date = 18 [(google.api.field_behavior) = OPTIONAL];
-  google.type.Money purchase_price = 19;
+  int32 year_built = 17 [(google.api.field_behavior) = OPTIONAL];
+  Area total_area = 18;
+  google.type.Date acquired_date = 19 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Money purchase_price = 20;
 
   // The finance.account Account holding the mortgage or paying the rent.
-  ref.v1alpha1.ObjectReference finance_account = 20 [
+  ref.v1alpha1.ObjectReference finance_account = 21 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.finance.account/Account"
   ];
 
   // No longer held. Retained for history.
-  bool disposed = 21;
+  bool disposed = 22;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

@@ -116,34 +116,36 @@ message Conversion {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The codegen.converter Converter to run.
-  ref.v1alpha1.ObjectReference converter = 10 [(google.api.resource_reference).type = "unmango.codegen.converter/Converter"];
+  ref.v1alpha1.ObjectReference converter = 11 [(google.api.resource_reference).type = "unmango.codegen.converter/Converter"];
 
-  repeated ConversionInput inputs = 11;
+  repeated ConversionInput inputs = 12;
 
   // Merged over the Converter's default_options.
-  map<string, string> options = 12;
+  map<string, string> options = 13;
 
   // Where output lands. A plain string so it can address a
   // dev.unmango.protofs path or a repository subdirectory.
-  string output_uri = 13;
+  string output_uri = 14;
 
   // When to materialize a new run. Empty means only on explicit request.
-  repeated ConversionTrigger triggers = 14;
+  repeated ConversionTrigger triggers = 15;
 
   // Propose the output as a vcs.change Change against this vcs.branch Branch
   // instead of writing it in place, which is how a generated SDK gets
   // reviewed before it lands.
-  ref.v1alpha1.ObjectReference change_target = 15 [
+  ref.v1alpha1.ObjectReference change_target = 16 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.vcs.branch/Branch"
   ];
 
-  google.protobuf.Duration timeout = 16;
-  int32 max_retries = 17;
+  google.protobuf.Duration timeout = 17;
+  int32 max_retries = 18;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -189,20 +191,22 @@ message ConversionRun {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state, snapshotted from the Conversion at creation so the run
   // stays reproducible after the Conversion is edited.
-  ref.v1alpha1.ObjectReference converter = 10 [(google.api.resource_reference).type = "unmango.codegen.converter/Converter"];
-  string converter_tool_version = 11;
+  ref.v1alpha1.ObjectReference converter = 11 [(google.api.resource_reference).type = "unmango.codegen.converter/Converter"];
+  string converter_tool_version = 12;
 
   // Digests are always resolved here, never left to follow.
-  repeated ConversionInput inputs = 12;
+  repeated ConversionInput inputs = 13;
 
-  map<string, string> options = 13;
-  string output_uri = 14;
-  google.protobuf.Duration timeout = 15;
-  int32 max_retries = 16;
+  map<string, string> options = 14;
+  string output_uri = 15;
+  google.protobuf.Duration timeout = 16;
+  int32 max_retries = 17;
 
   // Assigned desired state.
   // The ci.job JobRun executing this run. Unset while pending, exactly as an

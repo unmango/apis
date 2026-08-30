@@ -97,31 +97,33 @@ message Task {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. TaskTemplate mirrors 10-39.
-  string summary = 10;
-  string notes = 11 [(google.api.field_behavior) = OPTIONAL];
-  TaskPriority priority = 12;
-  google.protobuf.Duration estimated_effort = 13;
+  string summary = 11;
+  string notes = 12 [(google.api.field_behavior) = OPTIONAL];
+  TaskPriority priority = 13;
+  google.protobuf.Duration estimated_effort = 14;
 
   // Tasks that must reach DONE before this one leaves BLOCKED.
-  repeated ref.v1alpha1.ObjectReference depends_on = 14 [(google.api.resource_reference).type = "unmango.productivity.task/Task"];
+  repeated ref.v1alpha1.ObjectReference depends_on = 15 [(google.api.resource_reference).type = "unmango.productivity.task/Task"];
 
   // The people.contact Contact responsible.
-  ref.v1alpha1.ObjectReference assignee = 15 [
+  ref.v1alpha1.ObjectReference assignee = 16 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   // Which subtasks this Task claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 17;
 
   // How far ahead to notify.
-  repeated google.protobuf.Duration reminders = 17;
+  repeated google.protobuf.Duration reminders = 18;
 
   // Every subtask must be DONE before this one may be.
-  bool blocked_by_subtasks = 18;
+  bool blocked_by_subtasks = 19;
 
   // Assigned desired state. Computed per occurrence for a materialized task.
   google.type.Date due_date = 40 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -199,34 +201,36 @@ message RecurringTask {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Stamped onto each materialized Task.
-  TaskTemplate template = 10;
+  TaskTemplate template = 11;
 
-  RecurrenceRule rule = 11;
-  google.type.Date start_date = 12;
-  google.type.TimeOfDay due_time = 13 [(google.api.field_behavior) = OPTIONAL];
+  RecurrenceRule rule = 12;
+  google.type.Date start_date = 13;
+  google.type.TimeOfDay due_time = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Surface each occurrence this many days before it is due.
-  int32 lead_time_days = 14;
+  int32 lead_time_days = 15;
 
   // Materialize occurrences up to this date.
-  google.type.Date materialize_through = 15;
+  google.type.Date materialize_through = 16;
 
   // Which Tasks this chore claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 17;
 
   // Stop materializing without deleting the chore.
-  bool suspended = 17;
+  bool suspended = 18;
 
   // Keep at most one incomplete occurrence outstanding, rather than letting
   // missed occurrences pile up. What a daily habit wants.
-  bool skip_missed = 18;
+  bool skip_missed = 19;
 
   // Completed occurrences to retain. Zero retains all.
-  int32 occurrence_history_limit = 19;
+  int32 occurrence_history_limit = 20;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

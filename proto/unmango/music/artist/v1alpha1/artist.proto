@@ -89,28 +89,30 @@ message Membership {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The group being joined. The group decides whether to admit this.
-  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.music.artist/Artist"];
+  ref.v1alpha1.ParentReference parent_ref = 11 [(google.api.resource_reference).type = "unmango.music.artist/Artist"];
 
   // The Artist who is a member, normally one of kind PERSON.
-  ref.v1alpha1.ObjectReference member = 11 [(google.api.resource_reference).type = "unmango.music.artist/Artist"];
+  ref.v1alpha1.ObjectReference member = 12 [(google.api.resource_reference).type = "unmango.music.artist/Artist"];
 
   // What they played: "bass", "backing vocals", "drum programming".
-  repeated string roles = 12;
+  repeated string roles = 13;
 
-  google.type.Date joined = 13 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date joined = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Unset while the membership is current.
-  google.type.Date left = 14 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date left = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Present at the group's formation.
-  bool founding = 15;
+  bool founding = 16;
 
   // Plays live but does not appear on the recordings.
-  bool touring_only = 16;
+  bool touring_only = 17;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -143,28 +145,30 @@ message ArtistCredit {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The media.title Title being credited on.
-  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.media.title/Title"];
+  ref.v1alpha1.ParentReference parent_ref = 11 [(google.api.resource_reference).type = "unmango.media.title/Title"];
 
-  ref.v1alpha1.ObjectReference artist = 11 [(google.api.resource_reference).type = "unmango.music.artist/Artist"];
+  ref.v1alpha1.ObjectReference artist = 12 [(google.api.resource_reference).type = "unmango.music.artist/Artist"];
 
   // "performer", "composer", "remixer", "producer", "engineer". An open string
   // for the same reason media.title Credit.role is: the set of things a person
   // can be credited for has no closed list worth freezing into the schema.
-  string role = 12;
+  string role = 13;
 
   // Ordering within the role. Lower is billed first.
-  int32 billing_order = 13;
+  int32 billing_order = 14;
 
   // The album artist rather than a feature or a session player. At most one
   // credit per Title per role should set this.
-  bool primary = 14;
+  bool primary = 15;
 
   // The name printed on this release, when it differs from the Artist's.
-  string credited_as = 15 [(google.api.field_behavior) = OPTIONAL];
+  string credited_as = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -199,54 +203,56 @@ message Artist {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Immutable once set, for the reason media.title Title.kind is: create a new
   // Artist rather than changing what level of the hierarchy an existing one
   // occupies. An update must reject a change to this field.
-  ArtistKind kind = 10 [(google.api.field_behavior) = IMMUTABLE];
+  ArtistKind kind = 11 [(google.api.field_behavior) = IMMUTABLE];
 
   // Name as presented.
-  string artist_name = 11;
+  string artist_name = 12;
 
   // Name normalized for ordering, with leading articles dropped and a person
   // written surname first.
-  string sort_name = 12 [(google.api.field_behavior) = OPTIONAL];
+  string sort_name = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Distinguishes artists sharing a name: "the Ohio one", "1970s UK punk".
-  string disambiguation = 13 [(google.api.field_behavior) = OPTIONAL];
+  string disambiguation = 14 [(google.api.field_behavior) = OPTIONAL];
 
-  string summary = 14 [(google.api.field_behavior) = OPTIONAL];
+  string summary = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Formed, or born, or first active under this name.
-  google.type.Date active_from = 15 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date active_from = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Disbanded, or died. Unset while active.
-  google.type.Date active_until = 16 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date active_until = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // ISO 3166 code of where the artist is from.
-  string origin_country = 17 [(google.api.field_behavior) = OPTIONAL];
+  string origin_country = 18 [(google.api.field_behavior) = OPTIONAL];
 
-  repeated string genres = 18;
-  repeated ExternalId external_ids = 19;
+  repeated string genres = 19;
+  repeated ExternalId external_ids = 20;
 
   // A people.contact Contact when the artist is someone known personally,
   // otherwise unset. The same escape hatch media.title Credit.contact offers.
-  ref.v1alpha1.ObjectReference contact = 20 [
+  ref.v1alpha1.ObjectReference contact = 21 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   // Artwork. A plain string so it can address a dev.unmango.protofs path
   // without coupling the packages.
-  string image_uri = 21 [(google.api.field_behavior) = OPTIONAL];
+  string image_uri = 22 [(google.api.field_behavior) = OPTIONAL];
 
   // Personal rating, 0 to 100. Distinct from any external score.
-  int32 rating = 22 [(google.api.field_behavior) = OPTIONAL];
+  int32 rating = 23 [(google.api.field_behavior) = OPTIONAL];
 
   // Which child Artists this one claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 23;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 24;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

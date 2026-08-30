@@ -140,38 +140,40 @@ message LibraryItem {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  OwnershipType ownership = 10;
+  OwnershipType ownership = 11;
 
   // The files backing this copy. Empty for something owned physically or held
   // only through a subscription.
-  repeated MediaFile files = 11;
+  repeated MediaFile files = 12;
 
   // Where a physical copy sits: an asset.property Space, with the shelf
   // within it, if any, as the ParentReference section.
-  ref.v1alpha1.ParentReference location = 12 [
+  ref.v1alpha1.ParentReference location = 13 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.asset.property/Space"
   ];
 
   // Where a digital copy came from: a service name, a rip, a purchase.
-  string source = 13 [(google.api.field_behavior) = OPTIONAL];
+  string source = 14 [(google.api.field_behavior) = OPTIONAL];
 
-  google.type.Date acquired_date = 14 [(google.api.field_behavior) = OPTIONAL];
-  google.type.Money purchase_price = 15;
+  google.type.Date acquired_date = 15 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Money purchase_price = 16;
 
   // When a rental or loan is due back.
-  google.type.Date due_date = 16 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date due_date = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // The people.contact Contact currently holding it, when lent out.
-  ref.v1alpha1.ObjectReference lent_to = 17 [
+  ref.v1alpha1.ObjectReference lent_to = 18 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
-  string notes = 18 [(google.api.field_behavior) = OPTIONAL];
+  string notes = 19 [(google.api.field_behavior) = OPTIONAL];
 
   // Assigned desired state.
   // The media.title Edition this is a copy of. Unset means unmatched.
@@ -232,26 +234,28 @@ message Library {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which LibraryItems belong. An empty selector claims nothing, never
   // everything.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
 
   // Roots a scanner walks to discover items. Plain strings so they can address
   // dev.unmango.protofs paths.
-  repeated string scan_uris = 11;
+  repeated string scan_uris = 12;
 
   // Labels stamped onto items discovered by a scan, which is how a scanner
   // makes them match this library's selector.
-  map<string, string> item_labels = 12;
+  map<string, string> item_labels = 13;
 
   // Seconds between scans. Zero disables scanning.
-  int32 scan_interval_seconds = 13;
+  int32 scan_interval_seconds = 14;
 
   // Re-check that recorded files still exist during a scan.
-  bool verify_files = 14;
+  bool verify_files = 15;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -287,23 +291,25 @@ message Collection {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which media.title Titles belong.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
 
-  string summary = 11 [(google.api.field_behavior) = OPTIONAL];
+  string summary = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Members in a deliberate order, for a collection whose sequence matters.
   // Anything the selector claims but this omits sorts after these.
-  repeated ref.v1alpha1.ObjectReference ordered_members = 12 [(google.api.resource_reference).type = "unmango.media.title/Title"];
+  repeated ref.v1alpha1.ObjectReference ordered_members = 13 [(google.api.resource_reference).type = "unmango.media.title/Title"];
 
   // Artwork. A plain string so it can address a dev.unmango.protofs path.
-  string poster_uri = 13 [(google.api.field_behavior) = OPTIONAL];
+  string poster_uri = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Restrict membership to Titles with a held LibraryItem.
-  bool owned_only = 14;
+  bool owned_only = 15;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

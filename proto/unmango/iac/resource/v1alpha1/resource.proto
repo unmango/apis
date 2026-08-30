@@ -61,16 +61,18 @@ message Resource {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Tool- and provider-specific kind: "aws_instance",
   // "kubernetes_deployment", "google_storage_bucket".
-  string type = 10 [(google.api.field_behavior) = IMMUTABLE];
+  string type = 11 [(google.api.field_behavior) = IMMUTABLE];
 
   // The module-local identifier the tool addresses this resource by: a
   // Terraform resource address, a Pulumi URN.
-  string address = 11 [(google.api.field_behavior) = IMMUTABLE];
+  string address = 12 [(google.api.field_behavior) = IMMUTABLE];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

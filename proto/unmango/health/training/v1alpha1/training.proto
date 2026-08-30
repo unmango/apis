@@ -116,33 +116,35 @@ message Activity {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state. Recorded facts rather than intent, since an Activity is
   // authored after the event.
-  ActivityType type = 10;
-  google.type.Interval when = 11;
+  ActivityType type = 11;
+  google.type.Interval when = 12;
 
   // Elapsed time excluding pauses.
-  google.protobuf.Duration moving_duration = 12;
+  google.protobuf.Duration moving_duration = 13;
 
-  double distance_meters = 13;
-  double elevation_gain_meters = 14;
-  int32 calories_kcal = 15;
-  int32 average_heart_rate_bpm = 16 [(google.api.field_behavior) = OPTIONAL];
-  int32 max_heart_rate_bpm = 17 [(google.api.field_behavior) = OPTIONAL];
-  repeated StrengthSet sets = 18;
+  double distance_meters = 14;
+  double elevation_gain_meters = 15;
+  int32 calories_kcal = 16;
+  int32 average_heart_rate_bpm = 17 [(google.api.field_behavior) = OPTIONAL];
+  int32 max_heart_rate_bpm = 18 [(google.api.field_behavior) = OPTIONAL];
+  repeated StrengthSet sets = 19;
 
   // Borg CR10, 1 to 10.
-  int32 perceived_exertion = 19 [(google.api.field_behavior) = OPTIONAL];
+  int32 perceived_exertion = 20 [(google.api.field_behavior) = OPTIONAL];
 
-  string notes = 20 [(google.api.field_behavior) = OPTIONAL];
+  string notes = 21 [(google.api.field_behavior) = OPTIONAL];
 
   // Where the GPS track or device file lives. A plain string so it can
   // address a dev.unmango.protofs path without coupling the packages.
-  string route_uri = 21 [(google.api.field_behavior) = OPTIONAL];
+  string route_uri = 22 [(google.api.field_behavior) = OPTIONAL];
 
-  string device = 22 [(google.api.field_behavior) = OPTIONAL];
+  string device = 23 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state. Derived rather than recorded.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -182,19 +184,21 @@ message Workout {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. WorkoutTemplate mirrors 10-39.
-  ActivityType type = 10;
-  string summary = 11;
-  Targets targets = 12;
-  string instructions = 13 [(google.api.field_behavior) = OPTIONAL];
+  ActivityType type = 11;
+  string summary = 12;
+  Targets targets = 13;
+  string instructions = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Missing this breaks the plan's progression rather than just the week.
-  bool key_session = 14;
+  bool key_session = 15;
 
   // Which Activities this Workout claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 15;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
 
   // Assigned desired state. Computed when the occurrence is materialized.
   google.type.Date scheduled_date = 40 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -268,40 +272,42 @@ message TrainingPlan {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // One template per session in the cycle, each placed by its
   // cycle_offset_days. Seven templates over a seven day cycle is a week.
-  repeated WorkoutTemplate workouts = 10;
+  repeated WorkoutTemplate workouts = 11;
 
   // Length of one repetition of the cycle.
-  int32 cycle_length_days = 11;
+  int32 cycle_length_days = 12;
 
-  google.type.Date start_date = 12;
+  google.type.Date start_date = 13;
 
   // Unset means indefinitely.
-  google.type.Date end_date = 13 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date end_date = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Materialize workouts up to this date, bounding how far ahead the chain
   // runs.
-  google.type.Date materialize_through = 14;
+  google.type.Date materialize_through = 15;
 
   // Which Workouts this plan claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 15;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
 
   // What the plan is building toward.
-  ActivityType focus = 16;
+  ActivityType focus = 17;
 
   // The event being trained for, expressed as a target date.
-  google.type.Date goal_date = 17 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date goal_date = 18 [(google.api.field_behavior) = OPTIONAL];
 
   // Stop materializing without deleting the plan. What an injury looks like.
-  bool suspended = 18;
+  bool suspended = 19;
 
   // Completed workouts to retain. Zero retains all. Their Activities are never
   // reaped, since those are the durable history.
-  int32 workout_history_limit = 19;
+  int32 workout_history_limit = 20;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

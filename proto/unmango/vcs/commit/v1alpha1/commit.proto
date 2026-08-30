@@ -93,7 +93,13 @@ enum CommitKind {
 //   no display_name  a commit has a message, not a name someone chose
 //   no owner_refs    parents are DAG edges, not ownership; nothing cascades
 //   no generation    nothing about a commit is ever declared or reconciled
+//   no update_time   a commit is never written twice
 //   no delete_time   unreachable objects are garbage collected, not deleted
+//
+// Each omission is a reserved number rather than a compacted band, so a field
+// number means the same thing here as it does on every other kind: 4 is
+// labels, 5 is annotations, 8 is when the node came into being. commit_time
+// takes the create_time slot because for a commit they are the same fact.
 //
 // Labels and annotations survive because they are local metadata about the
 // node rather than part of it, which is exactly how a selector should treat a
@@ -109,50 +115,46 @@ message Commit {
   // The identity.
   string revision = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The vcs.repository Repository this commit is observed in. Scope rather
-  // than ownership: the same sha in a fork is the same commit.
-  ref.v1alpha1.ObjectReference repository = 2 [
-    (google.api.field_behavior) = OUTPUT_ONLY,
-    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
-  ];
-
-  reserved 3;
-
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
-
-  reserved 6, 7;
 
   // Committer timestamp, promoted into the identity band because it is the
   // axis the graph is most often walked along.
   google.protobuf.Timestamp commit_time = 8;
 
-  reserved 9;
+  reserved 2, 3, 6, 7, 9, 10; // uid, display_name, owner_refs, generation, update_time, delete_time: the revision is the whole identity, and nothing declares, owns, or rewrites a commit
+
+  // The vcs.repository Repository this commit is observed in. Scope rather
+  // than ownership: the same sha in a fork is the same commit.
+  ref.v1alpha1.ObjectReference repository = 11 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
 
   // Content. Fixed at creation and covered by the hash.
   // Parents, in order. The first is the mainline; the rest are merged
   // branches. Empty means a root commit. This is the DAG edge.
-  repeated string parent_revisions = 10;
+  repeated string parent_revisions = 12;
 
   // Root tree object of this commit.
-  string tree_revision = 11;
+  string tree_revision = 13;
 
   // Full message, subject and body.
-  string message = 12;
+  string message = 14;
 
-  Signature author = 13;
-  Signature committer = 14;
+  Signature author = 15;
+  Signature committer = 16;
 
   // Parsed message footer.
-  repeated Trailer trailers = 15;
+  repeated Trailer trailers = 17;
 
   // A dev.unmango.protofs root for browsing this commit's tree. A plain
   // string so the packages stay uncoupled: open it with FsService and walk it
   // like any other filesystem.
-  string tree_uri = 16 [(google.api.field_behavior) = OPTIONAL];
+  string tree_uri = 18 [(google.api.field_behavior) = OPTIONAL];
 
   // Detached signature, when the commit carries one.
-  string signature = 17 [(google.api.field_behavior) = OPTIONAL];
+  string signature = 19 [(google.api.field_behavior) = OPTIONAL];
 
   // Derived. Computed by whoever indexes the graph, not part of the hash.
   // First line of message.

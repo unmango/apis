@@ -86,13 +86,15 @@ message OdometerReading {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  uom.v1alpha1.Quantity reading = 10;
-  google.type.Date observed_date = 11;
-  OdometerSource source = 12;
-  string note = 13 [(google.api.field_behavior) = OPTIONAL];
+  uom.v1alpha1.Quantity reading = 11;
+  google.type.Date observed_date = 12;
+  OdometerSource source = 13;
+  string note = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -138,34 +140,36 @@ message Vehicle {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  VehicleType type = 10;
-  string make = 11;
-  string model = 12;
-  string trim = 13 [(google.api.field_behavior) = OPTIONAL];
-  int32 model_year = 14 [(google.api.field_behavior) = OPTIONAL];
-  FuelType fuel_type = 15;
-  string vin = 16 [(google.api.field_behavior) = OPTIONAL];
-  string license_plate = 17 [(google.api.field_behavior) = OPTIONAL];
-  string color = 18 [(google.api.field_behavior) = OPTIONAL];
-  google.type.Date acquired_date = 19 [(google.api.field_behavior) = OPTIONAL];
-  google.type.Money purchase_price = 20;
+  VehicleType type = 11;
+  string make = 12;
+  string model = 13;
+  string trim = 14 [(google.api.field_behavior) = OPTIONAL];
+  int32 model_year = 15 [(google.api.field_behavior) = OPTIONAL];
+  FuelType fuel_type = 16;
+  string vin = 17 [(google.api.field_behavior) = OPTIONAL];
+  string license_plate = 18 [(google.api.field_behavior) = OPTIONAL];
+  string color = 19 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date acquired_date = 20 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Money purchase_price = 21;
 
   // Distance unit this vehicle's readings and service intervals use.
-  uom.v1alpha1.Unit distance_unit = 21;
+  uom.v1alpha1.Unit distance_unit = 22;
 
   // Which OdometerReadings this Vehicle claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 22;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 23;
 
   // Registration and insurance renewal dates, surfaced so a
   // asset.maintenance plan can act on them.
-  google.type.Date registration_expiry = 23 [(google.api.field_behavior) = OPTIONAL];
-  google.type.Date insurance_expiry = 24 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date registration_expiry = 24 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date insurance_expiry = 25 [(google.api.field_behavior) = OPTIONAL];
 
   // The finance.account Account carrying its loan or lease.
-  ref.v1alpha1.ObjectReference finance_account = 25 [
+  ref.v1alpha1.ObjectReference finance_account = 26 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.finance.account/Account"
   ];

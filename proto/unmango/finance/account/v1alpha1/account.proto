@@ -78,30 +78,32 @@ message Account {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  AccountType type = 10;
+  AccountType type = 11;
 
   // ISO 4217. Every Money on this account uses it.
-  string currency_code = 11;
+  string currency_code = 12;
 
-  SyncConfig sync = 12;
+  SyncConfig sync = 13;
 
   // Last few digits, for matching against a statement.
-  string mask = 13 [(google.api.field_behavior) = OPTIONAL];
+  string mask = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Borrowing ceiling, for CREDIT_CARD and LOAN.
-  google.type.Money credit_limit = 14;
+  google.type.Money credit_limit = 15;
 
-  google.type.Date opened_date = 15;
+  google.type.Date opened_date = 16;
 
   // Retained for history but no longer transacting.
-  bool closed = 16;
+  bool closed = 17;
 
   // Exclude from net-worth and budget rollups. Useful for shared or
   // pass-through accounts.
-  bool excluded_from_totals = 17;
+  bool excluded_from_totals = 18;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -139,14 +141,16 @@ message Institution {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  InstitutionKind kind = 10;
-  string website = 11 [(google.api.field_behavior) = OPTIONAL];
+  InstitutionKind kind = 11;
+  string website = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Connection shared by every Account held here.
-  SyncConfig sync = 12;
+  SyncConfig sync = 13;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

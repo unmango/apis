@@ -171,16 +171,18 @@ message Converter {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  ConverterKind kind = 10;
-  repeated Port inputs = 11;
-  repeated Port outputs = 12;
+  ConverterKind kind = 11;
+  repeated Port inputs = 12;
+  repeated Port outputs = 13;
 
   // The compute.platform Platform for the tool this wraps. Absent for a
   // converter that is its own tool.
-  ref.v1alpha1.ObjectReference platform = 13 [
+  ref.v1alpha1.ObjectReference platform = 14 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.compute.platform/Platform"
   ];
@@ -188,32 +190,32 @@ message Converter {
   // How the converter is invoked. A plain string so it can address a
   // dev.unmango.protofs path, an OCI reference, or a flake output without
   // coupling the packages: "github:UnstoppableMango/a2b#lib.buf.generate".
-  string entrypoint = 14;
+  string entrypoint = 15;
 
   // Pinned version of the wrapped tool. Part of what a codegen.artifact
   // Artifact hashes over, so bumping it invalidates every cached output.
-  string tool_version = 15 [(google.api.field_behavior) = OPTIONAL];
+  string tool_version = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Options the converter accepts, with the values used when a Conversion
   // does not override them.
-  map<string, string> default_options = 16;
+  map<string, string> default_options = 17;
 
   // Whether identical inputs always produce byte-identical outputs. False for
   // a converter whose output embeds a timestamp, a hostname, or a map
   // iteration order, which is what makes its artifacts uncacheable.
-  bool deterministic = 17;
+  bool deterministic = 18;
 
   // The vcs.repository Repository the converter's own source lives in.
-  ref.v1alpha1.ObjectReference repository = 18 [
+  ref.v1alpha1.ObjectReference repository = 19 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
   ];
 
   // The calling convention at entrypoint.
-  InvocationKind invocation_kind = 19;
+  InvocationKind invocation_kind = 20;
 
   // Set only when invocation_kind is RPC.
-  RpcInvocation rpc_invocation = 20 [(google.api.field_behavior) = OPTIONAL];
+  RpcInvocation rpc_invocation = 21 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -316,26 +318,28 @@ message ConverterRegistry {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which Converters belong. An empty selector claims nothing, never
   // everything.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
 
-  string summary = 11 [(google.api.field_behavior) = OPTIONAL];
+  string summary = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Stamped onto converters created through this registry, which is how a new
   // converter ends up matching the selector.
-  map<string, string> converter_labels = 12;
+  map<string, string> converter_labels = 13;
 
   // Where the registry publishes its index for consumers who resolve
   // converters without talking to this API.
-  string index_uri = 13 [(google.api.field_behavior) = OPTIONAL];
+  string index_uri = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Where to look for Converters that have not been declared yet. Empty
   // discovers nothing, the same as an empty selector claims nothing.
-  repeated DiscoverySource discovery = 14;
+  repeated DiscoverySource discovery = 15;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

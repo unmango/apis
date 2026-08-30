@@ -62,22 +62,24 @@ message Project {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  string summary = 10;
-  string notes = 11 [(google.api.field_behavior) = OPTIONAL];
+  string summary = 11;
+  string notes = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Which Tasks belong. An empty selector claims nothing, never everything.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 13;
 
-  google.type.Date start_date = 13 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date start_date = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Unset means open-ended.
-  google.type.Date target_date = 14 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date target_date = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Paused organizationally. Does not affect the underlying Tasks.
-  bool on_hold = 15;
+  bool on_hold = 16;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

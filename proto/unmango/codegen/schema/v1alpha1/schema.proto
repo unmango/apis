@@ -132,7 +132,9 @@ message Schema {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The interface description language this Schema is written in: "protobuf",
@@ -142,7 +144,7 @@ message Schema {
   // reason codegen.converter Port.format is: this repository would need a
   // proto change every time it learned to parse one more, and learning to
   // parse a new format belongs in data rather than in the schema.
-  string format = 10;
+  string format = 11;
 
   // Where the bytes live. A plain string so it can address a
   // dev.unmango.protofs path or a URL without coupling the packages. The
@@ -218,27 +220,29 @@ message TypeDef {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Content, populated when the owning Schema is parsed. Not user-declared,
   // and there is no reconciliation loop pushing observed state toward it.
   // Fully qualified within the declaring Schema, and what a TypeRef names.
-  string type_name = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string type_name = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  TypeKind kind = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
-  repeated Field fields = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+  TypeKind kind = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated Field fields = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Set only when kind is TYPE_KIND_ENUM.
-  repeated string enum_values = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated string enum_values = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Set only when kind is TYPE_KIND_ALIAS.
-  TypeRef alias_of = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  TypeRef alias_of = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string docs = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
-  bool deprecated = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string docs = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool deprecated = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Set only when kind is TYPE_KIND_SERVICE.
-  repeated Method methods = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated Method methods = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

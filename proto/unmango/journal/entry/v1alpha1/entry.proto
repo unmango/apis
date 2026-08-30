@@ -104,7 +104,9 @@ message Entry {
   reserved 6, 7; // owner_refs, generation: nothing owns or reconciles an entry
 
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
 
@@ -112,37 +114,37 @@ message Entry {
   // Distinct from create_time: a backfilled entry is written today with an
   // entry_date from last week. Not enforced unique per day, the same way
   // record.note allows more than one note in a day.
-  google.type.Date entry_date = 10;
+  google.type.Date entry_date = 11;
 
-  string title = 11 [(google.api.field_behavior) = OPTIONAL];
-  string body = 12;
-  ContentFormat format = 13;
-  Mood mood = 14;
+  string title = 12 [(google.api.field_behavior) = OPTIONAL];
+  string body = 13;
+  ContentFormat format = 14;
+  Mood mood = 15;
 
   // Free-text affect tags tied to mood: "anxious", "grateful", "wired".
   // Open-ended where mood is closed and coarse.
-  repeated string feelings = 15;
+  repeated string feelings = 16;
 
   // Human-authored topical tags: "therapy-session", "milestone". Distinct
   // from labels, which are the machine-matched selector surface.
-  repeated string tags = 16;
+  repeated string tags = 17;
 
   // Optional pointer at a people.contact Contact. Unset means single-user.
   // A plain reference, not a ~> attachment: nothing admits or rejects it.
-  ref.v1alpha1.ObjectReference author = 17 [
+  ref.v1alpha1.ObjectReference author = 18 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   // Optional pointer at a health.measurement Measurement for a quantified
   // mood or anxiety reading behind the coarse mood scale.
-  ref.v1alpha1.ObjectReference mood_measurement = 18 [
+  ref.v1alpha1.ObjectReference mood_measurement = 19 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.health.measurement/Measurement"
   ];
 
-  repeated Attachment attachments = 19;
-  Visibility visibility = 20;
+  repeated Attachment attachments = 20;
+  Visibility visibility = 21;
 
   // Observed state.
   reserved 50, 51; // observed_generation, conditions: nothing reconciles an entry
