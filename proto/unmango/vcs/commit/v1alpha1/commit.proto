@@ -276,17 +276,29 @@ message WatchCommitsRequest {
 
 message WatchCommitsResponse {
   CommitEventType type = 1;
-  Commit commit = 2;
+
+  // Unset on a BOOKMARK event, which carries only the resume point.
+  Commit commit = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Resume point as of this event. A client stores it and sends it back as
+  // WatchCommitsRequest.resource_version after a dropped stream, so the
+  // request's resume token has somewhere to come from.
+  string resource_version = 3;
 }
 
 // A commit is never modified, so the event set is narrower than the mutable
-// kinds. ADDED is a commit becoming visible; DELETED is one becoming
-// unreachable and eligible for collection.
+// kinds. ADDED is a commit becoming visible; UNREACHABLE is one nothing
+// points at any more; DELETED is one collected from the store.
 enum CommitEventType {
   COMMIT_EVENT_TYPE_UNSPECIFIED = 0;
   COMMIT_EVENT_TYPE_ADDED = 1;
   COMMIT_EVENT_TYPE_UNREACHABLE = 2;
   COMMIT_EVENT_TYPE_DELETED = 3;
+
+  // No change to any commit. Carries a resource_version so an idle
+  // stream still advances the client's resume point, rather than leaving it
+  // pinned at the last real event. This is the Kubernetes BOOKMARK event.
+  COMMIT_EVENT_TYPE_BOOKMARK = 4;
 }
 
 message WalkCommitsRequest {

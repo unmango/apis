@@ -233,7 +233,14 @@ message WatchArtifactsRequest {
 
 message WatchArtifactsResponse {
   ArtifactEventType type = 1;
-  Artifact artifact = 2;
+
+  // Unset on a BOOKMARK event, which carries only the resume point.
+  Artifact artifact = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Resume point as of this event. A client stores it and sends it back as
+  // WatchArtifactsRequest.resource_version after a dropped stream, so the
+  // request's resume token has somewhere to come from.
+  string resource_version = 3;
 }
 
 // An artifact is never modified, so the event set is narrower than the
@@ -245,6 +252,11 @@ enum ArtifactEventType {
   ARTIFACT_EVENT_TYPE_ADDED = 1;
   ARTIFACT_EVENT_TYPE_UNREACHABLE = 2;
   ARTIFACT_EVENT_TYPE_DELETED = 3;
+
+  // No change to any artifact. Carries a resource_version so an idle
+  // stream still advances the client's resume point, rather than leaving it
+  // pinned at the last real event. This is the Kubernetes BOOKMARK event.
+  ARTIFACT_EVENT_TYPE_BOOKMARK = 4;
 }
 
 message WalkInputsRequest {
