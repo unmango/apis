@@ -63,7 +63,7 @@ enum TransactionDirection {
 message Split {
   // The finance.budget Allocation this part counts against.
   ref.v1alpha1.ObjectReference allocation = 1 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.finance.budget/Allocation"
   ];
 
@@ -73,7 +73,7 @@ message Split {
 
   google.type.Money amount = 3;
 
-  string note = 4 [features.field_presence = EXPLICIT];
+  string note = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ---------------------------------------------------------------------------
@@ -90,7 +90,7 @@ message Transaction {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Also the surface a finance.budget Allocation.selector matches against:
   // the two fields are a cross-package contract neither file imports the
@@ -102,22 +102,19 @@ message Transaction {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. TransactionTemplate mirrors 10-39.
   google.type.Money amount = 10;
   TransactionDirection direction = 11;
-  string merchant = 12 [features.field_presence = EXPLICIT];
-  string description = 13 [features.field_presence = EXPLICIT];
+  string merchant = 12 [(google.api.field_behavior) = OPTIONAL];
+  string description = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // How the amount is distributed across budget envelopes. A single split
   // covering the full amount is the common case.
   repeated Split splits = 14;
 
-  string note = 15 [features.field_presence = EXPLICIT];
+  string note = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Assigned desired state.
   // The Account this transaction belongs to. Attachment rather than
@@ -129,25 +126,18 @@ message Transaction {
 
   // The matching leg, when direction is TRANSFER.
   ref.v1alpha1.ObjectReference transfer_peer = 42 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.finance.transaction/Transaction"
   ];
 
   // Identifier at the institution, used to deduplicate on re-sync.
-  string external_id = 43 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string external_id = 43 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   TransactionStatus status = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp booked_time = 53 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp booked_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Allocations whose selectors currently claim this transaction. Makes the
   // selector edge navigable from the transaction side.
@@ -161,7 +151,6 @@ message Transaction {
 
   // The projected Transaction this one was matched against, if any.
   ref.v1alpha1.ObjectReference matched_projection = 56 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.finance.transaction/Transaction"
   ];
@@ -176,10 +165,10 @@ message TransactionTemplate {
 
   google.type.Money amount = 10;
   TransactionDirection direction = 11;
-  string merchant = 12 [features.field_presence = EXPLICIT];
-  string description = 13 [features.field_presence = EXPLICIT];
+  string merchant = 12 [(google.api.field_behavior) = OPTIONAL];
+  string description = 13 [(google.api.field_behavior) = OPTIONAL];
   repeated Split splits = 14;
-  string note = 15 [features.field_presence = EXPLICIT];
+  string note = 15 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ---------------------------------------------------------------------------
@@ -197,16 +186,13 @@ message RecurringTransaction {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Stamped onto each projected Transaction.
@@ -225,7 +211,7 @@ message RecurringTransaction {
   google.type.Date start_date = 14;
 
   // Unset means indefinitely.
-  google.type.Date end_date = 15 [features.field_presence = EXPLICIT];
+  google.type.Date end_date = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Project occurrences up to this date, bounding how far the chain runs.
   google.type.Date materialize_through = 16;
@@ -245,14 +231,8 @@ message RecurringTransaction {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 projected_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   int64 matched_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.type.Date next_occurrence_date = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.type.Date last_matched_date = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.type.Date next_occurrence_date = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.type.Date last_matched_date = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.type.Date materialized_through = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Mean of matched amounts, which drifts from the templated amount as prices

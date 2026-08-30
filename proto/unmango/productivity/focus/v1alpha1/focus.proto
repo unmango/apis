@@ -108,37 +108,34 @@ message FocusSession {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
 
   // The productivity.task Task this session works on. Unset for an
   // untargeted deep-work or body-doubling block.
   ref.v1alpha1.ObjectReference task = 10 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.productivity.task/Task"
   ];
 
   FocusTechnique technique = 11;
   google.protobuf.Duration planned_duration = 12;
-  google.protobuf.Timestamp planned_start_time = 13 [features.field_presence = EXPLICIT];
+  google.protobuf.Timestamp planned_start_time = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // What "done" looks like for this block, decided before starting so
   // starting does not require also deciding this.
-  string intention = 14 [features.field_presence = EXPLICIT];
+  string intention = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // The people.contact Contact co-working this session, for body doubling.
   ref.v1alpha1.ObjectReference companion = 15 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
@@ -148,14 +145,8 @@ message FocusSession {
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   FocusSessionStatus status = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp start_time = 53 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp end_time = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp start_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp end_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Duration actual_duration = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 interruption_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
   EnergyLevel energy_after = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -176,7 +167,7 @@ message Interruption {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -185,19 +176,16 @@ message Interruption {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   google.protobuf.Timestamp occurred_time = 10;
   InterruptionSource source = 11;
-  string description = 12 [features.field_presence = EXPLICIT];
+  string description = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // How long it pulled you away, if you resumed. Unset if it ended the
   // session instead.
-  google.protobuf.Duration duration = 13 [features.field_presence = EXPLICIT];
+  google.protobuf.Duration duration = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

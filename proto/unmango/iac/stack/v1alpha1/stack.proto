@@ -71,16 +71,13 @@ message Stack {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The iac.module Module to run.
@@ -91,11 +88,11 @@ message Stack {
 
   // Open string: "prod", "staging", a caller-defined name. Not an enum,
   // since the set of environments is defined by the caller, not this schema.
-  string target_environment = 12 [features.field_presence = EXPLICIT];
+  string target_environment = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Where state for this stack's runs is stored: a Terraform backend
   // address, a Pulumi stack URI, or empty for a tool with no external state.
-  string state_uri = 13 [features.field_presence = EXPLICIT];
+  string state_uri = 13 [(google.api.field_behavior) = OPTIONAL];
 
   google.protobuf.Duration timeout = 14;
   int32 max_retries = 15;
@@ -107,15 +104,11 @@ message Stack {
   int32 run_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   ref.v1alpha1.ObjectReference last_run = 54 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.iac.stack/Run"
   ];
   RunPhase last_run_phase = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp last_apply_time = 56 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_apply_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ---------------------------------------------------------------------------
@@ -132,7 +125,7 @@ message Run {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -141,25 +134,21 @@ message Run {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state, snapshotted from the Stack at creation so the run stays
   // reproducible after the Stack is edited.
   RunKind run_kind = 10;
   ref.v1alpha1.ObjectReference module = 11 [(google.api.resource_reference).type = "unmango.iac.module/Module"];
   google.protobuf.Struct inputs = 12;
-  string target_environment = 13 [features.field_presence = EXPLICIT];
-  string state_uri = 14 [features.field_presence = EXPLICIT];
+  string target_environment = 13 [(google.api.field_behavior) = OPTIONAL];
+  string state_uri = 14 [(google.api.field_behavior) = OPTIONAL];
   google.protobuf.Duration timeout = 15;
 
   // Assigned desired state.
   // The ci.job JobRun executing this run. Unset while pending, exactly as an
   // unscheduled Pod has no node.
   ref.v1alpha1.ObjectReference job_run = 40 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.ci.job/JobRun"
   ];
@@ -168,28 +157,16 @@ message Run {
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   RunPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp start_time = 53 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp completion_time = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp start_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp completion_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Summary counts, meaningful once the run completes.
   int32 resources_added = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 resources_changed = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 resources_destroyed = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string error_message = 58 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string error_message = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   int32 attempt = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string logs_uri = 60 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string logs_uri = 60 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

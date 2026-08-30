@@ -71,16 +71,13 @@ message PlaySession {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state. Recorded facts, since a session is written as it happens.
   google.type.Interval when = 10;
@@ -105,7 +102,7 @@ message PlaySession {
 
   // The media.library LibraryItem the bytes came from, when played locally.
   ref.v1alpha1.ObjectReference library_item = 17 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.media.library/LibraryItem"
   ];
 
@@ -139,16 +136,13 @@ message PlayState {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The media.title Title being played. Attachment rather than ownership:
@@ -162,7 +156,7 @@ message PlayState {
   google.protobuf.Duration position = 12;
 
   // Personal rating, 0 to 100.
-  int32 rating = 13 [features.field_presence = EXPLICIT];
+  int32 rating = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Marked to watch next, independently of any Collection.
   bool queued = 14;
@@ -173,7 +167,7 @@ message PlayState {
   // Which PlaySessions this state claims.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
 
-  string notes = 17 [features.field_presence = EXPLICIT];
+  string notes = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -193,18 +187,9 @@ message PlayState {
   // Summed over sessions, so a rewatched title reports more than its runtime.
   google.protobuf.Duration total_watched_duration = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp first_played_time = 57 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp last_played_time = 58 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp completed_time = 59 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp first_played_time = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_played_time = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp completed_time = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Position has not advanced in a long time while phase is IN_PROGRESS.
   bool stalled = 60 [(google.api.field_behavior) = OUTPUT_ONLY];

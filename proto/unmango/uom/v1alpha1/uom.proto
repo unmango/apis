@@ -2,6 +2,8 @@ edition = "2024";
 
 package unmango.uom.v1alpha1;
 
+import "google/api/field_behavior.proto";
+
 // Shared measurement vocabulary, so a value's unit is comparable across
 // domains instead of being a free-text string each package invents its own
 // convention for. Kept separate from unmango.ref: ref addresses relationships
@@ -55,7 +57,7 @@ message Quantity {
   Unit unit = 2;
 
   // Set only when unit is UNIT_CUSTOM.
-  string custom_unit = 3 [features.field_presence = EXPLICIT];
+  string custom_unit = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Compute available on, or requested from, a capacity provider. Shared by

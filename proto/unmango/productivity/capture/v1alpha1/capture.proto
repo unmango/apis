@@ -63,17 +63,14 @@ message CaptureItem {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
   reserved 6, 7; // owner_refs, generation: nothing owns or reconciles a capture
 
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
 
@@ -84,7 +81,7 @@ message CaptureItem {
   // "event", "note". Set by whoever captured it, not enforced at triage,
   // the same open-string treatment codegen.schema Schema.format uses for a
   // category nobody wants to execute logic against.
-  string suggested_kind = 11 [features.field_presence = EXPLICIT];
+  string suggested_kind = 11 [(google.api.field_behavior) = OPTIONAL];
 
   repeated string tags = 12;
 
@@ -94,19 +91,12 @@ message CaptureItem {
 
   // What this became once triaged. Unset until status is TRIAGED.
   ref.v1alpha1.ObjectReference resolved_into = 53 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "*"
   ];
 
-  google.protobuf.Timestamp triaged_time = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp triaged_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Set only when status is DISCARDED.
-  string discard_reason = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string discard_reason = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

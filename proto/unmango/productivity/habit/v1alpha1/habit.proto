@@ -57,33 +57,30 @@ message Habit {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  string description = 10 [features.field_presence = EXPLICIT];
+  string description = 10 [(google.api.field_behavior) = OPTIONAL];
   HabitFrequency frequency = 11;
 
   // Occurrences per frequency period.
   int32 target_count = 12;
 
   // Set only when this habit tracks an amount, e.g. "8 cups water".
-  uom.v1alpha1.Quantity target_quantity = 13 [features.field_presence = EXPLICIT];
+  uom.v1alpha1.Quantity target_quantity = 13 [(google.api.field_behavior) = OPTIONAL];
 
-  google.protobuf.Duration reminder_lead_time = 14 [features.field_presence = EXPLICIT];
+  google.protobuf.Duration reminder_lead_time = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Stop expecting occurrences without deleting the habit.
   bool paused = 15;
 
-  google.protobuf.Timestamp start_time = 16 [features.field_presence = EXPLICIT];
+  google.protobuf.Timestamp start_time = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -96,10 +93,7 @@ message Habit {
   // Periods meeting target_count divided by periods elapsed since start_time.
   double completion_rate = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp last_logged_time = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_logged_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 total_log_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
@@ -113,7 +107,7 @@ message HabitLog {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -122,10 +116,7 @@ message HabitLog {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
 
@@ -134,8 +125,8 @@ message HabitLog {
   google.protobuf.Timestamp logged_time = 10;
 
   // Set only when the owning Habit tracks target_quantity.
-  uom.v1alpha1.Quantity quantity = 11 [features.field_presence = EXPLICIT];
-  string note = 12 [features.field_presence = EXPLICIT];
+  uom.v1alpha1.Quantity quantity = 11 [(google.api.field_behavior) = OPTIONAL];
+  string note = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

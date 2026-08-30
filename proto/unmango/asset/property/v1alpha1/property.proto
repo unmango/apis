@@ -93,16 +93,13 @@ message Space {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   SpaceType type = 10;
@@ -152,16 +149,13 @@ message Property {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   PropertyType type = 10;
@@ -175,14 +169,14 @@ message Property {
   // Which Spaces this Property claims.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 15;
 
-  int32 year_built = 16 [features.field_presence = EXPLICIT];
+  int32 year_built = 16 [(google.api.field_behavior) = OPTIONAL];
   Area total_area = 17;
-  google.type.Date acquired_date = 18 [features.field_presence = EXPLICIT];
+  google.type.Date acquired_date = 18 [(google.api.field_behavior) = OPTIONAL];
   google.type.Money purchase_price = 19;
 
   // The finance.account Account holding the mortgage or paying the rent.
   ref.v1alpha1.ObjectReference finance_account = 20 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.finance.account/Account"
   ];
 
@@ -197,10 +191,7 @@ message Property {
   // Most recent valuation, which drifts from purchase_price over time.
   google.type.Money estimated_value = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.type.Date valuation_date = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.type.Date valuation_date = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Open asset.maintenance WorkOrders whose subject is this Property or one
   // of its Spaces.

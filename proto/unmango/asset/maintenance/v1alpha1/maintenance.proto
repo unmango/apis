@@ -95,16 +95,13 @@ message ServiceRecord {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   google.type.Date performed_date = 10;
@@ -114,7 +111,7 @@ message ServiceRecord {
 
   google.type.Money cost = 12;
   string summary = 13;
-  string notes = 14 [features.field_presence = EXPLICIT];
+  string notes = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Reading at the time of service, when the subject tracks distance.
   uom.v1alpha1.Quantity odometer = 15;
@@ -123,14 +120,14 @@ message ServiceRecord {
 
   // Where the invoice lives. A plain string so it can address a
   // dev.unmango.protofs path without coupling the packages.
-  string invoice_uri = 17 [features.field_presence = EXPLICIT];
+  string invoice_uri = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // Work is guaranteed until this date.
-  google.type.Date warranty_until = 18 [features.field_presence = EXPLICIT];
+  google.type.Date warranty_until = 18 [(google.api.field_behavior) = OPTIONAL];
 
   // The finance.transaction Transaction that paid for it.
   ref.v1alpha1.ObjectReference transaction = 19 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.finance.transaction/Transaction"
   ];
 
@@ -148,7 +145,7 @@ message ServiceRecord {
 // A component consumed during service.
 message PartUsed {
   string name = 1;
-  string part_number = 2 [features.field_presence = EXPLICIT];
+  string part_number = 2 [(google.api.field_behavior) = OPTIONAL];
   double quantity = 3;
   google.type.Money unit_cost = 4;
 }
@@ -168,20 +165,17 @@ message WorkOrder {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. WorkOrderTemplate mirrors 10-39.
   string summary = 10;
-  string instructions = 11 [features.field_presence = EXPLICIT];
+  string instructions = 11 [(google.api.field_behavior) = OPTIONAL];
   repeated Task tasks = 12;
   WorkOrderPriority priority = 13;
   google.type.Money estimated_cost = 14;
@@ -195,24 +189,19 @@ message WorkOrder {
   // directly for a one-off.
   ref.v1alpha1.ObjectReference subject = 40 [(google.api.resource_reference).type = "*"];
 
-  google.type.Date due_date = 41 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.type.Date due_date = 41 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Distance bound, when the subject tracks one.
   uom.v1alpha1.Quantity due_distance = 42 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The people.contact Contact responsible.
   ref.v1alpha1.ObjectReference assigned_to = 43 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   // The calendar.event Event booked to do the work.
   ref.v1alpha1.ObjectReference scheduled_event = 44 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.calendar.event/Event"
   ];
@@ -221,18 +210,11 @@ message WorkOrder {
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   WorkOrderPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.type.Date started_date = 53 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.type.Date completed_date = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.type.Date started_date = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.type.Date completed_date = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The ServiceRecord this work order produced, once completed.
   ref.v1alpha1.ObjectReference service_record = 55 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.asset.maintenance/ServiceRecord"
   ];
@@ -253,7 +235,7 @@ message WorkOrderTemplate {
   map<string, string> annotations = 2;
 
   string summary = 10;
-  string instructions = 11 [features.field_presence = EXPLICIT];
+  string instructions = 11 [(google.api.field_behavior) = OPTIONAL];
   repeated Task tasks = 12;
   WorkOrderPriority priority = 13;
   google.type.Money estimated_cost = 14;
@@ -276,16 +258,13 @@ message MaintenancePlan {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // What this plan services. Attachment, not ownership: the plan is authored
@@ -321,7 +300,7 @@ message MaintenancePlan {
 
   // Baseline for the first occurrence, when the subject has service history
   // predating this plan.
-  google.type.Date last_serviced_date = 18 [features.field_presence = EXPLICIT];
+  google.type.Date last_serviced_date = 18 [(google.api.field_behavior) = OPTIONAL];
   uom.v1alpha1.Quantity last_serviced_distance = 19;
 
   // Observed state.
@@ -330,27 +309,18 @@ message MaintenancePlan {
   // Reports readiness, and whether the subject admitted the attachment.
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.type.Date next_due_date = 52 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.type.Date next_due_date = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   uom.v1alpha1.Quantity next_due_distance = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Forecast from the subject's observed usage rate, when the interval has a
   // distance bound. Earlier than next_due_date for something driven hard.
-  google.type.Date forecast_due_date = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.type.Date forecast_due_date = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   int32 open_work_order_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 overdue_work_order_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
   int64 completed_work_order_count = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.type.Date last_completed_date = 58 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.type.Date last_completed_date = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Summed over every ServiceRecord under this plan.
   google.type.Money lifetime_cost = 59 [(google.api.field_behavior) = OUTPUT_ONLY];

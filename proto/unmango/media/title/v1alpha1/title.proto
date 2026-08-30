@@ -55,7 +55,7 @@ message Credit {
   // A people.contact Contact when the person is known personally,
   // otherwise unset and identified by name alone.
   ref.v1alpha1.ObjectReference contact = 1 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
@@ -68,7 +68,7 @@ message Credit {
   int32 billing_order = 4;
 
   // Part played, for a performing credit.
-  string character = 5 [features.field_presence = EXPLICIT];
+  string character = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 
 enum ReleaseFormat {
@@ -101,25 +101,22 @@ message Edition {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   ReleaseFormat format = 10;
 
   // What distinguishes this release: "Director's Cut", "2011 Remaster",
   // "Deluxe Edition".
-  string edition_name = 11 [features.field_presence = EXPLICIT];
+  string edition_name = 11 [(google.api.field_behavior) = OPTIONAL];
 
-  google.type.Date release_date = 12 [features.field_presence = EXPLICIT];
+  google.type.Date release_date = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Runtime or length specific to this cut, which may differ from the Title's.
   google.protobuf.Duration runtime = 13;
@@ -128,10 +125,10 @@ message Edition {
   repeated string languages = 14;
   repeated string subtitle_languages = 15;
 
-  string publisher = 16 [features.field_presence = EXPLICIT];
+  string publisher = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // ISO 3166 code of the release territory.
-  string region = 17 [features.field_presence = EXPLICIT];
+  string region = 17 [(google.api.field_behavior) = OPTIONAL];
 
   repeated ExternalId external_ids = 18;
 
@@ -160,7 +157,7 @@ message Title {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -169,10 +166,7 @@ message Title {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Immutable once set; create a new Title rather than changing what level
@@ -184,13 +178,13 @@ message Title {
   string title = 11;
 
   // Title normalized for ordering, with leading articles dropped.
-  string sort_title = 12 [features.field_presence = EXPLICIT];
+  string sort_title = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Title in the language of origin, when it differs.
-  string original_title = 13 [features.field_presence = EXPLICIT];
+  string original_title = 13 [(google.api.field_behavior) = OPTIONAL];
 
-  string summary = 14 [features.field_presence = EXPLICIT];
-  google.type.Date release_date = 15 [features.field_presence = EXPLICIT];
+  string summary = 14 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date release_date = 15 [(google.api.field_behavior) = OPTIONAL];
   repeated string genres = 16;
   google.protobuf.Duration runtime = 17;
   repeated Credit credits = 18;
@@ -198,24 +192,24 @@ message Title {
 
   // Position within the parent. Season number on a season, track or episode
   // number on a leaf.
-  int32 sequence_number = 20 [features.field_presence = EXPLICIT];
+  int32 sequence_number = 20 [(google.api.field_behavior) = OPTIONAL];
 
   // Content rating in its issuing system: "PG-13", "TV-MA", "E10+".
-  string content_rating = 21 [features.field_presence = EXPLICIT];
+  string content_rating = 21 [(google.api.field_behavior) = OPTIONAL];
 
   // ISO 639 code of the original language.
-  string original_language = 22 [features.field_presence = EXPLICIT];
+  string original_language = 22 [(google.api.field_behavior) = OPTIONAL];
 
   // Which child Titles and Editions this Title claims.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 23;
 
   // Artwork. Plain strings so they can address dev.unmango.protofs paths
   // without coupling the packages.
-  string poster_uri = 24 [features.field_presence = EXPLICIT];
-  string backdrop_uri = 25 [features.field_presence = EXPLICIT];
+  string poster_uri = 24 [(google.api.field_behavior) = OPTIONAL];
+  string backdrop_uri = 25 [(google.api.field_behavior) = OPTIONAL];
 
   // Personal rating, 0 to 100. Distinct from any external score.
-  int32 rating = 26 [features.field_presence = EXPLICIT];
+  int32 rating = 26 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

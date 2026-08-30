@@ -4,6 +4,7 @@ package dev.unmango.discord.backup.v1alpha1;
 
 import "dev/unmango/discord/backup/v1alpha1/guild.proto";
 import "dev/unmango/discord/backup/v1alpha1/message.proto";
+import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 
 // BackupMetadata holds information about a backup snapshot itself.
@@ -12,7 +13,7 @@ message BackupMetadata {
   google.protobuf.Timestamp created_at = 2;
   string guild_id = 3;
   string schema_version = 4;
-  string tool_version = 5 [features.field_presence = EXPLICIT];
+  string tool_version = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ServerBackup is a complete snapshot of a Discord guild.

@@ -73,7 +73,7 @@ message TypeRef {
   // The Schema the type lives in. Unset means the referring Schema. Only
   // meaningful alongside type_name; a primitive has no owning Schema.
   ref.v1alpha1.ObjectReference schema = 2 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.codegen.schema/Schema"
   ];
 
@@ -126,16 +126,13 @@ message Schema {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The interface description language this Schema is written in: "protobuf",
@@ -153,12 +150,12 @@ message Schema {
   string source_uri = 12;
 
   // Version of the API being described, not of this resource.
-  string version = 13 [features.field_presence = EXPLICIT];
+  string version = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // The compute.platform Platform whose API this describes: Proxmox, GitHub,
   // Discord. Absent for a schema that describes no external system.
   ref.v1alpha1.ObjectReference platform = 14 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.compute.platform/Platform"
   ];
 
@@ -169,13 +166,13 @@ message Schema {
   // tracked by one. Provenance only: never used to derive source_uri, and
   // never required to agree with it beyond both describing the same bytes.
   ref.v1alpha1.ObjectReference repository = 16 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
   ];
 
   // Subdirectory of repository holding the schema: "proto/". Meaningless,
   // and left unset, when repository is unset.
-  string root_path = 17 [features.field_presence = EXPLICIT];
+  string root_path = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -184,17 +181,11 @@ message Schema {
   // Content hash of the source as last fetched. What a
   // codegen.conversion ConversionInput pins and a codegen.artifact Artifact
   // hashes over.
-  string digest = 52 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string digest = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   int32 type_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 service_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp last_fetch_time = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_fetch_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Schemas whose imports name this one. Makes the import graph navigable
   // from either end.
@@ -218,7 +209,7 @@ message TypeDef {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -227,10 +218,7 @@ message TypeDef {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Content, populated when the owning Schema is parsed. Not user-declared,
   // and there is no reconciliation loop pushing observed state toward it.
@@ -244,10 +232,7 @@ message TypeDef {
   repeated string enum_values = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Set only when kind is TYPE_KIND_ALIAS.
-  TypeRef alias_of = 14 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  TypeRef alias_of = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string docs = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
   bool deprecated = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
