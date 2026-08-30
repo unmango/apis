@@ -81,24 +81,26 @@ message Runner {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. RunnerTemplate mirrors 10-39.
   // The compute.platform Platform this runner registers with.
-  ref.v1alpha1.ObjectReference platform = 10 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
-  RunnerScope scope = 11;
-  repeated string capabilities = 12;
-  string version = 13;
+  ref.v1alpha1.ObjectReference platform = 11 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
+  RunnerScope scope = 12;
+  repeated string capabilities = 13;
+  string version = 14;
 
   // Exit after completing a single job. The standard posture for untrusted
   // workloads, since it guarantees a clean environment per job.
-  bool ephemeral = 14;
+  bool ephemeral = 15;
 
-  int32 max_concurrency = 15;
-  uom.v1alpha1.ResourceQuantity resources = 16;
+  int32 max_concurrency = 16;
+  uom.v1alpha1.ResourceQuantity resources = 17;
 
   // Restricts which Hosts this Runner may be bound to.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector host_selector = 17;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector host_selector = 18;
 
   // Assigned desired state.
   // The Host this Runner is bound to. Unset means unscheduled.
@@ -187,21 +189,23 @@ message RunnerSet {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  int32 replicas = 10;
+  int32 replicas = 11;
 
   // Which Runners this set claims. Must match template.labels.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
 
   // Stamped onto every generated Runner. Immutable once set; a RunnerPool
   // creates a new RunnerSet rather than mutating this.
-  RunnerTemplate template = 12;
+  RunnerTemplate template = 13;
 
   // Identifies the template revision, so a RunnerPool can tell its RunnerSets
   // apart and roll back to one.
-  string revision = 13;
+  string revision = 14;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -239,26 +243,28 @@ message RunnerPool {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  int32 replicas = 10;
+  int32 replicas = 11;
 
   // Which RunnerSets this pool claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
 
   // Editing this creates a new RunnerSet revision and starts a rollout.
-  RunnerTemplate template = 12;
+  RunnerTemplate template = 13;
 
-  RolloutStrategy strategy = 13;
+  RolloutStrategy strategy = 14;
 
   // Superseded RunnerSets kept for rollback. Zero keeps none.
-  int32 revision_history_limit = 14;
+  int32 revision_history_limit = 15;
 
   // Lower and upper replica bounds when an autoscaler drives this pool. Unset
   // min disables autoscaling.
-  int32 min_replicas = 15 [(google.api.field_behavior) = OPTIONAL];
-  int32 max_replicas = 16 [(google.api.field_behavior) = OPTIONAL];
+  int32 min_replicas = 16 [(google.api.field_behavior) = OPTIONAL];
+  int32 max_replicas = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

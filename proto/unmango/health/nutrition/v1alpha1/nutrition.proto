@@ -100,26 +100,28 @@ message Food {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  string brand = 10 [(google.api.field_behavior) = OPTIONAL];
+  string brand = 11 [(google.api.field_behavior) = OPTIONAL];
 
   // Portions this food can be measured in. The first is the default.
-  repeated Serving servings = 11;
+  repeated Serving servings = 12;
 
-  string barcode = 12 [(google.api.field_behavior) = OPTIONAL];
+  string barcode = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Where the nutrition data came from: "usda", "label", "estimated".
-  string source = 13;
+  string source = 14;
 
   // Composed of other Foods, as a recipe is.
-  repeated Ingredient ingredients = 14;
+  repeated Ingredient ingredients = 15;
 
   // Servings the whole recipe yields. Only meaningful with ingredients.
-  double recipe_yield = 15;
+  double recipe_yield = 16;
 
-  google.type.Money typical_cost = 16;
+  google.type.Money typical_cost = 17;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -166,22 +168,24 @@ message FoodEntry {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The catalog Food eaten. Attachment rather than ownership: the entry
   // records a portion, the Food records the facts.
-  ref.v1alpha1.ParentReference food_ref = 10 [(google.api.resource_reference).type = "unmango.health.nutrition/Food"];
+  ref.v1alpha1.ParentReference food_ref = 11 [(google.api.resource_reference).type = "unmango.health.nutrition/Food"];
 
-  double quantity = 11;
+  double quantity = 12;
 
   // Which of the Food's servings the quantity is counted in.
-  uom.v1alpha1.Unit unit = 12;
+  uom.v1alpha1.Unit unit = 13;
 
-  string note = 13 [(google.api.field_behavior) = OPTIONAL];
+  string note = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Set only when unit is UNIT_CUSTOM.
-  string custom_unit = 14 [(google.api.field_behavior) = OPTIONAL];
+  string custom_unit = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -227,21 +231,23 @@ message Meal {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. MealTemplate mirrors 10-39.
-  MealType type = 10;
+  MealType type = 11;
 
   // Entries to materialize. Editing this changes what the meal consists of.
-  repeated FoodEntryTemplate entries = 11;
+  repeated FoodEntryTemplate entries = 12;
 
   // Which FoodEntries this Meal claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 13;
 
-  string notes = 13 [(google.api.field_behavior) = OPTIONAL];
+  string notes = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Nutrient budget for this sitting, against which totals are compared.
-  Nutrients targets = 14;
+  Nutrients targets = 15;
 
   // Assigned desired state.
   google.type.Date meal_date = 40 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -305,30 +311,32 @@ message MealPlan {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // One template per sitting in the cycle, each placed by its
   // cycle_offset_days.
-  repeated MealTemplate meals = 10;
+  repeated MealTemplate meals = 11;
 
-  int32 cycle_length_days = 11;
-  google.type.Date start_date = 12;
-  google.type.Date end_date = 13 [(google.api.field_behavior) = OPTIONAL];
+  int32 cycle_length_days = 12;
+  google.type.Date start_date = 13;
+  google.type.Date end_date = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Materialize meals up to this date, bounding how far ahead the chain runs.
-  google.type.Date materialize_through = 14;
+  google.type.Date materialize_through = 15;
 
   // Which Meals this plan claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 15;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
 
   // Nutrient budget for a whole day, against which each day is compared.
-  Nutrients daily_targets = 16;
+  Nutrients daily_targets = 17;
 
-  bool suspended = 17;
+  bool suspended = 18;
 
   // Eaten meals to retain. Zero retains all.
-  int32 meal_history_limit = 18;
+  int32 meal_history_limit = 19;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

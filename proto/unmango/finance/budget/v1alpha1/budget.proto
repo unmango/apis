@@ -53,14 +53,16 @@ message Allocation {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. AllocationTemplate mirrors 10-39.
   // Spending category this envelope covers: "groceries", "fuel".
-  string category = 10;
+  string category = 11;
 
   // Amount budgeted for the period.
-  google.type.Money limit = 11;
+  google.type.Money limit = 12;
 
   // Which Transactions this envelope claims. Selection rather than ownership,
   // so a Transaction is claimed by label and can move between envelopes
@@ -69,23 +71,23 @@ message Allocation {
   // file imports the other to enforce, so a Transaction whose labelling
   // convention changes can silently stop matching an Allocation that expects
   // the old one.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 13;
 
   // Carry an unspent remainder into the next period's matching Allocation.
-  bool rollover = 13;
+  bool rollover = 14;
 
   // Treat overspend as an error condition rather than a note.
-  bool strict = 14;
+  bool strict = 15;
 
   // Ordering hint for display. Lower sorts first.
-  int32 priority = 15;
+  int32 priority = 16;
 
   // Save toward this total rather than (or alongside) capping spend at
   // limit. Unset means this envelope is spend-down only.
-  google.type.Money target_amount = 16 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Money target_amount = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // Reach target_amount by this date. Unset means no deadline.
-  google.type.Date target_date = 17 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date target_date = 18 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -162,20 +164,22 @@ message BudgetPeriod {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. BudgetPeriodTemplate mirrors 10-39.
   // Envelopes to materialize for this window.
-  repeated AllocationTemplate allocations = 10;
+  repeated AllocationTemplate allocations = 11;
 
   // Ceiling across all envelopes. Independent of the sum of their limits, so
   // an overallocated period is detectable.
-  google.type.Money total_limit = 11;
+  google.type.Money total_limit = 12;
 
   // Transactions that fall in this window, matched before any child
   // Allocation's own selector runs. Normally a date-range label written by
   // the ingest path.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 13;
 
   // Assigned desired state. Set when the period is materialized, not
   // templated, since the window is what distinguishes one period from another.
@@ -245,37 +249,39 @@ message Budget {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // How often a new BudgetPeriod is materialized.
-  google.type.CalendarPeriod period = 10;
+  google.type.CalendarPeriod period = 11;
 
   // First period starts on or after this date.
-  google.type.Date start_date = 11;
+  google.type.Date start_date = 12;
 
   // Stop materializing after this date. Unset means indefinitely.
-  google.type.Date end_date = 12 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date end_date = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Stamped onto each materialized BudgetPeriod. Editing this affects future
   // periods only; existing ones keep the revision they were created with.
-  BudgetPeriodTemplate template = 13;
+  BudgetPeriodTemplate template = 14;
 
   // Materialize periods up to this date. Bounds how far ahead the chain runs,
   // rather than generating an unbounded future.
-  google.type.Date materialize_through = 14;
+  google.type.Date materialize_through = 15;
 
   // ISO 4217. Every Money under this budget uses it.
-  string currency_code = 15;
+  string currency_code = 16;
 
   // Which BudgetPeriods this Budget claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 17;
 
   // Stop materializing new periods without deleting the budget.
-  bool suspended = 17;
+  bool suspended = 18;
 
   // Superseded periods to retain. Zero retains all.
-  int32 period_history_limit = 18;
+  int32 period_history_limit = 19;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -307,10 +313,12 @@ message Budget {
 
 // A content-addressed snapshot of a Budget's template, recorded whenever it
 // changes. Nothing here is declared or reconciled, so the identity band
-// departs from the repository-wide preamble the way vcs.commit Commit and
+// reserves what it has no use for the way vcs.commit Commit and
 // codegen.artifact Artifact do: no display_name, no owner_refs, no
-// generation, no delete_time. Editing a Budget's template produces a new
-// BudgetRevision rather than changing this one.
+// generation, no update_time, no delete_time. Those numbers stay reserved
+// rather than being reused, so a field number means the same thing here as
+// everywhere else. Editing a Budget's template produces a new BudgetRevision
+// rather than changing this one.
 message BudgetRevision {
   option (google.api.resource) = {
     type: "unmango.finance.budget/BudgetRevision"
@@ -322,28 +330,30 @@ message BudgetRevision {
   // Hash over the content band and the budget reference.
   string digest = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  reserved 3, 6, 7, 9, 10; // display_name, owner_refs, generation, update_time, delete_time: nothing declares, owns, or rewrites a revision
+
   // The Budget this snapshots. Scope rather than ownership, matching
   // vcs.commit Commit's repository field.
-  ref.v1alpha1.ObjectReference budget = 2 [
+  ref.v1alpha1.ObjectReference budget = 11 [
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.finance.budget/Budget"
   ];
 
-  string uid = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-  map<string, string> labels = 4;
-  map<string, string> annotations = 5;
-  google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // Content, fixed at creation and covered by the digest.
   // Previous revision's digest. Empty for the first revision. This is the
   // >> edge.
-  string parent_digest = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string parent_digest = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Snapshot of Budget.template at the moment this revision was recorded.
-  BudgetPeriodTemplate template = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  BudgetPeriodTemplate template = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Free-text note describing why the standing intent changed.
-  string note = 12 [(google.api.field_behavior) = OPTIONAL];
+  string note = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Derived, computed by whoever indexes the graph.
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

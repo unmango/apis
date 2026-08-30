@@ -103,33 +103,35 @@ message Note {
   reserved 7; // generation: nothing reconciles a Note toward a declared state
 
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  string title = 10;
-  string body = 11;
-  ContentFormat format = 12;
+  string title = 11;
+  string body = 12;
+  ContentFormat format = 13;
 
   // Edges into any other domain.
-  repeated Link links = 13;
+  repeated Link links = 14;
 
-  repeated Attachment attachments = 14;
+  repeated Attachment attachments = 15;
 
   // Where the note came from, when it was captured rather than written: a URL,
   // a clipping, an imported file.
-  string source_uri = 15 [(google.api.field_behavior) = OPTIONAL];
+  string source_uri = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Which sub-notes this Note claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 17;
 
   // Keep at the top of listings.
-  bool pinned = 17;
+  bool pinned = 18;
 
   // Retained but out of the way. Distinct from deleted.
-  bool archived = 18;
+  bool archived = 19;
 
   // Position among sibling sub-notes. Lower sorts first.
-  int32 sequence_number = 19;
+  int32 sequence_number = 20;
 
   // Observed state.
   reserved 50, 51; // observed_generation, conditions: nothing reconciles a Note
@@ -174,23 +176,25 @@ message Notebook {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which Notes belong. An empty selector claims nothing, never everything.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
 
-  string summary = 11 [(google.api.field_behavior) = OPTIONAL];
+  string summary = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Stamped onto notes created through this notebook, which is how a new note
   // ends up matching the selector.
-  map<string, string> note_labels = 12;
+  map<string, string> note_labels = 13;
 
-  ContentFormat default_format = 13;
+  ContentFormat default_format = 14;
 
   // The domain this notebook documents, when it is scoped to one: a Vehicle, a
   // Pipeline, a Property.
-  ref.v1alpha1.ObjectReference subject = 14 [
+  ref.v1alpha1.ObjectReference subject = 15 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "*"
   ];

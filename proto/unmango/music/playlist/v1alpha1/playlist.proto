@@ -93,29 +93,31 @@ message PlaylistEntry {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The media.title Title, normally one of kind TRACK.
-  ref.v1alpha1.ObjectReference track = 10 [(google.api.resource_reference).type = "unmango.media.title/Title"];
+  ref.v1alpha1.ObjectReference track = 11 [(google.api.resource_reference).type = "unmango.media.title/Title"];
 
   // Sort key under ORDERING_STRATEGY_MANUAL. A string rather than an integer
   // position so that inserting a track rewrites one entry instead of every
   // entry after it: a caller picks any value ordering between its new
   // neighbors. Entries sort by byte comparison, ties broken by name.
-  string rank = 11;
+  string rank = 12;
 
   // A specific media.title Edition to play, when the release matters. Unset
   // means any edition of the Title will do.
-  ref.v1alpha1.ObjectReference prefer_edition = 12 [
+  ref.v1alpha1.ObjectReference prefer_edition = 13 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.media.title/Edition"
   ];
 
   // Why this track is here.
-  string note = 13 [(google.api.field_behavior) = OPTIONAL];
+  string note = 14 [(google.api.field_behavior) = OPTIONAL];
 
-  google.protobuf.Timestamp added_time = 14 [(google.api.field_behavior) = OPTIONAL];
+  google.protobuf.Timestamp added_time = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -157,27 +159,29 @@ message Playlist {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  string description = 10 [(google.api.field_behavior) = OPTIONAL];
+  string description = 11 [(google.api.field_behavior) = OPTIONAL];
 
   // Generates entries. Unset means every entry was added by hand.
-  PlaylistSource source = 11 [(google.api.field_behavior) = OPTIONAL];
+  PlaylistSource source = 12 [(google.api.field_behavior) = OPTIONAL];
 
-  OrderingStrategy ordering = 12;
+  OrderingStrategy ordering = 13;
 
   // Artwork. A plain string so it can address a dev.unmango.protofs path
   // without coupling the packages.
-  string image_uri = 13 [(google.api.field_behavior) = OPTIONAL];
+  string image_uri = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Shared beyond its owner.
-  bool published = 14;
+  bool published = 15;
 
-  repeated ExternalId external_ids = 15;
+  repeated ExternalId external_ids = 16;
 
   // Which child Playlists this one claims as a folder.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 17;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

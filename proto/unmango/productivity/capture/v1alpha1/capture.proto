@@ -70,20 +70,22 @@ message CaptureItem {
   reserved 6, 7; // owner_refs, generation: nothing owns or reconciles a capture
 
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
 
   // The raw capture. The only field required to let go of the thought.
-  string body = 10;
+  string body = 11;
 
   // An open, non-authoritative hint at what this might become: "task",
   // "event", "note". Set by whoever captured it, not enforced at triage,
   // the same open-string treatment codegen.schema Schema.format uses for a
   // category nobody wants to execute logic against.
-  string suggested_kind = 11 [(google.api.field_behavior) = OPTIONAL];
+  string suggested_kind = 12 [(google.api.field_behavior) = OPTIONAL];
 
-  repeated string tags = 12;
+  repeated string tags = 13;
 
   reserved 50, 51; // observed_generation, conditions: nothing reconciles a capture
 

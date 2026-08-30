@@ -108,34 +108,36 @@ message CertificateRequest {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The pki.issuer Issuer to request from.
-  ref.v1alpha1.ObjectReference issuer = 10 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
+  ref.v1alpha1.ObjectReference issuer = 11 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
 
-  repeated string dns_names = 11;
-  string common_name = 12 [(google.api.field_behavior) = OPTIONAL];
-  repeated string ip_addresses = 13;
-  KeyAlgorithm key_algorithm = 14;
+  repeated string dns_names = 12;
+  string common_name = 13 [(google.api.field_behavior) = OPTIONAL];
+  repeated string ip_addresses = 14;
+  KeyAlgorithm key_algorithm = 15;
 
   // Bits, meaningful only for KEY_ALGORITHM_RSA.
-  int32 key_size = 15 [(google.api.field_behavior) = OPTIONAL];
+  int32 key_size = 16 [(google.api.field_behavior) = OPTIONAL];
 
-  google.protobuf.Duration duration = 16;
+  google.protobuf.Duration duration = 17;
 
   // Reissue once the current Certificate's remaining lifetime falls below
   // this.
-  google.protobuf.Duration renew_before = 17;
+  google.protobuf.Duration renew_before = 18;
 
-  repeated CertificateUsage usages = 18;
+  repeated CertificateUsage usages = 19;
 
   // The requested certificate can itself sign, the X.509 basic-constraints
   // CA bit.
-  bool is_ca = 19;
+  bool is_ca = 20;
 
   // A dev.unmango.protofs path the issued material is written to.
-  string output_uri = 20 [(google.api.field_behavior) = OPTIONAL];
+  string output_uri = 21 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -180,20 +182,22 @@ message CertificateIssuance {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state, snapshotted from the CertificateRequest at creation so the
   // issuance stays reproducible after the request is edited.
-  ref.v1alpha1.ObjectReference issuer = 10 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
-  repeated string dns_names = 11;
-  string common_name = 12 [(google.api.field_behavior) = OPTIONAL];
-  repeated string ip_addresses = 13;
-  KeyAlgorithm key_algorithm = 14;
-  int32 key_size = 15 [(google.api.field_behavior) = OPTIONAL];
-  google.protobuf.Duration duration = 16;
-  repeated CertificateUsage usages = 17;
-  bool is_ca = 18;
-  string output_uri = 19 [(google.api.field_behavior) = OPTIONAL];
+  ref.v1alpha1.ObjectReference issuer = 11 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
+  repeated string dns_names = 12;
+  string common_name = 13 [(google.api.field_behavior) = OPTIONAL];
+  repeated string ip_addresses = 14;
+  KeyAlgorithm key_algorithm = 15;
+  int32 key_size = 16 [(google.api.field_behavior) = OPTIONAL];
+  google.protobuf.Duration duration = 17;
+  repeated CertificateUsage usages = 18;
+  bool is_ca = 19;
+  string output_uri = 20 [(google.api.field_behavior) = OPTIONAL];
 
   // Assigned desired state.
   // The ci.job JobRun executing this issuance. Unset while pending, exactly
@@ -224,6 +228,11 @@ message CertificateIssuance {
 // ---------------------------------------------------------------------------
 
 // One content-addressed, issued X.509 certificate.
+//
+// The identity band reserves what an immutable node has no use for,
+// display_name, owner_refs, generation, update_time, and delete_time, rather
+// than compacting around them, so 4 is labels, 5 is annotations, and 8 is
+// create_time here exactly as on every mutable kind.
 message Certificate {
   option (google.api.resource) = {
     type: "unmango.pki.certificate/Certificate"
@@ -238,31 +247,33 @@ message Certificate {
   string fingerprint = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  map<string, string> labels = 3;
-  map<string, string> annotations = 4;
-  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  reserved 3, 6, 7, 9, 10; // display_name, owner_refs, generation, update_time, delete_time: nothing declares, owns, or rewrites a certificate
 
   // Content, fixed at creation and covered by the fingerprint.
-  string serial_number = 10;
-  repeated string dns_names = 11;
-  string common_name = 12 [(google.api.field_behavior) = OPTIONAL];
-  repeated string ip_addresses = 13;
-  KeyAlgorithm key_algorithm = 14;
-  repeated CertificateUsage usages = 15;
-  bool is_ca = 16;
-  google.protobuf.Timestamp not_before = 17;
-  google.protobuf.Timestamp not_after = 18;
+  string serial_number = 11;
+  repeated string dns_names = 12;
+  string common_name = 13 [(google.api.field_behavior) = OPTIONAL];
+  repeated string ip_addresses = 14;
+  KeyAlgorithm key_algorithm = 15;
+  repeated CertificateUsage usages = 16;
+  bool is_ca = 17;
+  google.protobuf.Timestamp not_before = 18;
+  google.protobuf.Timestamp not_after = 19;
 
   // The pki.issuer Issuer that minted this.
-  ref.v1alpha1.ObjectReference issuer = 19 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
+  ref.v1alpha1.ObjectReference issuer = 20 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
 
   // Fingerprint of the Certificate that signed this one. The `>>` edge,
   // fixed at creation because the signer's identity is part of what a
   // conforming chain-of-trust covers. Unset for a self-signed root.
-  string issuer_fingerprint = 20 [(google.api.field_behavior) = OPTIONAL];
+  string issuer_fingerprint = 21 [(google.api.field_behavior) = OPTIONAL];
 
   // A dev.unmango.protofs root holding the issued material.
-  string material_uri = 21 [(google.api.field_behavior) = OPTIONAL];
+  string material_uri = 22 [(google.api.field_behavior) = OPTIONAL];
 
   // Derived, computed by whoever indexes the graph.
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

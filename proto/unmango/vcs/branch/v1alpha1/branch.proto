@@ -97,32 +97,34 @@ message Branch {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Ref name as the underlying VCS spells it: "main", "feat/life-domain-apis".
-  string ref_name = 10;
+  string ref_name = 11;
 
   // The repository's default branch. At most one per Repository.
-  bool default = 11;
+  bool default = 12;
 
   // Rules enforced against changes targeting this branch. Unset means
   // unprotected.
-  Protection protection = 12 [(google.api.field_behavior) = OPTIONAL];
+  Protection protection = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Branch this one is compared and merged against. Unset means the
   // repository default.
-  string base_ref_name = 13 [(google.api.field_behavior) = OPTIONAL];
+  string base_ref_name = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Remote-tracking counterpart, when this branch tracks one.
-  ref.v1alpha1.ObjectReference upstream_remote = 14 [
+  ref.v1alpha1.ObjectReference upstream_remote = 15 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.vcs.repository/Remote"
   ];
-  string upstream_ref_name = 15 [(google.api.field_behavior) = OPTIONAL];
+  string upstream_ref_name = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Delete automatically once a change merges it.
-  bool delete_on_merge = 16;
+  bool delete_on_merge = 17;
 
   // Observed state. Where the pointer actually is, which nobody declares.
   // head_revision names a node in the vcs.commit graph.
@@ -189,32 +191,34 @@ message Tag {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Ref name as the underlying VCS spells it: "v0.36.4".
-  string ref_name = 10;
+  string ref_name = 11;
 
   // The vcs.commit Commit this tag names. Declared, and never expected to
   // change.
-  string target_revision = 11 [(google.api.field_behavior) = IMMUTABLE];
+  string target_revision = 12 [(google.api.field_behavior) = IMMUTABLE];
 
-  TagType type = 12;
-  string message = 13 [(google.api.field_behavior) = OPTIONAL];
+  TagType type = 13;
+  string message = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // people.contact Contact who created it.
-  ref.v1alpha1.ObjectReference tagger = 14 [
+  ref.v1alpha1.ObjectReference tagger = 15 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   // Marks a published release rather than an internal marker.
-  bool release = 15;
+  bool release = 16;
 
-  string release_notes = 16 [(google.api.field_behavior) = OPTIONAL];
+  string release_notes = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // Not yet ready for general use.
-  bool prerelease = 17;
+  bool prerelease = 18;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

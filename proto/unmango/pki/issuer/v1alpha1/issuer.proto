@@ -105,14 +105,16 @@ message Issuer {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   oneof config {
-    SelfSignedConfig self_signed = 10;
-    CaConfig ca = 11;
-    AcmeConfig acme = 12;
-    VaultConfig vault = 13;
+    SelfSignedConfig self_signed = 11;
+    CaConfig ca = 12;
+    AcmeConfig acme = 13;
+    VaultConfig vault = 14;
   }
 
   // Observed state.
