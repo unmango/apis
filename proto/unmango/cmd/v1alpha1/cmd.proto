@@ -4,6 +4,12 @@ package unmango.cmd.v1alpha1;
 
 import "unmango/cli/v1alpha1/cli.proto";
 
+// Deprecated: use dev.unmango.cmd.v1alpha2.
+// Command execution is infrastructure, not a life domain. v1alpha2 there
+// runs a Process rather than a Utility, and BuilderService converts one to
+// the other.
+option deprecated = true;
+
 service ExecutionService {
   rpc Run(RunRequest) returns (RunResponse);
 }

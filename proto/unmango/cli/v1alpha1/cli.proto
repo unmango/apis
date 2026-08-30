@@ -10,6 +10,11 @@ package unmango.cli.v1alpha1;
 
 import "google/protobuf/any.proto";
 
+// Deprecated: use dev.unmango.cli.v1alpha2.
+// A CLI parser is infrastructure, not a life domain, and unmango.* is where
+// the life domains live.
+option deprecated = true;
+
 service AnalysisService {
   rpc Parse(ParseRequest) returns (ParseResponse);
 }

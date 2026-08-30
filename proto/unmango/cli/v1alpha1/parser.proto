@@ -5,6 +5,11 @@ package unmango.cli.v1alpha1;
 import "unmango/cli/v1alpha1/cli.proto";
 import "unmango/cli/v1alpha1/cst.proto";
 
+// Deprecated: use dev.unmango.cli.v1alpha2.
+// A CLI parser is infrastructure, not a life domain, and unmango.* is where
+// the life domains live.
+option deprecated = true;
+
 service ParserService {
   rpc ParseCommand(ParseCommandRequest) returns (ParseCommandResponse);
 }

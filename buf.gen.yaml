@@ -16,3 +16,6 @@ inputs:
   - directory: proto
     paths:
       - proto/unmango
+      # dev.unmango.cli moved here out of the life-domain namespace and still
+      # needs generated code; the rest of proto/dev/unmango does not.
+      - proto/dev/unmango/cli

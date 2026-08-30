@@ -1,0 +1,24 @@
+edition = "2024";
+
+package dev.unmango.cli.v1alpha2;
+
+// Supersedes both unmango.cli.v1alpha1, which put an infrastructure API in
+// the life-domain namespace, and dev.unmango.cli.v1alpha1, which carried a
+// duplicate copy of Convention, Option, and Utility without the CST or the
+// parser.
+
+import "dev/unmango/cli/v1alpha2/cli.proto";
+import "dev/unmango/cli/v1alpha2/cst.proto";
+
+service ParserService {
+  rpc ParseCommand(ParseCommandRequest) returns (ParseCommandResponse);
+}
+
+message ParseCommandRequest {
+  string input = 1;
+  Convention convention = 2;
+}
+
+message ParseCommandResponse {
+  CommandLine command_line = 1;
+}
