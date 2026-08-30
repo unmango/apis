@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.media.library.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
 import "google/type/money.proto";
@@ -122,6 +123,12 @@ message SubtitleTrack {
 
 // One held copy of something. Binds to the Edition it is a copy of.
 message LibraryItem {
+  option (google.api.resource) = {
+    type: "unmango.media.library/LibraryItem"
+    pattern: "{library_item}"
+    singular: "libraryItem"
+    plural: "libraryItems"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -147,7 +154,10 @@ message LibraryItem {
 
   // Where a physical copy sits: an asset.property Space, with the shelf
   // within it, if any, as the ParentReference section.
-  ref.v1alpha1.ParentReference location = 12 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ParentReference location = 12 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.asset.property/Space"
+  ];
 
   // Where a digital copy came from: a service name, a rip, a purchase.
   string source = 13 [features.field_presence = EXPLICIT];
@@ -159,7 +169,10 @@ message LibraryItem {
   google.type.Date due_date = 16 [features.field_presence = EXPLICIT];
 
   // The people.contact Contact currently holding it, when lent out.
-  ref.v1alpha1.ObjectReference lent_to = 17 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference lent_to = 17 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
 
   string notes = 18 [features.field_presence = EXPLICIT];
 
@@ -167,14 +180,16 @@ message LibraryItem {
   // The media.title Edition this is a copy of. Unset means unmatched.
   ref.v1alpha1.ObjectReference edition = 40 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.media.title/Edition"
   ];
 
   // The media.title Title, denormalized from the Edition so a Collection can
   // select on it without a join.
   ref.v1alpha1.ObjectReference title = 41 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.media.title/Title"
   ];
 
   // Observed state.
@@ -184,7 +199,10 @@ message LibraryItem {
 
   // Libraries whose selectors currently claim this item. Makes the selector
   // edge navigable from the item side.
-  repeated ref.v1alpha1.ObjectReference claimed_by = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference claimed_by = 53 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.media.library/Library"
+  ];
 
   int32 file_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   int64 total_size_bytes = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -208,6 +226,12 @@ message LibraryItem {
 // A managed set of LibraryItems, claimed by selector. The thing a scanner
 // populates and a player browses.
 message Library {
+  option (google.api.resource) = {
+    type: "unmango.media.library/Library"
+    pattern: "{library}"
+    singular: "library"
+    plural: "libraries"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -266,6 +290,12 @@ message Library {
 // automatic one are the same kind: the difference is only how specific the
 // selector is.
 message Collection {
+  option (google.api.resource) = {
+    type: "unmango.media.library/Collection"
+    pattern: "{collection}"
+    singular: "collection"
+    plural: "collections"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -287,7 +317,7 @@ message Collection {
 
   // Members in a deliberate order, for a collection whose sequence matters.
   // Anything the selector claims but this omits sorts after these.
-  repeated ref.v1alpha1.ObjectReference ordered_members = 12;
+  repeated ref.v1alpha1.ObjectReference ordered_members = 12 [(google.api.resource_reference).type = "unmango.media.title/Title"];
 
   // Artwork. A plain string so it can address a dev.unmango.protofs path.
   string poster_uri = 13 [features.field_presence = EXPLICIT];

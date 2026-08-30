@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.productivity.capture.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "unmango/ref/v1alpha1/ref.proto";
 
@@ -54,6 +55,12 @@ enum CaptureStatus {
 
 // One unstructured thought, captured before it is lost.
 message CaptureItem {
+  option (google.api.resource) = {
+    type: "unmango.productivity.capture/CaptureItem"
+    pattern: "{capture_item}"
+    singular: "captureItem"
+    plural: "captureItems"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -88,7 +95,8 @@ message CaptureItem {
   // What this became once triaged. Unset until status is TRIAGED.
   ref.v1alpha1.ObjectReference resolved_into = 53 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "*"
   ];
 
   google.protobuf.Timestamp triaged_time = 54 [

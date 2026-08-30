@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.media.title.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
@@ -53,7 +54,10 @@ message ExternalId {
 message Credit {
   // A people.contact Contact when the person is known personally,
   // otherwise unset and identified by name alone.
-  ref.v1alpha1.ObjectReference contact = 1 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference contact = 1 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
 
   string person_name = 2;
 
@@ -89,6 +93,12 @@ enum ReleaseFormat {
 
 // A specific release of a Title. What a media.library LibraryItem binds to.
 message Edition {
+  option (google.api.resource) = {
+    type: "unmango.media.title/Edition"
+    pattern: "{edition}"
+    singular: "edition"
+    plural: "editions"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -142,6 +152,12 @@ message Edition {
 
 // A work. Nests to form series and seasons, and owns its Editions.
 message Title {
+  option (google.api.resource) = {
+    type: "unmango.media.title/Title"
+    pattern: "{title}"
+    singular: "title"
+    plural: "titles"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];

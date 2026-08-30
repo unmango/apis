@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.productivity.task.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
@@ -78,6 +79,12 @@ message RecurrenceRule {
 
 // One thing to be done. Nests to form subtasks.
 message Task {
+  option (google.api.resource) = {
+    type: "unmango.productivity.task/Task"
+    pattern: "{task}"
+    singular: "task"
+    plural: "tasks"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -102,10 +109,13 @@ message Task {
   google.protobuf.Duration estimated_effort = 13;
 
   // Tasks that must reach DONE before this one leaves BLOCKED.
-  repeated ref.v1alpha1.ObjectReference depends_on = 14;
+  repeated ref.v1alpha1.ObjectReference depends_on = 14 [(google.api.resource_reference).type = "unmango.productivity.task/Task"];
 
   // The people.contact Contact responsible.
-  ref.v1alpha1.ObjectReference assignee = 15 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference assignee = 15 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
 
   // Which subtasks this Task claims.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
@@ -137,7 +147,8 @@ message Task {
   // The calendar.event Event booked to do this.
   ref.v1alpha1.ObjectReference scheduled_event = 43 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.calendar.event/Event"
   ];
 
   // Observed state.
@@ -175,8 +186,11 @@ message TaskTemplate {
   string notes = 11 [features.field_presence = EXPLICIT];
   TaskPriority priority = 12;
   google.protobuf.Duration estimated_effort = 13;
-  repeated ref.v1alpha1.ObjectReference depends_on = 14;
-  ref.v1alpha1.ObjectReference assignee = 15 [features.field_presence = EXPLICIT];
+  repeated ref.v1alpha1.ObjectReference depends_on = 14 [(google.api.resource_reference).type = "unmango.productivity.task/Task"];
+  ref.v1alpha1.ObjectReference assignee = 15 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
 
   // Which subtasks a generated Task claims.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
@@ -190,6 +204,12 @@ message TaskTemplate {
 
 // A repeating chore, and the owner of every Task it materializes.
 message RecurringTask {
+  option (google.api.resource) = {
+    type: "unmango.productivity.task/RecurringTask"
+    pattern: "{recurring_task}"
+    singular: "recurringTask"
+    plural: "recurringTasks"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];

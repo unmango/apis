@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.codegen.schema.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -71,7 +72,10 @@ message TypeRef {
 
   // The Schema the type lives in. Unset means the referring Schema. Only
   // meaningful alongside type_name; a primitive has no owning Schema.
-  ref.v1alpha1.ObjectReference schema = 2 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference schema = 2 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.codegen.schema/Schema"
+  ];
 
   // Fills the type parameters of a generic, the element of a list, or the
   // key and value of a map, in that order.
@@ -114,6 +118,12 @@ message Method {
 
 // One machine-readable description of an API, in one format.
 message Schema {
+  option (google.api.resource) = {
+    type: "unmango.codegen.schema/Schema"
+    pattern: "{schema}"
+    singular: "schema"
+    plural: "schemas"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -147,15 +157,21 @@ message Schema {
 
   // The compute.platform Platform whose API this describes: Proxmox, GitHub,
   // Discord. Absent for a schema that describes no external system.
-  ref.v1alpha1.ObjectReference platform = 14 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference platform = 14 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.compute.platform/Platform"
+  ];
 
   // Other Schemas this one depends on to resolve its types.
-  repeated ref.v1alpha1.ObjectReference imports = 15;
+  repeated ref.v1alpha1.ObjectReference imports = 15 [(google.api.resource_reference).type = "unmango.codegen.schema/Schema"];
 
   // The vcs.repository Repository the source is checked into, when it is
   // tracked by one. Provenance only: never used to derive source_uri, and
   // never required to agree with it beyond both describing the same bytes.
-  ref.v1alpha1.ObjectReference repository = 16 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference repository = 16 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
 
   // Subdirectory of repository holding the schema: "proto/". Meaningless,
   // and left unset, when repository is unset.
@@ -182,7 +198,10 @@ message Schema {
 
   // Schemas whose imports name this one. Makes the import graph navigable
   // from either end.
-  repeated ref.v1alpha1.ObjectReference imported_by = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference imported_by = 56 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.codegen.schema/Schema"
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -191,6 +210,12 @@ message Schema {
 
 // One named type declared by a Schema.
 message TypeDef {
+  option (google.api.resource) = {
+    type: "unmango.codegen.schema/TypeDef"
+    pattern: "{type_def}"
+    singular: "typeDef"
+    plural: "typeDefs"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -235,7 +260,10 @@ message TypeDef {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Other TypeDefs whose fields, methods, or aliases name this one.
-  repeated ref.v1alpha1.ObjectReference referenced_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference referenced_by = 52 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.codegen.schema/TypeDef"
+  ];
 
   int32 field_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.music.artist.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -74,6 +75,12 @@ message ExternalId {
 // One person's tenure in a group. Authored independently of both, and admitted
 // by the group.
 message Membership {
+  option (google.api.resource) = {
+    type: "unmango.music.artist/Membership"
+    pattern: "{membership}"
+    singular: "membership"
+    plural: "memberships"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -89,10 +96,10 @@ message Membership {
 
   // Desired state.
   // The group being joined. The group decides whether to admit this.
-  ref.v1alpha1.ParentReference parent_ref = 10;
+  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.music.artist/Artist"];
 
   // The Artist who is a member, normally one of kind PERSON.
-  ref.v1alpha1.ObjectReference member = 11;
+  ref.v1alpha1.ObjectReference member = 11 [(google.api.resource_reference).type = "unmango.music.artist/Artist"];
 
   // What they played: "bass", "backing vocals", "drum programming".
   repeated string roles = 12;
@@ -128,6 +135,12 @@ message Membership {
 // An Artist's credit on a media.title Title. Attaches to the Title; the Title
 // admits it and reports the outcome as a Condition.
 message ArtistCredit {
+  option (google.api.resource) = {
+    type: "unmango.music.artist/ArtistCredit"
+    pattern: "{artist_credit}"
+    singular: "artistCredit"
+    plural: "artistCredits"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -143,9 +156,9 @@ message ArtistCredit {
 
   // Desired state.
   // The media.title Title being credited on.
-  ref.v1alpha1.ParentReference parent_ref = 10;
+  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.media.title/Title"];
 
-  ref.v1alpha1.ObjectReference artist = 11;
+  ref.v1alpha1.ObjectReference artist = 11 [(google.api.resource_reference).type = "unmango.music.artist/Artist"];
 
   // "performer", "composer", "remixer", "producer", "engineer". An open string
   // for the same reason media.title Credit.role is: the set of things a person
@@ -181,6 +194,12 @@ message ArtistCredit {
 // A performing entity. Nests to form aliases, and is what ArtistCredits and
 // Memberships point at.
 message Artist {
+  option (google.api.resource) = {
+    type: "unmango.music.artist/Artist"
+    pattern: "{artist}"
+    singular: "artist"
+    plural: "artists"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -229,7 +248,10 @@ message Artist {
 
   // A people.contact Contact when the artist is someone known personally,
   // otherwise unset. The same escape hatch media.title Credit.contact offers.
-  ref.v1alpha1.ObjectReference contact = 20 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference contact = 20 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
 
   // Artwork. A plain string so it can address a dev.unmango.protofs path
   // without coupling the packages.

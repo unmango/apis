@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.asset.maintenance.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
@@ -86,6 +87,12 @@ message Task {
 // What was actually done, by whom, and what it cost. The durable artifact of
 // the chain: WorkOrders come and go on a schedule, service records accumulate.
 message ServiceRecord {
+  option (google.api.resource) = {
+    type: "unmango.asset.maintenance/ServiceRecord"
+    pattern: "{service_record}"
+    singular: "serviceRecord"
+    plural: "serviceRecords"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -122,7 +129,10 @@ message ServiceRecord {
   google.type.Date warranty_until = 18 [features.field_presence = EXPLICIT];
 
   // The finance.transaction Transaction that paid for it.
-  ref.v1alpha1.ObjectReference transaction = 19 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference transaction = 19 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.finance.transaction/Transaction"
+  ];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -150,6 +160,12 @@ message PartUsed {
 // One occurrence of scheduled work. Materialized by a MaintenancePlan, or
 // created directly for a one-off repair.
 message WorkOrder {
+  option (google.api.resource) = {
+    type: "unmango.asset.maintenance/WorkOrder"
+    pattern: "{work_order}"
+    singular: "workOrder"
+    plural: "workOrders"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -177,7 +193,7 @@ message WorkOrder {
   // Assigned desired state. Computed when the occurrence is materialized.
   // What is being serviced. Copied from the owning plan's parent_ref, or set
   // directly for a one-off.
-  ref.v1alpha1.ObjectReference subject = 40;
+  ref.v1alpha1.ObjectReference subject = 40 [(google.api.resource_reference).type = "*"];
 
   google.type.Date due_date = 41 [
     features.field_presence = EXPLICIT,
@@ -190,13 +206,15 @@ message WorkOrder {
   // The people.contact Contact responsible.
   ref.v1alpha1.ObjectReference assigned_to = 43 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   // The calendar.event Event booked to do the work.
   ref.v1alpha1.ObjectReference scheduled_event = 44 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.calendar.event/Event"
   ];
 
   // Observed state.
@@ -215,7 +233,8 @@ message WorkOrder {
   // The ServiceRecord this work order produced, once completed.
   ref.v1alpha1.ObjectReference service_record = 55 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.asset.maintenance/ServiceRecord"
   ];
 
   google.type.Money actual_cost = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -249,6 +268,12 @@ message WorkOrderTemplate {
 // A standing schedule attached to something that needs upkeep. The kind a
 // human edits, and the owner of every WorkOrder it materializes.
 message MaintenancePlan {
+  option (google.api.resource) = {
+    type: "unmango.asset.maintenance/MaintenancePlan"
+    pattern: "{maintenance_plan}"
+    singular: "maintenancePlan"
+    plural: "maintenancePlans"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -267,7 +292,7 @@ message MaintenancePlan {
   // independently of its subject, deleting it does not touch the subject, and
   // the subject admits or rejects it. Points at an asset.vehicle Vehicle, an
   // asset.property Property or Space, or a compute.host Host.
-  ref.v1alpha1.ParentReference parent_ref = 10;
+  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "*"];
 
   // When work comes due.
   MaintenanceInterval interval = 11;

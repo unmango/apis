@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.vcs.change.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -111,6 +112,12 @@ message ReviewComment {
 // by it, so a reviewer can record a verdict without write access to the
 // proposal itself.
 message Review {
+  option (google.api.resource) = {
+    type: "unmango.vcs.change/Review"
+    pattern: "{review}"
+    singular: "review"
+    plural: "reviews"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -126,10 +133,10 @@ message Review {
 
   // Desired state.
   // The Change being reviewed. The Change decides whether to admit this.
-  ref.v1alpha1.ParentReference parent_ref = 10;
+  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.vcs.change/Change"];
 
   // The people.contact Contact reviewing.
-  ref.v1alpha1.ObjectReference reviewer = 11;
+  ref.v1alpha1.ObjectReference reviewer = 11 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
   ReviewVerdict verdict = 12;
   string body = 13 [features.field_presence = EXPLICIT];
@@ -167,6 +174,12 @@ message Review {
 
 // One proposal to move a branch. A pull request, a merge request, a change.
 message Change {
+  option (google.api.resource) = {
+    type: "unmango.vcs.change/Change"
+    pattern: "{change}"
+    singular: "change"
+    plural: "changes"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -191,10 +204,13 @@ message Change {
   MergeStrategy merge_strategy = 13;
 
   // people.contact Contacts whose review is requested.
-  repeated ref.v1alpha1.ObjectReference reviewers = 14;
+  repeated ref.v1alpha1.ObjectReference reviewers = 14 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
   // people.contact Contact expected to carry the change forward.
-  ref.v1alpha1.ObjectReference assignee = 15 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference assignee = 15 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
 
   // Merge as soon as the target branch's rules are satisfied.
   bool auto_merge = 16;
@@ -207,13 +223,13 @@ message Change {
   // Assigned desired state. Computed per repository when materialized.
   // The vcs.branch Branch this change targets. Attachment: the branch admits
   // or rejects on its Protection rules, and was authored independently.
-  ref.v1alpha1.ParentReference target_ref = 40;
+  ref.v1alpha1.ParentReference target_ref = 40 [(google.api.resource_reference).type = "unmango.vcs.branch/Branch"];
 
   // The vcs.branch Branch holding the proposed commits.
-  ref.v1alpha1.ObjectReference source_branch = 41;
+  ref.v1alpha1.ObjectReference source_branch = 41 [(google.api.resource_reference).type = "unmango.vcs.branch/Branch"];
 
   // The vcs.repository Repository both branches live in.
-  ref.v1alpha1.ObjectReference repository = 42;
+  ref.v1alpha1.ObjectReference repository = 42 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Forge-assigned number. Zero before the change exists on the forge.
   int32 number = 43 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -221,7 +237,8 @@ message Change {
   // people.contact Contact who opened it.
   ref.v1alpha1.ObjectReference author = 44 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   // Observed state.
@@ -240,7 +257,10 @@ message Change {
   int32 approvals_outstanding = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // ci.job JobRuns triggered by this change.
-  repeated ref.v1alpha1.ObjectReference check_runs = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference check_runs = 58 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.ci.job/JobRun"
+  ];
 
   bool checks_passed = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -290,8 +310,11 @@ message ChangeTemplate {
   string body = 11 [features.field_presence = EXPLICIT];
   bool draft = 12;
   MergeStrategy merge_strategy = 13;
-  repeated ref.v1alpha1.ObjectReference reviewers = 14;
-  ref.v1alpha1.ObjectReference assignee = 15 [features.field_presence = EXPLICIT];
+  repeated ref.v1alpha1.ObjectReference reviewers = 14 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  ref.v1alpha1.ObjectReference assignee = 15 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
   bool auto_merge = 16;
   bool delete_source_on_merge = 17;
 
@@ -306,6 +329,12 @@ message ChangeTemplate {
 // One edit applied across many repositories, tracked as a single thing. Owns
 // every Change it materializes, so abandoning the set closes all of them.
 message ChangeSet {
+  option (google.api.resource) = {
+    type: "unmango.vcs.change/ChangeSet"
+    pattern: "{change_set}"
+    singular: "changeSet"
+    plural: "changeSets"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -324,11 +353,14 @@ message ChangeSet {
   ChangeTemplate template = 10;
 
   // vcs.repository Repositories to open a Change in. Named explicitly.
-  repeated ref.v1alpha1.ObjectReference repositories = 11;
+  repeated ref.v1alpha1.ObjectReference repositories = 11 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Or claimed by selector, via a vcs.repository RepositoryGroup. Applied in
   // addition to repositories above.
-  ref.v1alpha1.ObjectReference repository_group = 12 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference repository_group = 12 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.vcs.repository/RepositoryGroup"
+  ];
 
   // Which Changes this set claims.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 13;
@@ -369,7 +401,8 @@ message ChangeSet {
   // The Change at the front of the queue, for SEQUENTIAL and STACKED.
   ref.v1alpha1.ObjectReference next_change = 61 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.vcs.change/Change"
   ];
 
   google.protobuf.Timestamp first_opened_time = 62 [

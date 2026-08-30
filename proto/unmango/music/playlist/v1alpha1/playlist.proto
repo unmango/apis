@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.music.playlist.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -78,6 +79,12 @@ message PlaylistSource {
 
 // One track in one playlist. Owned by the Playlist and cascades with it.
 message PlaylistEntry {
+  option (google.api.resource) = {
+    type: "unmango.music.playlist/PlaylistEntry"
+    pattern: "{playlist_entry}"
+    singular: "playlistEntry"
+    plural: "playlistEntries"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -93,7 +100,7 @@ message PlaylistEntry {
 
   // Desired state.
   // The media.title Title, normally one of kind TRACK.
-  ref.v1alpha1.ObjectReference track = 10;
+  ref.v1alpha1.ObjectReference track = 10 [(google.api.resource_reference).type = "unmango.media.title/Title"];
 
   // Sort key under ORDERING_STRATEGY_MANUAL. A string rather than an integer
   // position so that inserting a track rewrites one entry instead of every
@@ -103,7 +110,10 @@ message PlaylistEntry {
 
   // A specific media.title Edition to play, when the release matters. Unset
   // means any edition of the Title will do.
-  ref.v1alpha1.ObjectReference prefer_edition = 12 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference prefer_edition = 12 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.media.title/Edition"
+  ];
 
   // Why this track is here.
   string note = 13 [features.field_presence = EXPLICIT];
@@ -132,6 +142,12 @@ message PlaylistEntry {
 
 // An ordered set of tracks. Nests to form folders, and owns its entries.
 message Playlist {
+  option (google.api.resource) = {
+    type: "unmango.music.playlist/Playlist"
+    pattern: "{playlist}"
+    singular: "playlist"
+    plural: "playlists"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];

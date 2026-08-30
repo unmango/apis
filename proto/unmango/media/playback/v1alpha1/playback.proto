@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.media.playback.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/interval.proto";
@@ -62,6 +63,12 @@ enum SessionOutcome {
 
 // One sitting. Append-only history behind a PlayState.
 message PlaySession {
+  option (google.api.resource) = {
+    type: "unmango.media.playback/PlaySession"
+    pattern: "{play_session}"
+    singular: "playSession"
+    plural: "playSessions"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -90,14 +97,17 @@ message PlaySession {
   // Where it was played.
   oneof played_on {
     // A compute.host Host.
-    ref.v1alpha1.ObjectReference device = 15;
+    ref.v1alpha1.ObjectReference device = 15 [(google.api.resource_reference).type = "unmango.compute.host/Host"];
 
     // A device outside this API, identified only by name.
     string external_device_name = 16;
   }
 
   // The media.library LibraryItem the bytes came from, when played locally.
-  ref.v1alpha1.ObjectReference library_item = 17 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference library_item = 17 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.media.library/LibraryItem"
+  ];
 
   // Playback speed. 1.0 is normal; audiobooks and podcasts often are not.
   double speed = 18;
@@ -121,6 +131,12 @@ message PlaySession {
 // One person's progress through one Title. Attached to the Title, owner of the
 // sessions that produced it.
 message PlayState {
+  option (google.api.resource) = {
+    type: "unmango.media.playback/PlayState"
+    pattern: "{play_state}"
+    singular: "playState"
+    plural: "playStates"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -137,10 +153,10 @@ message PlayState {
   // Desired state.
   // The media.title Title being played. Attachment rather than ownership:
   // progress is per person and outlives the catalog entry.
-  ref.v1alpha1.ParentReference parent_ref = 10;
+  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.media.title/Title"];
 
   // The people.contact Contact whose progress this is.
-  ref.v1alpha1.ObjectReference viewer = 11;
+  ref.v1alpha1.ObjectReference viewer = 11 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
   // Where to resume. The one number a player needs.
   google.protobuf.Duration position = 12;

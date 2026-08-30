@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.vcs.branch.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -57,7 +58,7 @@ message Protection {
   bool enforce_for_admins = 9;
 
   // people.contact Contacts permitted to push directly, bypassing changes.
-  repeated ref.v1alpha1.ObjectReference push_allowlist = 10;
+  repeated ref.v1alpha1.ObjectReference push_allowlist = 10 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 }
 
 enum TagType {
@@ -79,6 +80,12 @@ enum TagType {
 
 // A moving pointer into a Repository's history.
 message Branch {
+  option (google.api.resource) = {
+    type: "unmango.vcs.branch/Branch"
+    pattern: "{branch}"
+    singular: "branch"
+    plural: "branches"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -111,7 +118,10 @@ message Branch {
   string base_ref_name = 13 [features.field_presence = EXPLICIT];
 
   // Remote-tracking counterpart, when this branch tracks one.
-  ref.v1alpha1.ObjectReference upstream_remote = 14 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference upstream_remote = 14 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Remote"
+  ];
   string upstream_ref_name = 15 [features.field_presence = EXPLICIT];
 
   // Delete automatically once a change merges it.
@@ -127,7 +137,8 @@ message Branch {
   string head_message = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   ref.v1alpha1.ObjectReference head_author = 55 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
   google.protobuf.Timestamp head_commit_time = 56 [
     features.field_presence = EXPLICIT,
@@ -171,6 +182,12 @@ enum BranchPhase {
 // A fixed pointer into a Repository's history. Unlike a Branch, its target is
 // declared rather than observed, since a tag that moves is a bug.
 message Tag {
+  option (google.api.resource) = {
+    type: "unmango.vcs.branch/Tag"
+    pattern: "{tag}"
+    singular: "tag"
+    plural: "tags"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -196,7 +213,10 @@ message Tag {
   string message = 13 [features.field_presence = EXPLICIT];
 
   // people.contact Contact who created it.
-  ref.v1alpha1.ObjectReference tagger = 14 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference tagger = 14 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
 
   // Marks a published release rather than an internal marker.
   bool release = 15;

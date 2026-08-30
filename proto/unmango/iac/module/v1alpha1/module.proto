@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.iac.module.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -34,6 +35,12 @@ import "unmango/ref/v1alpha1/ref.proto";
 
 // One runnable config-as-code definition.
 message Module {
+  option (google.api.resource) = {
+    type: "unmango.iac.module/Module"
+    pattern: "{module}"
+    singular: "module"
+    plural: "modules"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -53,10 +60,10 @@ message Module {
   // Desired state.
   // The compute.platform Platform for the tool that reads this module:
   // Terraform, Pulumi, Ansible, Helm, kubectl.
-  ref.v1alpha1.ObjectReference tool = 10;
+  ref.v1alpha1.ObjectReference tool = 10 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
 
   // The vcs.repository Repository the module's source lives in.
-  ref.v1alpha1.ObjectReference repository = 11;
+  ref.v1alpha1.ObjectReference repository = 11 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Subdirectory within the repository, when the module is not at its root.
   string path = 12 [features.field_presence = EXPLICIT];
@@ -76,7 +83,10 @@ message Module {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Registries whose selectors currently claim this module.
-  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.iac.module/ModuleRegistry"
+  ];
 
   // iac.stack Stacks naming this module.
   int32 stack_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -88,6 +98,12 @@ message Module {
 
 // A published collection of Modules, claimed by selector.
 message ModuleRegistry {
+  option (google.api.resource) = {
+    type: "unmango.iac.module/ModuleRegistry"
+    pattern: "{module_registry}"
+    singular: "moduleRegistry"
+    plural: "moduleRegistries"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -115,7 +131,10 @@ message ModuleRegistry {
   // The vcs.repository Repository scanned for Modules that have not been
   // declared yet. Unset discovers nothing, the same as an empty selector
   // claims nothing.
-  ref.v1alpha1.ObjectReference discovery_repository = 13 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference discovery_repository = 13 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
