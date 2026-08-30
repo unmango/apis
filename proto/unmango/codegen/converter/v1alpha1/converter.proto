@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.codegen.converter.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -153,6 +154,12 @@ message RpcInvocation {
 
 // One transformation from a set of inputs to a set of outputs.
 message Converter {
+  option (google.api.resource) = {
+    type: "unmango.codegen.converter/Converter"
+    pattern: "{converter}"
+    singular: "converter"
+    plural: "converters"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -176,7 +183,10 @@ message Converter {
 
   // The compute.platform Platform for the tool this wraps. Absent for a
   // converter that is its own tool.
-  ref.v1alpha1.ObjectReference platform = 13 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference platform = 13 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.compute.platform/Platform"
+  ];
 
   // How the converter is invoked. A plain string so it can address a
   // dev.unmango.protofs path, an OCI reference, or a flake output without
@@ -197,7 +207,10 @@ message Converter {
   bool deterministic = 17;
 
   // The vcs.repository Repository the converter's own source lives in.
-  ref.v1alpha1.ObjectReference repository = 18 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference repository = 18 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
 
   // The calling convention at entrypoint.
   InvocationKind invocation_kind = 19;
@@ -211,7 +224,10 @@ message Converter {
 
   // Registries whose selectors currently claim this converter. Makes the
   // selector edge navigable from the converter side.
-  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.codegen.converter/ConverterRegistry"
+  ];
 
   // codegen.conversion Conversions naming this converter.
   int32 conversion_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -287,7 +303,7 @@ message DirectorySource {
 // avoid.
 message ReleaseArtifactSource {
   // The vcs.repository Repository whose releases are scanned.
-  ref.v1alpha1.ObjectReference repository = 1;
+  ref.v1alpha1.ObjectReference repository = 1 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Regex a release asset name must match to be treated as a candidate.
   string asset_pattern = 2 [features.field_presence = EXPLICIT];
@@ -295,6 +311,12 @@ message ReleaseArtifactSource {
 
 // A published collection of Converters, claimed by selector.
 message ConverterRegistry {
+  option (google.api.resource) = {
+    type: "unmango.codegen.converter/ConverterRegistry"
+    pattern: "{converter_registry}"
+    singular: "converterRegistry"
+    plural: "converterRegistries"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];

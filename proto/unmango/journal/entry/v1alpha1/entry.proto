@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.journal.entry.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -88,6 +89,12 @@ enum Visibility {
 
 // One dated log entry.
 message Entry {
+  option (google.api.resource) = {
+    type: "unmango.journal.entry/Entry"
+    pattern: "{entry}"
+    singular: "entry"
+    plural: "entries"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -125,11 +132,17 @@ message Entry {
 
   // Optional pointer at a people.contact Contact. Unset means single-user.
   // A plain reference, not a ~> attachment: nothing admits or rejects it.
-  ref.v1alpha1.ObjectReference author = 17 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference author = 17 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
 
   // Optional pointer at a health.measurement Measurement for a quantified
   // mood or anxiety reading behind the coarse mood scale.
-  ref.v1alpha1.ObjectReference mood_measurement = 18 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference mood_measurement = 18 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.health.measurement/Measurement"
+  ];
 
   repeated Attachment attachments = 19;
   Visibility visibility = 20;

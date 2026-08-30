@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.codegen.conversion.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -84,7 +85,7 @@ message ConversionInput {
 
   // Where the bytes come from: a codegen.schema Schema, a vcs.repository
   // Repository, a vcs.commit Commit.
-  ref.v1alpha1.ObjectReference source = 2;
+  ref.v1alpha1.ObjectReference source = 2 [(google.api.resource_reference).type = "*"];
 
   // Pins the input to one revision. Unset follows the source's current
   // digest, which is what makes a Conversion go stale rather than diverge
@@ -101,6 +102,12 @@ message ConversionInput {
 
 // A standing instruction to run one Converter over one set of inputs.
 message Conversion {
+  option (google.api.resource) = {
+    type: "unmango.codegen.conversion/Conversion"
+    pattern: "{conversion}"
+    singular: "conversion"
+    plural: "conversions"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -116,7 +123,7 @@ message Conversion {
 
   // Desired state.
   // The codegen.converter Converter to run.
-  ref.v1alpha1.ObjectReference converter = 10;
+  ref.v1alpha1.ObjectReference converter = 10 [(google.api.resource_reference).type = "unmango.codegen.converter/Converter"];
 
   repeated ConversionInput inputs = 11;
 
@@ -133,7 +140,10 @@ message Conversion {
   // Propose the output as a vcs.change Change against this vcs.branch Branch
   // instead of writing it in place, which is how a generated SDK gets
   // reviewed before it lands.
-  ref.v1alpha1.ObjectReference change_target = 15 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference change_target = 15 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.vcs.branch/Branch"
+  ];
 
   google.protobuf.Duration timeout = 16;
   int32 max_retries = 17;
@@ -143,7 +153,8 @@ message Conversion {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   ref.v1alpha1.ObjectReference latest_run = 52 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.codegen.conversion/ConversionRun"
   ];
 
   // Digest of the primary codegen.artifact Artifact the latest successful run
@@ -171,6 +182,12 @@ message Conversion {
 
 // One execution of a Conversion.
 message ConversionRun {
+  option (google.api.resource) = {
+    type: "unmango.codegen.conversion/ConversionRun"
+    pattern: "{conversion_run}"
+    singular: "conversionRun"
+    plural: "conversionRuns"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -189,7 +206,7 @@ message ConversionRun {
 
   // Desired state, snapshotted from the Conversion at creation so the run
   // stays reproducible after the Conversion is edited.
-  ref.v1alpha1.ObjectReference converter = 10;
+  ref.v1alpha1.ObjectReference converter = 10 [(google.api.resource_reference).type = "unmango.codegen.converter/Converter"];
   string converter_tool_version = 11;
 
   // Digests are always resolved here, never left to follow.
@@ -205,7 +222,8 @@ message ConversionRun {
   // unscheduled Pod has no node.
   ref.v1alpha1.ObjectReference job_run = 40 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.ci.job/JobRun"
   ];
 
   // Observed state.
@@ -224,7 +242,10 @@ message ConversionRun {
 
   // The codegen.artifact Artifacts this run produced, in the order the
   // Converter declares its output Ports.
-  repeated ref.v1alpha1.ObjectReference artifacts = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference artifacts = 56 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.codegen.artifact/Artifact"
+  ];
 
   // Hash of the resolved inputs, the options, and the converter version
   // together. Two runs sharing an input_digest should produce identical

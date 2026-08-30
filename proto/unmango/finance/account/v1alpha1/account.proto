@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.finance.account.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
 import "google/type/money.proto";
@@ -63,6 +64,12 @@ message SyncConfig {
 
 // A single balance held at an Institution.
 message Account {
+  option (google.api.resource) = {
+    type: "unmango.finance.account/Account"
+    pattern: "{account}"
+    singular: "account"
+    plural: "accounts"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -127,6 +134,12 @@ message Account {
 
 // A counterparty holding one or more Accounts.
 message Institution {
+  option (google.api.resource) = {
+    type: "unmango.finance.account/Institution"
+    pattern: "{institution}"
+    singular: "institution"
+    plural: "institutions"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];

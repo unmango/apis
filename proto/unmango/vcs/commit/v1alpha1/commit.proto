@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.vcs.commit.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/interval.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -43,7 +44,10 @@ message Signature {
   google.protobuf.Timestamp time = 3;
 
   // The people.contact Contact this resolves to, when the address is known.
-  ref.v1alpha1.ObjectReference contact = 4 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference contact = 4 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
 }
 
 // A key-value line in the commit message footer: Co-Authored-By, Signed-off-by,
@@ -95,13 +99,22 @@ enum CommitKind {
 // node rather than part of it, which is exactly how a selector should treat a
 // commit.
 message Commit {
+  option (google.api.resource) = {
+    type: "unmango.vcs.commit/Commit"
+    pattern: "{commit}"
+    singular: "commit"
+    plural: "commits"
+  };
   // Content address or revision identifier, as the underlying VCS names it.
   // The identity.
   string revision = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The vcs.repository Repository this commit is observed in. Scope rather
   // than ownership: the same sha in a fork is the same commit.
-  ref.v1alpha1.ObjectReference repository = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ref.v1alpha1.ObjectReference repository = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
 
   reserved 3;
 
@@ -150,10 +163,16 @@ message Commit {
   bool signature_verified = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // vcs.branch Branches and Tags pointing directly at this commit.
-  repeated ref.v1alpha1.ObjectReference refs = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference refs = 54 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "*"
+  ];
 
   // vcs.change Changes containing this commit.
-  repeated ref.v1alpha1.ObjectReference changes = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference changes = 55 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.vcs.change/Change"
+  ];
 
   DiffStat stats = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -198,7 +217,7 @@ service CommitService {
 }
 
 message GetCommitRequest {
-  ref.v1alpha1.ObjectReference repository = 1;
+  ref.v1alpha1.ObjectReference repository = 1 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Full or abbreviated revision identifier, or a revision expression the
   // server resolves. Syntax is VCS-specific: git accepts "HEAD", "main~3",
@@ -218,13 +237,16 @@ message ListCommitsRequest {
   // Field 4 is `repository` rather than the `owner` this position holds on
   // every mutable kind. A commit has no owner reference to list by; the
   // repository is scope, not ownership.
-  ref.v1alpha1.ObjectReference repository = 4;
+  ref.v1alpha1.ObjectReference repository = 4 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Restricts results to commits within this window, by commit_time.
   google.type.Interval window = 5;
 
   // Restricts results to commits authored by this people.contact Contact.
-  ref.v1alpha1.ObjectReference author = 6 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference author = 6 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
 
   repeated CommitKind kinds = 7;
 
@@ -239,10 +261,10 @@ message ListCommitsResponse {
 
 message WatchCommitsRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1;
-  ref.v1alpha1.ObjectReference repository = 2;
+  ref.v1alpha1.ObjectReference repository = 2 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Restricts the stream to commits reachable from these refs.
-  repeated ref.v1alpha1.ObjectReference watch_refs = 3;
+  repeated ref.v1alpha1.ObjectReference watch_refs = 3 [(google.api.resource_reference).type = "*"];
 
   // Resume from this point instead of the current state, so a client that
   // drops the stream does not have to replay from nothing. Unset starts
@@ -266,7 +288,7 @@ enum CommitEventType {
 }
 
 message WalkCommitsRequest {
-  ref.v1alpha1.ObjectReference repository = 1;
+  ref.v1alpha1.ObjectReference repository = 1 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Where the walk begins. Revision expressions, resolved as in GetCommit.
   repeated string start_revisions = 2;
@@ -292,7 +314,10 @@ message WalkCommitsRequest {
   repeated string paths = 9;
 
   google.type.Interval window = 10;
-  ref.v1alpha1.ObjectReference author = 11 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference author = 11 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
 
   // Substring match against message.
   string query = 12 [features.field_presence = EXPLICIT];
@@ -334,7 +359,7 @@ enum WalkOrder {
 }
 
 message GetMergeBaseRequest {
-  ref.v1alpha1.ObjectReference repository = 1;
+  ref.v1alpha1.ObjectReference repository = 1 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Two or more revisions to find the common ancestor of.
   repeated string revisions = 2;
@@ -352,7 +377,7 @@ message GetMergeBaseResponse {
 }
 
 message CompareCommitsRequest {
-  ref.v1alpha1.ObjectReference repository = 1;
+  ref.v1alpha1.ObjectReference repository = 1 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
   string base_revision = 2;
   string head_revision = 3;
 

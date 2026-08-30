@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.finance.transaction.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/calendar_period.proto";
 import "google/type/date.proto";
@@ -61,7 +62,10 @@ enum TransactionDirection {
 // transactions.
 message Split {
   // The finance.budget Allocation this part counts against.
-  ref.v1alpha1.ObjectReference allocation = 1 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference allocation = 1 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.finance.budget/Allocation"
+  ];
 
   // Category label, kept alongside the reference so a split stays meaningful
   // when no budget exists.
@@ -78,6 +82,12 @@ message Split {
 
 // A single movement of money.
 message Transaction {
+  option (google.api.resource) = {
+    type: "unmango.finance.transaction/Transaction"
+    pattern: "{transaction}"
+    singular: "transaction"
+    plural: "transactions"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -112,7 +122,7 @@ message Transaction {
   // Assigned desired state.
   // The Account this transaction belongs to. Attachment rather than
   // ownership: the fact outlives the account.
-  ref.v1alpha1.ObjectReference account = 40;
+  ref.v1alpha1.ObjectReference account = 40 [(google.api.resource_reference).type = "unmango.finance.account/Account"];
 
   // Date the institution assigned. What budget periods bucket on.
   google.type.Date posted_date = 41;
@@ -120,7 +130,8 @@ message Transaction {
   // The matching leg, when direction is TRANSFER.
   ref.v1alpha1.ObjectReference transfer_peer = 42 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.finance.transaction/Transaction"
   ];
 
   // Identifier at the institution, used to deduplicate on re-sync.
@@ -140,7 +151,10 @@ message Transaction {
 
   // Allocations whose selectors currently claim this transaction. Makes the
   // selector edge navigable from the transaction side.
-  repeated ref.v1alpha1.ObjectReference claimed_by = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference claimed_by = 54 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.finance.budget/Allocation"
+  ];
 
   // Account balance immediately after this transaction settled.
   google.type.Money running_balance = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -148,7 +162,8 @@ message Transaction {
   // The projected Transaction this one was matched against, if any.
   ref.v1alpha1.ObjectReference matched_projection = 56 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.finance.transaction/Transaction"
   ];
 }
 
@@ -174,6 +189,12 @@ message TransactionTemplate {
 // A standing arrangement that produces Transactions: a subscription, a salary,
 // a mortgage payment. Owns the projected Transactions it materializes.
 message RecurringTransaction {
+  option (google.api.resource) = {
+    type: "unmango.finance.transaction/RecurringTransaction"
+    pattern: "{recurring_transaction}"
+    singular: "recurringTransaction"
+    plural: "recurringTransactions"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -192,7 +213,7 @@ message RecurringTransaction {
   TransactionTemplate template = 10;
 
   // Account the projected transactions attach to.
-  ref.v1alpha1.ObjectReference account = 11;
+  ref.v1alpha1.ObjectReference account = 11 [(google.api.resource_reference).type = "unmango.finance.account/Account"];
 
   // How often it recurs.
   google.type.CalendarPeriod period = 12;

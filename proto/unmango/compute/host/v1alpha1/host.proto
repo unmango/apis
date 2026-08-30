@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.compute.host.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -74,6 +75,12 @@ enum TaintEffect {
 
 // A machine that work is bound to.
 message Host {
+  option (google.api.resource) = {
+    type: "unmango.compute.host/Host"
+    pattern: "{host}"
+    singular: "host"
+    plural: "hosts"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -92,7 +99,7 @@ message Host {
 
   // The compute.platform Platform this machine physically runs on or
   // was provisioned from.
-  ref.v1alpha1.ObjectReference provider = 11;
+  ref.v1alpha1.ObjectReference provider = 11 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
 
   // Cordon. Existing work keeps running, nothing new binds.
   bool unschedulable = 12;
@@ -104,7 +111,10 @@ message Host {
   uom.v1alpha1.ResourceQuantity reserved = 14;
 
   // The asset.property Space this machine physically sits in.
-  ref.v1alpha1.ObjectReference location = 15 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference location = 15 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.asset.property/Space"
+  ];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -158,6 +168,12 @@ enum HostPhase {
 // A named set of Hosts, claimed by label selector rather than by name. Adding
 // a matching label to a Host joins it; no edit to the Cluster is needed.
 message Cluster {
+  option (google.api.resource) = {
+    type: "unmango.compute.host/Cluster"
+    pattern: "{cluster}"
+    singular: "cluster"
+    plural: "clusters"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];

@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.asset.property.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
 import "google/type/latlng.proto";
@@ -84,6 +85,12 @@ enum AreaUnit {
 
 // A room or defined area inside a Property. The unit other domains bind to.
 message Space {
+  option (google.api.resource) = {
+    type: "unmango.asset.property/Space"
+    pattern: "{space}"
+    singular: "space"
+    plural: "spaces"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -137,6 +144,12 @@ message SpaceTemplate {
 
 // A property, and the owner of the Spaces inside it.
 message Property {
+  option (google.api.resource) = {
+    type: "unmango.asset.property/Property"
+    pattern: "{property}"
+    singular: "property"
+    plural: "properties"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -168,7 +181,10 @@ message Property {
   google.type.Money purchase_price = 19;
 
   // The finance.account Account holding the mortgage or paying the rent.
-  ref.v1alpha1.ObjectReference finance_account = 20 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference finance_account = 20 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.finance.account/Account"
+  ];
 
   // No longer held. Retained for history.
   bool disposed = 21;

@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.iac.resource.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -43,6 +44,12 @@ enum DriftStatus {
 
 // One provisioned thing a Stack manages.
 message Resource {
+  option (google.api.resource) = {
+    type: "unmango.iac.resource/Resource"
+    pattern: "{resource}"
+    singular: "resource"
+    plural: "resources"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -88,7 +95,8 @@ message Resource {
   // The iac.stack Run that last applied changes to this resource.
   ref.v1alpha1.ObjectReference last_applied_run = 55 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.iac.stack/Run"
   ];
 
   google.protobuf.Timestamp last_observed_time = 56 [

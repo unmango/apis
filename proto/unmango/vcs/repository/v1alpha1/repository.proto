@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.vcs.repository.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -41,6 +42,12 @@ enum Visibility {
 
 // A named endpoint a Repository exchanges objects with.
 message Remote {
+  option (google.api.resource) = {
+    type: "unmango.vcs.repository/Remote"
+    pattern: "{remote}"
+    singular: "remote"
+    plural: "remotes"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -109,6 +116,12 @@ enum AuthMethod {
 // A single body of versioned history. Owns its Remotes, and the vcs.branch
 // Branches and Tags that point into it.
 message Repository {
+  option (google.api.resource) = {
+    type: "unmango.vcs.repository/Repository"
+    pattern: "{repository}"
+    singular: "repository"
+    plural: "repositories"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -128,11 +141,14 @@ message Repository {
   // Desired state.
   // The compute.platform Platform whose version control system this
   // repository uses.
-  ref.v1alpha1.ObjectReference vcs = 10;
+  ref.v1alpha1.ObjectReference vcs = 10 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
 
   // The compute.platform Platform hosting this repository. Unset means
   // a bare repository with no forge in front of it.
-  ref.v1alpha1.ObjectReference forge = 11 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference forge = 11 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.compute.platform/Platform"
+  ];
 
   // Namespace on the forge: an organization or a user.
   string owner = 12;
@@ -160,7 +176,10 @@ message Repository {
 
   // The repository this one was forked from. Attachment rather than
   // ownership: an upstream has no say in its forks and outlives them.
-  ref.v1alpha1.ObjectReference upstream = 21 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference upstream = 21 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
 
   // Tracks its upstream automatically rather than diverging.
   bool mirror = 22;
@@ -170,7 +189,8 @@ message Repository {
   // Unset means the forge hosts it.
   ref.v1alpha1.ObjectReference host = 40 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.compute.host/Host"
   ];
 
   // Working copy on disk. A plain string so it can address a
@@ -187,7 +207,10 @@ message Repository {
 
   // RepositoryGroups whose selectors currently claim this repository. Makes
   // the selector edge navigable from the repository side.
-  repeated ref.v1alpha1.ObjectReference claimed_by = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference claimed_by = 53 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.vcs.repository/RepositoryGroup"
+  ];
 
   int32 remote_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 branch_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -244,6 +267,12 @@ enum RepositoryPhase {
 // monorepo constellation, or a vcs.change ChangeSet target list is expressed
 // as.
 message RepositoryGroup {
+  option (google.api.resource) = {
+    type: "unmango.vcs.repository/RepositoryGroup"
+    pattern: "{repository_group}"
+    singular: "repositoryGroup"
+    plural: "repositoryGroups"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -299,6 +328,12 @@ message RepositoryGroup {
 // at whichever it applies to, the same kind-polymorphism owner_refs already
 // carries everywhere else.
 message Grant {
+  option (google.api.resource) = {
+    type: "unmango.vcs.repository/Grant"
+    pattern: "{grant}"
+    singular: "grant"
+    plural: "grants"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -317,7 +352,7 @@ message Grant {
 
   // Desired state.
   // The people.contact Contact or Group receiving access.
-  ref.v1alpha1.ObjectReference subject = 10;
+  ref.v1alpha1.ObjectReference subject = 10 [(google.api.resource_reference).type = "*"];
 
   // Access role as the forge names it: GitHub's read/triage/write/maintain/
   // admin, GitLab's guest/reporter/developer/maintainer/owner, or a Gerrit
@@ -335,7 +370,8 @@ message Grant {
   // Contact who issued this grant, when known.
   ref.v1alpha1.ObjectReference granted_by = 53 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   google.protobuf.Timestamp granted_time = 54 [
@@ -369,6 +405,12 @@ enum GrantPhase {
 // pinned_revision here changes only when this Composition is explicitly
 // updated -- never by activity in the nested repository.
 message Composition {
+  option (google.api.resource) = {
+    type: "unmango.vcs.repository/Composition"
+    pattern: "{composition}"
+    singular: "composition"
+    plural: "compositions"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -391,7 +433,7 @@ message Composition {
   string path = 10;
 
   // The vcs.repository Repository nested at path.
-  ref.v1alpha1.ObjectReference repository = 11;
+  ref.v1alpha1.ObjectReference repository = 11 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Declared commit revision to check out.
   string pinned_revision = 12;

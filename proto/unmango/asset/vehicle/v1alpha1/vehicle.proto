@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.asset.vehicle.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
 import "google/type/money.proto";
@@ -71,6 +72,12 @@ enum VehicleStatus {
 
 // One observation of a Vehicle's accumulated distance. Append-only.
 message OdometerReading {
+  option (google.api.resource) = {
+    type: "unmango.asset.vehicle/OdometerReading"
+    pattern: "{odometer_reading}"
+    singular: "odometerReading"
+    plural: "odometerReadings"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -120,6 +127,12 @@ enum OdometerSource {
 // Something that moves under its own power or is towed. Owns its odometer
 // history and binds to the Space it is kept in.
 message Vehicle {
+  option (google.api.resource) = {
+    type: "unmango.asset.vehicle/Vehicle"
+    pattern: "{vehicle}"
+    singular: "vehicle"
+    plural: "vehicles"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -158,13 +171,17 @@ message Vehicle {
   google.type.Date insurance_expiry = 24 [features.field_presence = EXPLICIT];
 
   // The finance.account Account carrying its loan or lease.
-  ref.v1alpha1.ObjectReference finance_account = 25 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference finance_account = 25 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.finance.account/Account"
+  ];
 
   // Assigned desired state.
   // The asset.property Space it is kept in. Unset means unassigned.
   ref.v1alpha1.ObjectReference parked_at = 40 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.asset.property/Space"
   ];
 
   // Observed state.

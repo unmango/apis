@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.finance.budget.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/calendar_period.proto";
 import "google/type/date.proto";
@@ -38,6 +39,12 @@ import "unmango/ref/v1alpha1/ref.proto";
 
 // One category envelope for one period. The leaf of the chain.
 message Allocation {
+  option (google.api.resource) = {
+    type: "unmango.finance.budget/Allocation"
+    pattern: "{allocation}"
+    singular: "allocation"
+    plural: "allocations"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -120,7 +127,8 @@ message Allocation {
   // negative.
   ref.v1alpha1.ObjectReference covered_by = 59 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.finance.budget/Allocation"
   ];
 }
 
@@ -150,6 +158,12 @@ message AllocationTemplate {
 // The ReplicaSet of this chain: it pins one revision of the Budget's template
 // so that editing the Budget never rewrites history.
 message BudgetPeriod {
+  option (google.api.resource) = {
+    type: "unmango.finance.budget/BudgetPeriod"
+    pattern: "{budget_period}"
+    singular: "budgetPeriod"
+    plural: "budgetPeriods"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -230,6 +244,12 @@ message BudgetPeriodTemplate {
 // Standing budget intent. The kind a human edits, and the owner of every
 // BudgetPeriod it materializes.
 message Budget {
+  option (google.api.resource) = {
+    type: "unmango.finance.budget/Budget"
+    pattern: "{budget}"
+    singular: "budget"
+    plural: "budgets"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -281,7 +301,8 @@ message Budget {
   // The period containing today.
   ref.v1alpha1.ObjectReference current_period = 53 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.finance.budget/BudgetPeriod"
   ];
 
   // Rolled up from the current period.
@@ -308,13 +329,22 @@ message Budget {
 // generation, no delete_time. Editing a Budget's template produces a new
 // BudgetRevision rather than changing this one.
 message BudgetRevision {
+  option (google.api.resource) = {
+    type: "unmango.finance.budget/BudgetRevision"
+    pattern: "{budget_revision}"
+    singular: "budgetRevision"
+    plural: "budgetRevisions"
+  };
   // Content-addressed identity.
   // Hash over the content band and the budget reference.
   string digest = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The Budget this snapshots. Scope rather than ownership, matching
   // vcs.commit Commit's repository field.
-  ref.v1alpha1.ObjectReference budget = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ref.v1alpha1.ObjectReference budget = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.finance.budget/Budget"
+  ];
 
   string uid = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
   map<string, string> labels = 4;

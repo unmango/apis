@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.productivity.review.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -40,6 +41,12 @@ enum ReviewCadence {
 
 // A dated look back at a period: what happened, what to change.
 message Review {
+  option (google.api.resource) = {
+    type: "unmango.productivity.review/Review"
+    pattern: "{review}"
+    singular: "review"
+    plural: "reviews"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -66,10 +73,13 @@ message Review {
 
   // Tasks completed, FocusSessions had, Habits logged, or anything else
   // worth remembering from the period.
-  repeated ref.v1alpha1.ObjectReference highlights = 16;
+  repeated ref.v1alpha1.ObjectReference highlights = 16 [(google.api.resource_reference).type = "*"];
 
   // The same-day journal.entry Entry, if one exists.
-  ref.v1alpha1.ObjectReference related_entry = 17 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference related_entry = 17 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.journal.entry/Entry"
+  ];
 
   reserved 50, 51; // observed_generation, conditions: nothing reconciles a review
 }

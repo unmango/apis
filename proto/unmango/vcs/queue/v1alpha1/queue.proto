@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.vcs.queue.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -28,6 +29,12 @@ import "unmango/ref/v1alpha1/ref.proto";
 
 // Serializes and speculatively batches Changes proposed against one Branch.
 message MergeQueue {
+  option (google.api.resource) = {
+    type: "unmango.vcs.queue/MergeQueue"
+    pattern: "{merge_queue}"
+    singular: "mergeQueue"
+    plural: "mergeQueues"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -69,7 +76,8 @@ message MergeQueue {
   // Entry at the front of the queue, mirroring vcs.change ChangeSet.next_change.
   ref.v1alpha1.ObjectReference head_entry = 56 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.vcs.queue/QueueEntry"
   ];
 
   google.protobuf.Timestamp last_merge_time = 57 [
@@ -101,6 +109,12 @@ enum MergeQueuePhase {
 // One Change's position in a MergeQueue. Attaches to the queue it asks to
 // join; the queue admits or rejects it.
 message QueueEntry {
+  option (google.api.resource) = {
+    type: "unmango.vcs.queue/QueueEntry"
+    pattern: "{queue_entry}"
+    singular: "queueEntry"
+    plural: "queueEntries"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -117,10 +131,10 @@ message QueueEntry {
   // Desired state.
   // The MergeQueue this entry asks to join. The queue decides whether to
   // admit it.
-  ref.v1alpha1.ParentReference parent_ref = 10;
+  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.vcs.queue/MergeQueue"];
 
   // The vcs.change Change being queued.
-  ref.v1alpha1.ObjectReference change = 11;
+  ref.v1alpha1.ObjectReference change = 11 [(google.api.resource_reference).type = "unmango.vcs.change/Change"];
 
   // Higher merges sooner within its batch eligibility. Zero is default FIFO
   // order.

@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.ci.runner.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -66,6 +67,12 @@ enum RolloutStrategyType {
 // A single runner process registered with a CI platform, bound to one Host.
 // The Pod of this chain.
 message Runner {
+  option (google.api.resource) = {
+    type: "unmango.ci.runner/Runner"
+    pattern: "{runner}"
+    singular: "runner"
+    plural: "runners"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -81,7 +88,7 @@ message Runner {
 
   // Templated desired state. RunnerTemplate mirrors 10-39.
   // The compute.platform Platform this runner registers with.
-  ref.v1alpha1.ObjectReference platform = 10;
+  ref.v1alpha1.ObjectReference platform = 10 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
   RunnerScope scope = 11;
   repeated string capabilities = 12;
   string version = 13;
@@ -100,7 +107,8 @@ message Runner {
   // The Host this Runner is bound to. Unset means unscheduled.
   ref.v1alpha1.ObjectReference host = 40 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.compute.host/Host"
   ];
 
   // Observed state.
@@ -111,7 +119,8 @@ message Runner {
   // The job currently executing, when phase is BUSY.
   ref.v1alpha1.ObjectReference current_job = 53 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.ci.job/JobRun"
   ];
 
   google.protobuf.Timestamp bind_time = 54 [
@@ -155,7 +164,7 @@ message RunnerTemplate {
   map<string, string> annotations = 2;
 
   // The compute.platform Platform this runner registers with.
-  ref.v1alpha1.ObjectReference platform = 10;
+  ref.v1alpha1.ObjectReference platform = 10 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
   RunnerScope scope = 11;
   repeated string capabilities = 12;
   string version = 13;
@@ -175,6 +184,12 @@ message RunnerTemplate {
 // The ReplicaSet of this chain. Normally owned by a RunnerPool rather than
 // created directly.
 message RunnerSet {
+  option (google.api.resource) = {
+    type: "unmango.ci.runner/RunnerSet"
+    pattern: "{runner_set}"
+    singular: "runnerSet"
+    plural: "runnerSets"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -224,6 +239,12 @@ message RunnerSet {
 // shifts replicas between them to roll a change out. The Deployment of this
 // chain, and the kind a human normally edits.
 message RunnerPool {
+  option (google.api.resource) = {
+    type: "unmango.ci.runner/RunnerPool"
+    pattern: "{runner_pool}"
+    singular: "runnerPool"
+    plural: "runnerPools"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];

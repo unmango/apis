@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.health.measurement.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -98,6 +99,12 @@ enum GoalPhase {
 // One observation, at one moment. Append-only in practice: a wrong reading is
 // superseded rather than edited.
 message Measurement {
+  option (google.api.resource) = {
+    type: "unmango.health.measurement/Measurement"
+    pattern: "{measurement}"
+    singular: "measurement"
+    plural: "measurements"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -125,7 +132,10 @@ message Measurement {
   // What took the reading: a scale, a wearable, a lab, or a person.
   string source = 13;
 
-  ref.v1alpha1.ObjectReference source_device = 14 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference source_device = 14 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "*"
+  ];
   string notes = 15 [features.field_presence = EXPLICIT];
 
   // Conditions the reading was taken under, which determine whether two
@@ -138,7 +148,10 @@ message Measurement {
 
   // Goals whose selectors currently claim this measurement. Makes the selector
   // edge navigable from the measurement side.
-  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.health.measurement/Goal"
+  ];
 
   // Change from the previous comparable reading of the same type.
   repeated Component delta = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -156,6 +169,12 @@ message Measurement {
 
 // A target set against a series of Measurements, claimed by selector.
 message Goal {
+  option (google.api.resource) = {
+    type: "unmango.health.measurement/Goal"
+    pattern: "{goal}"
+    singular: "goal"
+    plural: "goals"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
