@@ -94,7 +94,7 @@ The Nix build does not read them.
 `nix build` assembles its own v2 buf workspace instead of resolving the BSR dependency, so the build never touches the network.
 The builders come from [a2b](https://github.com/UnstoppableMango/a2b), reached through `inputs'.a2b.legacyPackages.lib.buf`:
 
-- `nix/googleapis.nix`: `buf.vendor` copies `google/type` out of the pinned `googleapis` flake input into a tree matching its import paths
+- `nix/googleapis.nix`: `buf.vendor` copies `google/type`, `google/api/field_behavior.proto`, and `google/api/resource.proto` out of the pinned `googleapis` flake input into a tree matching its import paths
 - `nix/apimachinery.nix`: the same for the three `k8s.io/apimachinery` protos, out of the tag-pinned `apimachinery` flake input.
   `prefix` restores the `k8s.io/apimachinery` segments the repo root omits
 - `nix/workspace.nix`: `buf.mkWorkspace` stitches those two trees and `proto/` into one workspace whose modules resolve each other's imports.

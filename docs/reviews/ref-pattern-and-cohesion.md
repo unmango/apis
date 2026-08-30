@@ -9,6 +9,14 @@ No proto files were changed in producing this review.
 Scope: all 63 protos under `proto/`, plus `README.md` and `AGENTS.md`.
 Baseline: `feat/life-domain-apis`, commit `733cf7d`.
 
+**Status: implemented.**
+Every finding below was acted on across the `review/*` stack, bottom to top:
+`ref-vocabulary`, `resource-annotations`, `field-presence`, `update-time`,
+`watch-resume`, `capture-triage`, `cli-cmd-namespace`, `docs`.
+The findings are left as written rather than rewritten in the past tense, so
+the reasoning stays readable against the diffs that answered it.
+Two observations were deliberately not acted on, and are marked below.
+
 Several recommendations from
 [api-conventions.md](./api-conventions.md) and
 [domain-modeling.md](./domain-modeling.md) have since landed and are treated
@@ -147,6 +155,11 @@ It is the one type in that file that is not a reference.
 
 Strong, with one structural cost worth naming.
 
+Not acted on: this is an observation, not a recommendation.
+Extracting an ObjectMeta would reverse a choice `README.md` makes
+deliberately, and the cost named here is the argument for revisiting it
+later, not for reversing it now.
+
 The identity band is repeated across 89 resources, roughly nine fields plus
 annotations each, so about 800 of the 12,119 proto lines are the same block
 copied.
@@ -185,11 +198,16 @@ What holds up:
 | Reference typing | ids in the URL path | `string` + `resource_reference` | untyped `ObjectReference` on the wire |
 | Resource type registry | OpenAPI schema | `google.api.resource` | none, `kind` is convention only |
 | Pagination | numbered pages | `page_token` | `page_token`, matches AIP-158 |
-| Optimistic concurrency | ETag header | `etag` (AIP-154) | absent, zero occurrences |
+| Optimistic concurrency | ETag header | `etag` (AIP-154) | absent, zero occurrences (see below) |
 | Timestamps | varies | `create_time` + `update_time` (AIP-148) | `create_time` + `delete_time`, no `update_time` |
 | Field semantics | OpenAPI `readOnly` | `field_behavior` | `field_behavior`, adopted everywhere |
 
-Two rows are worth acting on before the service layer lands.
+`etag` is the one row left alone: it exists to make a read-modify-write
+sequence safe, and there are no write RPCs to make safe yet. It belongs with
+the deferred service layer, alongside `update_mask` and `request_id`, which
+[api-conventions.md](./api-conventions.md) already reserves.
+
+The other two rows are worth acting on before the service layer lands.
 There is no `update_time` anywhere, which AIP-148 treats as mandatory and
 which any list sorted by recency needs.
 And `google.api.resource` is the missing piece that would make the ref pattern
