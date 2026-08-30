@@ -33,6 +33,7 @@ Available tools in the dev shell: `buf`, `gnumake`.
 | Update flake inputs | `make update` or `nix flake update` |
 | Vendor third-party protos | `make vendor` (required before bare `buf` in the repo root) |
 | Lint protos | `make lint` (see gotcha below) |
+| Check field bands | `make bands` |
 | Check breaking changes | `make breaking` (override the base ref with `make breaking AGAINST=<ref>`) |
 | Generate code | `buf generate` (only `proto/unmango/*`, see gotcha below) |
 
@@ -45,6 +46,13 @@ Available tools in the dev shell: `buf`, `gnumake`.
 `.github/workflows/buf.yml` runs `make vendor` before `buf-action`, leaving that job with `buf build` alone.
 Its `lint`, `breaking`, and `format` steps are off: `nix flake check` covers lint and the treefmt `buf` formatter, `make breaking` covers breaking changes, and `buf format` would flag the vendored protos, which are copied in verbatim.
 `push` is off too: `buf push` rejects a module whose dependencies are not themselves named BSR modules, so `buf.build/unmango/apis` cannot be published until `k8s.io/apimachinery` has a BSR module to depend on.
+
+### Field bands
+
+The identity band is repeated on every resource rather than lifted into a shared message, so a resource stays flat: `name` sits where `google.api.resource` and AIP-122 expect it, and an update mask addresses `display_name` rather than `metadata.display_name`.
+Nothing in the compiler stops a new kind from putting `labels` at 3, so `hack/check-field-bands.py` does.
+It runs as the `field-bands` flake check and via `make bands`, and asserts that every resource fills identity slots 1-10 by name or reserves them, that the declared, assigned, and observed bands have no gaps, that mutable kinds carry `update_time` and content-addressed ones do not, and that every `ObjectReference` field declares a `resource_reference`.
+Adding a resource means satisfying it; see [README.md](./README.md) for what each band means.
 
 **Gotcha:** `buf format -d` takes exactly one positional path.
 To diff-check several files, repeat `--path`: `buf format -d --path a.proto --path b.proto`.

@@ -47,6 +47,8 @@ The identity band is positional, so a number means the same thing on all 91 kind
 | 5 `annotations` | 6 `owner_refs` | 7 `generation` | 8 `create_time` |
 | 9 `update_time` | 10 `delete_time` | | |
 
+`hack/check-field-bands.py` enforces all of this as the `field-bands` flake check, since the band is a convention rather than a shared type and nothing else would catch a kind that drifts off it.
+
 Immutable nodes fill 1, 2, 4, 5, and 8 and `reserved` the rest rather than compacting around the gaps, so `4` is still `labels` on a `Commit`.
 Field `1` holds the content address, `revision` or `digest` or `fingerprint`, in place of a name, and `11-39` holds content fixed at creation rather than declared state.
 `vcs.commit` `Commit` reserves `2` as well, since a content hash already is a stable unique identifier, and puts `commit_time` in the `create_time` slot because for a commit they are the same fact.
