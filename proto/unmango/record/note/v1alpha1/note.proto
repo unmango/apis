@@ -1,0 +1,197 @@
+edition = "2024";
+
+package unmango.record.note.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Written material, and how it is grouped:
+//
+//   Notebook => Note -> Note
+//
+// A Notebook claims Notes by label selector, so a note joins a notebook by
+// being labelled rather than by being moved. A Note nests through owner
+// references to form sub-notes.
+//
+// Note.links is the generic edge into every other domain. A note can point at
+// a finance.transaction Transaction, an asset.maintenance ServiceRecord, or
+// a media.title Title without any of those packages knowing that notes exist.
+// That is the point of a single ObjectReference vocabulary: the graph can grow
+// edges nothing planned for.
+//
+// Note keeps owner_refs, the real Note -> Note sub-note edge, but drops
+// generation, observed_generation, and conditions: nothing declares a Note
+// and reconciles it toward that declaration, so there is nothing for those
+// fields to report on. Notebook, a genuine selector-membership kind, keeps
+// the full band.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum ContentFormat {
+  CONTENT_FORMAT_UNSPECIFIED = 0;
+  CONTENT_FORMAT_MARKDOWN = 1;
+  CONTENT_FORMAT_PLAIN_TEXT = 2;
+  CONTENT_FORMAT_HTML = 3;
+  CONTENT_FORMAT_ORG = 4;
+  CONTENT_FORMAT_ASCIIDOC = 5;
+  CONTENT_FORMAT_TYPST = 6;
+}
+
+// An edge from a Note to anything else in the graph.
+message Link {
+  ref.v1alpha1.ObjectReference target = 1;
+
+  // How the note relates to the target.
+  LinkRelation relation = 2;
+
+  // Human-readable label, so a link survives its target being deleted.
+  string label = 3 [features.field_presence = EXPLICIT];
+
+  // Set only when relation is LINK_RELATION_OTHER.
+  string custom_relation = 4 [features.field_presence = EXPLICIT];
+}
+
+enum LinkRelation {
+  LINK_RELATION_UNSPECIFIED = 0;
+  LINK_RELATION_DOCUMENTS = 1;
+  LINK_RELATION_REFERENCES = 2;
+  LINK_RELATION_SUPERSEDES = 3;
+  LINK_RELATION_DERIVED_FROM = 4;
+  LINK_RELATION_OTHER = 5;
+}
+
+// A file attached to a Note.
+message Attachment {
+  // Where the bytes live. A plain string so it can address a
+  // dev.unmango.protofs path without coupling the packages.
+  string uri = 1;
+
+  string filename = 2;
+  string content_type = 3;
+  int64 size_bytes = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Note
+// ---------------------------------------------------------------------------
+
+// One piece of written material. Nests to form sub-notes.
+message Note {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+
+  // Also the surface a Notebook selector matches against.
+  map<string, string> labels = 4;
+
+  map<string, string> annotations = 5;
+
+  // A parent Note for a sub-note. Absent at the top of a document.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  reserved 7; // generation: nothing reconciles a Note toward a declared state
+
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  string title = 10;
+  string body = 11;
+  ContentFormat format = 12;
+
+  // Edges into any other domain.
+  repeated Link links = 13;
+
+  repeated Attachment attachments = 14;
+
+  // Where the note came from, when it was captured rather than written: a URL,
+  // a clipping, an imported file.
+  string source_uri = 15 [features.field_presence = EXPLICIT];
+
+  // Which sub-notes this Note claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
+
+  // Keep at the top of listings.
+  bool pinned = 17;
+
+  // Retained but out of the way. Distinct from deleted.
+  bool archived = 18;
+
+  // Position among sibling sub-notes. Lower sorts first.
+  int32 sequence_number = 19;
+
+  // Observed state.
+  reserved 50, 51; // observed_generation, conditions: nothing reconciles a Note
+
+  // Notebooks whose selectors currently claim this note. Makes the selector
+  // edge navigable from the note side.
+  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 child_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 link_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Other Notes whose links point at this one.
+  int32 backlink_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Links whose target no longer resolves.
+  int32 broken_link_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 word_count = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_edited_time = 58 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// Notebook
+// ---------------------------------------------------------------------------
+
+// A grouping of Notes, claimed by selector.
+message Notebook {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Which Notes belong. An empty selector claims nothing, never everything.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+
+  string summary = 11 [features.field_presence = EXPLICIT];
+
+  // Stamped onto notes created through this notebook, which is how a new note
+  // ends up matching the selector.
+  map<string, string> note_labels = 12;
+
+  ContentFormat default_format = 13;
+
+  // The domain this notebook documents, when it is scoped to one: a Vehicle, a
+  // Pipeline, a Property.
+  ref.v1alpha1.ObjectReference subject = 14 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 note_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 archived_note_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_edited_time = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}

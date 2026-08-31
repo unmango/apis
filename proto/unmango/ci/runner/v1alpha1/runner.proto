@@ -1,0 +1,278 @@
+edition = "2024";
+
+package unmango.ci.runner.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// CI runner fleet management, modelled directly on Deployment -> ReplicaSet
+// -> Pod:
+//
+//   RunnerPool -> RunnerSet -> Runner @ compute.host Host
+//
+// A RunnerPool owns a RunnerSet per template revision and shifts replicas
+// between them to roll out a change. Each RunnerSet holds one immutable
+// template revision and keeps that many Runners alive. Each Runner is bound to
+// a Host exactly as a Pod is bound to a Node.
+//
+// Field numbers follow the repository-wide bands:
+//   1-9    identity
+//   10-39  templated desired state, mirrored by *Template at the same numbers
+//   40-49  assigned desired state, set by a scheduler rather than a template
+//   50+    observed state
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// Where the runner offers itself for work.
+message RunnerScope {
+  // Organization, user, or group that owns the repositories.
+  string owner = 1;
+
+  // Single repository to serve. Unset means the whole owner scope.
+  string repository = 2 [features.field_presence = EXPLICIT];
+}
+
+// How a RunnerPool replaces Runners when its template changes.
+message RolloutStrategy {
+  RolloutStrategyType type = 1;
+
+  // Extra Runners permitted above the desired replica count during a rollout.
+  // ROLLING_UPDATE only.
+  int32 max_surge = 2;
+
+  // Runners permitted to be unavailable during a rollout. ROLLING_UPDATE only.
+  int32 max_unavailable = 3;
+}
+
+enum RolloutStrategyType {
+  ROLLOUT_STRATEGY_TYPE_UNSPECIFIED = 0;
+
+  // Drain every existing Runner before creating replacements.
+  ROLLOUT_STRATEGY_TYPE_RECREATE = 1;
+
+  // Shift replicas between RunnerSets incrementally.
+  ROLLOUT_STRATEGY_TYPE_ROLLING_UPDATE = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Runner
+// ---------------------------------------------------------------------------
+
+// A single runner process registered with a CI platform, bound to one Host.
+// The Pod of this chain.
+message Runner {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Templated desired state. RunnerTemplate mirrors 10-39.
+  // The compute.platform Platform this runner registers with.
+  ref.v1alpha1.ObjectReference platform = 10;
+  RunnerScope scope = 11;
+  repeated string capabilities = 12;
+  string version = 13;
+
+  // Exit after completing a single job. The standard posture for untrusted
+  // workloads, since it guarantees a clean environment per job.
+  bool ephemeral = 14;
+
+  int32 max_concurrency = 15;
+  ref.v1alpha1.ResourceQuantity resources = 16;
+
+  // Restricts which Hosts this Runner may be bound to.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector host_selector = 17;
+
+  // Assigned desired state.
+  // The Host this Runner is bound to. Unset means unscheduled.
+  ref.v1alpha1.ObjectReference host = 40 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  RunnerPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The job currently executing, when phase is BUSY.
+  ref.v1alpha1.ObjectReference current_job = 53 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  google.protobuf.Timestamp bind_time = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp last_heartbeat_time = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  int64 completed_job_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+enum RunnerPhase {
+  RUNNER_PHASE_UNSPECIFIED = 0;
+
+  // Accepted but not yet bound to a Host.
+  RUNNER_PHASE_PENDING = 1;
+
+  // Registered and waiting for work.
+  RUNNER_PHASE_IDLE = 2;
+
+  // Executing a job.
+  RUNNER_PHASE_BUSY = 3;
+
+  // Finishing current work, accepting no more. The state an ephemeral Runner
+  // passes through before termination.
+  RUNNER_PHASE_DRAINING = 4;
+
+  // Registered but not reachable.
+  RUNNER_PHASE_OFFLINE = 5;
+}
+
+// Desired state stamped onto Runners generated by a RunnerSet. Field numbers
+// mirror Runner 10-39 exactly; the assigned band is absent because bindings
+// are scheduled, not templated.
+message RunnerTemplate {
+  // Merged into the labels of generated Runners. Must match the owning
+  // RunnerSet selector.
+  map<string, string> labels = 1;
+  map<string, string> annotations = 2;
+
+  // The compute.platform Platform this runner registers with.
+  ref.v1alpha1.ObjectReference platform = 10;
+  RunnerScope scope = 11;
+  repeated string capabilities = 12;
+  string version = 13;
+  bool ephemeral = 14;
+  int32 max_concurrency = 15;
+  ref.v1alpha1.ResourceQuantity resources = 16;
+
+  // Restricts which Hosts a generated Runner may be bound to.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector host_selector = 17;
+}
+
+// ---------------------------------------------------------------------------
+// RunnerSet
+// ---------------------------------------------------------------------------
+
+// Keeps a fixed number of Runners alive from one immutable template revision.
+// The ReplicaSet of this chain. Normally owned by a RunnerPool rather than
+// created directly.
+message RunnerSet {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  int32 replicas = 10;
+
+  // Which Runners this set claims. Must match template.labels.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
+
+  // Stamped onto every generated Runner. Immutable once set; a RunnerPool
+  // creates a new RunnerSet rather than mutating this.
+  RunnerTemplate template = 12;
+
+  // Identifies the template revision, so a RunnerPool can tell its RunnerSets
+  // apart and roll back to one.
+  string revision = 13;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Runners currently claimed by this set.
+  int32 observed_replicas = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 ready_replicas = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Ready and idle, so available to accept a job.
+  int32 available_replicas = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// RunnerPool
+// ---------------------------------------------------------------------------
+
+// Declarative fleet of runners. Owns one RunnerSet per template revision and
+// shifts replicas between them to roll a change out. The Deployment of this
+// chain, and the kind a human normally edits.
+message RunnerPool {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  int32 replicas = 10;
+
+  // Which RunnerSets this pool claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
+
+  // Editing this creates a new RunnerSet revision and starts a rollout.
+  RunnerTemplate template = 12;
+
+  RolloutStrategy strategy = 13;
+
+  // Superseded RunnerSets kept for rollback. Zero keeps none.
+  int32 revision_history_limit = 14;
+
+  // Lower and upper replica bounds when an autoscaler drives this pool. Unset
+  // min disables autoscaling.
+  int32 min_replicas = 15 [features.field_presence = EXPLICIT];
+  int32 max_replicas = 16 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 observed_replicas = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Replicas running the newest template revision.
+  int32 updated_replicas = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 ready_replicas = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 available_replicas = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Replicas owned by superseded RunnerSets, still draining.
+  int32 outdated_replicas = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Revision of the RunnerSet currently serving most traffic.
+  string current_revision = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Revision being rolled out. Equal to current_revision when settled.
+  string update_revision = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

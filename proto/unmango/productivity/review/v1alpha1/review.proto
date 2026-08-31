@@ -1,0 +1,75 @@
+edition = "2024";
+
+package unmango.productivity.review.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// A periodic personal retrospective:
+//
+//   Review
+//
+// Deliberately as small as journal.entry Entry: no template, no container,
+// one freeform record per period. Distinct from vcs.change.v1alpha1.Review,
+// a forge reviewer's verdict on a Change, the same English word for an
+// unrelated concept, disambiguated the same way task/note/goal already are by full
+// package path rather than by inventing a synonym.
+//
+// A Review is never owned and nothing reconciles it, the same identity-band
+// variant capture.CaptureItem uses: no owner_refs, no generation, no
+// observed_generation, no conditions. related_entry points at a same-day
+// journal.entry Entry rather than duplicating mood tracking here.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum ReviewCadence {
+  REVIEW_CADENCE_UNSPECIFIED = 0;
+  REVIEW_CADENCE_DAILY = 1;
+  REVIEW_CADENCE_WEEKLY = 2;
+  REVIEW_CADENCE_MONTHLY = 3;
+  REVIEW_CADENCE_AD_HOC = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Review
+// ---------------------------------------------------------------------------
+
+// A dated look back at a period: what happened, what to change.
+message Review {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  reserved 6, 7; // owner_refs, generation: nothing owns or reconciles a review
+
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  ReviewCadence cadence = 10;
+  google.type.Date period_start = 11;
+  google.type.Date period_end = 12;
+  string went_well = 13 [features.field_presence = EXPLICIT];
+  string went_poorly = 14 [features.field_presence = EXPLICIT];
+
+  // What to change next period.
+  string adjustments = 15 [features.field_presence = EXPLICIT];
+
+  // Tasks completed, FocusSessions had, Habits logged, or anything else
+  // worth remembering from the period.
+  repeated ref.v1alpha1.ObjectReference highlights = 16;
+
+  // The same-day journal.entry Entry, if one exists.
+  ref.v1alpha1.ObjectReference related_entry = 17 [features.field_presence = EXPLICIT];
+
+  reserved 50, 51; // observed_generation, conditions: nothing reconciles a review
+}

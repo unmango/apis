@@ -1,0 +1,254 @@
+edition = "2024";
+
+package unmango.productivity.task.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "google/type/dayofweek.proto";
+import "google/type/timeofday.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Work to be done, with or without a fixed time:
+//
+//   RecurringTask -> Task -> Task
+//
+// Tasks nest through owner references rather than a dedicated parent field,
+// which is how subtasks stay uniform with every other ownership edge in the
+// repository: the same cascade rules and the same List-by-owner query apply.
+//
+// A Task differs from a calendar.event Event in that it has a deadline rather
+// than an interval, and survives being missed.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_PENDING = 1;
+  TASK_STATUS_IN_PROGRESS = 2;
+
+  // Waiting on a dependency or on someone else.
+  TASK_STATUS_BLOCKED = 3;
+
+  TASK_STATUS_DONE = 4;
+  TASK_STATUS_CANCELLED = 5;
+}
+
+enum TaskPriority {
+  TASK_PRIORITY_UNSPECIFIED = 0;
+  TASK_PRIORITY_LOW = 1;
+  TASK_PRIORITY_NORMAL = 2;
+  TASK_PRIORITY_HIGH = 3;
+  TASK_PRIORITY_URGENT = 4;
+}
+
+enum RecurrenceFrequency {
+  RECURRENCE_FREQUENCY_UNSPECIFIED = 0;
+  RECURRENCE_FREQUENCY_DAILY = 1;
+  RECURRENCE_FREQUENCY_WEEKLY = 2;
+  RECURRENCE_FREQUENCY_MONTHLY = 3;
+  RECURRENCE_FREQUENCY_YEARLY = 4;
+}
+
+// Redefined here rather than imported from calendar.event, so the two packages
+// version independently.
+message RecurrenceRule {
+  RecurrenceFrequency frequency = 1;
+  int32 interval = 2;
+  repeated google.type.DayOfWeek by_day = 3;
+  repeated int32 by_month_day = 4;
+  int32 count = 5;
+  google.type.Date until = 6 [features.field_presence = EXPLICIT];
+  repeated google.type.Date exclude_dates = 7;
+
+  // Schedule the next occurrence relative to when the last one was completed
+  // rather than when it was due. A chore that is done late should not
+  // immediately be due again. Mirrors calendar.event's copy of this field;
+  // keep the two in sync when either changes.
+  bool from_completion = 8;
+}
+
+// ---------------------------------------------------------------------------
+// Task
+// ---------------------------------------------------------------------------
+
+// One thing to be done. Nests to form subtasks.
+message Task {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // A parent Task for a subtask, or a RecurringTask for a materialized
+  // occurrence.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Templated desired state. TaskTemplate mirrors 10-39.
+  string summary = 10;
+  string notes = 11 [features.field_presence = EXPLICIT];
+  TaskPriority priority = 12;
+  google.protobuf.Duration estimated_effort = 13;
+
+  // Tasks that must reach DONE before this one leaves BLOCKED.
+  repeated ref.v1alpha1.ObjectReference depends_on = 14;
+
+  // The people.contact Contact responsible.
+  ref.v1alpha1.ObjectReference assignee = 15 [features.field_presence = EXPLICIT];
+
+  // Which subtasks this Task claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
+
+  // How far ahead to notify.
+  repeated google.protobuf.Duration reminders = 17;
+
+  // Every subtask must be DONE before this one may be.
+  bool blocked_by_subtasks = 18;
+
+  // Assigned desired state. Computed per occurrence for a materialized task.
+  google.type.Date due_date = 40 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Time of day the deadline falls. Unset means end of day.
+  google.type.TimeOfDay due_time = 41 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Earliest date this should surface. Hides work that cannot start yet.
+  google.type.Date defer_until = 42 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // The calendar.event Event booked to do this.
+  ref.v1alpha1.ObjectReference scheduled_event = 43 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  TaskStatus status = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp started_time = 53 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp completion_time = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  int32 subtask_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 completed_subtask_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Days past due_date. Negative means not yet due.
+  int32 days_overdue = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // A dependency has not reached DONE.
+  bool blocked = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Duration actual_effort = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Desired state stamped onto Tasks generated by a RecurringTask. Field numbers
+// mirror Task 10-39; the assigned band is absent because due dates are
+// computed per occurrence.
+message TaskTemplate {
+  map<string, string> labels = 1;
+  map<string, string> annotations = 2;
+
+  string summary = 10;
+  string notes = 11 [features.field_presence = EXPLICIT];
+  TaskPriority priority = 12;
+  google.protobuf.Duration estimated_effort = 13;
+  repeated ref.v1alpha1.ObjectReference depends_on = 14;
+  ref.v1alpha1.ObjectReference assignee = 15 [features.field_presence = EXPLICIT];
+
+  // Which subtasks a generated Task claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
+  repeated google.protobuf.Duration reminders = 17;
+  bool blocked_by_subtasks = 18;
+}
+
+// ---------------------------------------------------------------------------
+// RecurringTask
+// ---------------------------------------------------------------------------
+
+// A repeating chore, and the owner of every Task it materializes.
+message RecurringTask {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Stamped onto each materialized Task.
+  TaskTemplate template = 10;
+
+  RecurrenceRule rule = 11;
+  google.type.Date start_date = 12;
+  google.type.TimeOfDay due_time = 13 [features.field_presence = EXPLICIT];
+
+  // Surface each occurrence this many days before it is due.
+  int32 lead_time_days = 14;
+
+  // Materialize occurrences up to this date.
+  google.type.Date materialize_through = 15;
+
+  // Which Tasks this chore claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
+
+  // Stop materializing without deleting the chore.
+  bool suspended = 17;
+
+  // Keep at most one incomplete occurrence outstanding, rather than letting
+  // missed occurrences pile up. What a daily habit wants.
+  bool skip_missed = 18;
+
+  // Completed occurrences to retain. Zero retains all.
+  int32 occurrence_history_limit = 19;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 open_occurrence_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 completed_occurrence_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 missed_occurrence_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.type.Date next_due_date = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.type.Date last_completed_date = 56 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.type.Date materialized_through = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Completed divided by materialized, over the retained history.
+  double completion_rate = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Consecutive occurrences completed on time.
+  int32 current_streak = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

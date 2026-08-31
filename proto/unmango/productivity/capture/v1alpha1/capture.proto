@@ -1,0 +1,104 @@
+edition = "2024";
+
+package unmango.productivity.capture.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// A zero-friction inbox:
+//
+//   CaptureItem
+//
+// The value is getting a thought out of your head with one field and no
+// decisions, so it does not have to fight its way into a fully-formed
+// productivity.task Task, priority, due date, subtasks, before it is safe to
+// stop holding onto it. Triage into a Task, calendar.event Event, or
+// record.note Note happens later, by choice, not at the moment of capture.
+//
+// A CaptureItem is unowned by design, and survives triage as its own record
+// rather than becoming the thing it is triaged into. resolved_into is a plain pointer set
+// once triage happens, the same pattern journal.entry uses for
+// mood_measurement: a fact recorded about the item, not a live relationship
+// anything reconciles.
+//
+// The identity band departs from the repository-wide preamble a third way,
+// distinct from both the mutable-kind and content-addressed-node variants:
+// no owner_refs, no generation, no observed_generation, no conditions.
+// Nothing here is ever declared and reconciled by a controller; a capture is
+// written once and later read or triaged by a human choice, not admitted,
+// bound, or brought into agreement with a desired state. status still
+// exists, since triage is a real fact about the item, just not one anything
+// reconciles toward.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum CaptureStatus {
+  CAPTURE_STATUS_UNSPECIFIED = 0;
+
+  // Not yet looked at since capture.
+  CAPTURE_STATUS_RAW = 1;
+
+  // Reviewed and turned into something else, named by resolved_into.
+  CAPTURE_STATUS_TRIAGED = 2;
+
+  // Reviewed and deliberately dropped.
+  CAPTURE_STATUS_DISCARDED = 3;
+}
+
+// ---------------------------------------------------------------------------
+// CaptureItem
+// ---------------------------------------------------------------------------
+
+// One unstructured thought, captured before it is lost.
+message CaptureItem {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  reserved 6, 7; // owner_refs, generation: nothing owns or reconciles a capture
+
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+
+  // The raw capture. The only field required to let go of the thought.
+  string body = 10;
+
+  // An open, non-authoritative hint at what this might become: "task",
+  // "event", "note". Set by whoever captured it, not enforced at triage,
+  // the same open-string treatment codegen.schema Schema.format uses for a
+  // category nobody wants to execute logic against.
+  string suggested_kind = 11 [features.field_presence = EXPLICIT];
+
+  repeated string tags = 12;
+
+  reserved 50, 51; // observed_generation, conditions: nothing reconciles a capture
+
+  CaptureStatus status = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // What this became once triaged. Unset until status is TRIAGED.
+  ref.v1alpha1.ObjectReference resolved_into = 53 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  google.protobuf.Timestamp triaged_time = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Set only when status is DISCARDED.
+  string discard_reason = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}

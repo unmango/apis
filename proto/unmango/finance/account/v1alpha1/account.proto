@@ -1,0 +1,162 @@
+edition = "2024";
+
+package unmango.finance.account.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "google/type/money.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+
+// Where money is held:
+//
+//   Institution -> Account
+//
+// An Institution owns the Accounts held with it, so removing an institution
+// cascades to its accounts. Accounts are the thing finance.transaction
+// Transactions attach to.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum AccountType {
+  ACCOUNT_TYPE_UNSPECIFIED = 0;
+  ACCOUNT_TYPE_CHECKING = 1;
+  ACCOUNT_TYPE_SAVINGS = 2;
+  ACCOUNT_TYPE_CREDIT_CARD = 3;
+  ACCOUNT_TYPE_INVESTMENT = 4;
+  ACCOUNT_TYPE_RETIREMENT = 5;
+  ACCOUNT_TYPE_LOAN = 6;
+  ACCOUNT_TYPE_MORTGAGE = 7;
+  ACCOUNT_TYPE_CASH = 8;
+  ACCOUNT_TYPE_CRYPTO = 9;
+}
+
+enum InstitutionKind {
+  INSTITUTION_KIND_UNSPECIFIED = 0;
+  INSTITUTION_KIND_BANK = 1;
+  INSTITUTION_KIND_CREDIT_UNION = 2;
+  INSTITUTION_KIND_BROKERAGE = 3;
+  INSTITUTION_KIND_CARD_ISSUER = 4;
+  INSTITUTION_KIND_LENDER = 5;
+  INSTITUTION_KIND_EXCHANGE = 6;
+
+  // Cash, physical assets, anything with no counterparty.
+  INSTITUTION_KIND_SELF_HELD = 7;
+}
+
+// How balances and transactions get in.
+message SyncConfig {
+  // Aggregator or direct connection in use: "plaid", "simplefin", "manual".
+  string provider = 1;
+
+  // Identifier of this entity in the provider's namespace.
+  string external_id = 2 [features.field_presence = EXPLICIT];
+
+  bool enabled = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Account
+// ---------------------------------------------------------------------------
+
+// A single balance held at an Institution.
+message Account {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  AccountType type = 10;
+
+  // ISO 4217. Every Money on this account uses it.
+  string currency_code = 11;
+
+  SyncConfig sync = 12;
+
+  // Last few digits, for matching against a statement.
+  string mask = 13 [features.field_presence = EXPLICIT];
+
+  // Borrowing ceiling, for CREDIT_CARD and LOAN.
+  google.type.Money credit_limit = 14;
+
+  google.type.Date opened_date = 15;
+
+  // Retained for history but no longer transacting.
+  bool closed = 16;
+
+  // Exclude from net-worth and budget rollups. Useful for shared or
+  // pass-through accounts.
+  bool excluded_from_totals = 17;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Settled balance. Negative for money owed.
+  google.type.Money current_balance = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Current balance adjusted for holds and pending activity.
+  google.type.Money available_balance = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.type.Money pending_balance = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 transaction_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_transaction_time = 56 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp last_sync_time = 57 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// Institution
+// ---------------------------------------------------------------------------
+
+// A counterparty holding one or more Accounts.
+message Institution {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  InstitutionKind kind = 10;
+  string website = 11 [features.field_presence = EXPLICIT];
+
+  // Connection shared by every Account held here.
+  SyncConfig sync = 12;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 account_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Summed across accounts, excluding those marked excluded_from_totals.
+  google.type.Money total_balance = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp last_sync_time = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}

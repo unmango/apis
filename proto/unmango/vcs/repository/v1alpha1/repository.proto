@@ -1,0 +1,426 @@
+edition = "2024";
+
+package unmango.vcs.repository.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Where code lives:
+//
+//   Repository -> Remote
+//   RepositoryGroup => Repository
+//   Repository @ compute.host Host
+//
+// A Repository owns its Remotes, since a remote has no meaning apart from the
+// repository that configured it. A RepositoryGroup claims repositories by
+// label rather than naming them, so a repository joins an org-wide grouping by
+// being labelled.
+//
+// Commits live in vcs.commit, which models history as a graph. A Repository
+// refers to them by sha rather than embedding them, since the same commit can
+// be observed in a fork and is not owned by either repository.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum Visibility {
+  VISIBILITY_UNSPECIFIED = 0;
+  VISIBILITY_PUBLIC = 1;
+  VISIBILITY_PRIVATE = 2;
+
+  // Visible within an organization but not publicly.
+  VISIBILITY_INTERNAL = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Remote
+// ---------------------------------------------------------------------------
+
+// A named endpoint a Repository exchanges objects with.
+message Remote {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  string url = 10;
+  RemoteDirection direction = 11;
+  AuthMethod auth = 12;
+
+  // The remote a bare `push` or `fetch` uses. At most one per Repository.
+  bool default = 13;
+
+  // Ref patterns this remote fetches, in the underlying VCS's own syntax.
+  // Empty means the forge default.
+  repeated string fetch_refs = 14;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool reachable = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_contact_time = 53 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp last_fetch_time = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp last_push_time = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+enum RemoteDirection {
+  REMOTE_DIRECTION_UNSPECIFIED = 0;
+  REMOTE_DIRECTION_FETCH = 1;
+  REMOTE_DIRECTION_PUSH = 2;
+  REMOTE_DIRECTION_BOTH = 3;
+}
+
+enum AuthMethod {
+  AUTH_METHOD_UNSPECIFIED = 0;
+  AUTH_METHOD_NONE = 1;
+  AUTH_METHOD_SSH_KEY = 2;
+  AUTH_METHOD_HTTPS_TOKEN = 3;
+  AUTH_METHOD_HTTPS_BASIC = 4;
+
+  // Credentials supplied by an external helper rather than stored.
+  AUTH_METHOD_CREDENTIAL_HELPER = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Repository
+// ---------------------------------------------------------------------------
+
+// A single body of versioned history. Owns its Remotes, and the vcs.branch
+// Branches and Tags that point into it.
+message Repository {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+
+  // Also the surface a RepositoryGroup selector matches against.
+  map<string, string> labels = 4;
+
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // The compute.platform Platform whose version control system this
+  // repository uses.
+  ref.v1alpha1.ObjectReference vcs = 10;
+
+  // The compute.platform Platform hosting this repository. Unset means
+  // a bare repository with no forge in front of it.
+  ref.v1alpha1.ObjectReference forge = 11 [features.field_presence = EXPLICIT];
+
+  // Namespace on the forge: an organization or a user.
+  string owner = 12;
+
+  // Repository name within that namespace.
+  string slug = 13;
+
+  Visibility visibility = 14;
+
+  // Branch a fresh clone checks out, and the default target for a
+  // vcs.change Change.
+  string default_branch = 15;
+
+  string description = 16 [features.field_presence = EXPLICIT];
+  repeated string topics = 17;
+
+  // SPDX identifier.
+  string license = 18 [features.field_presence = EXPLICIT];
+
+  // Read-only. History is retained but nothing new is accepted.
+  bool archived = 19;
+
+  // Which Remotes and vcs.branch Branches this Repository claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 20;
+
+  // The repository this one was forked from. Attachment rather than
+  // ownership: an upstream has no say in its forks and outlives them.
+  ref.v1alpha1.ObjectReference upstream = 21 [features.field_presence = EXPLICIT];
+
+  // Tracks its upstream automatically rather than diverging.
+  bool mirror = 22;
+
+  // Assigned desired state.
+  // The compute.host Host serving this repository, when it is self-hosted.
+  // Unset means the forge hosts it.
+  ref.v1alpha1.ObjectReference host = 40 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Working copy on disk. A plain string so it can address a
+  // dev.unmango.protofs path without coupling the packages.
+  string working_copy_uri = 41 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  RepositoryPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // RepositoryGroups whose selectors currently claim this repository. Makes
+  // the selector edge navigable from the repository side.
+  repeated ref.v1alpha1.ObjectReference claimed_by = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 remote_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 branch_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 tag_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Open vcs.change Changes targeting this repository.
+  int32 open_change_count = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int64 size_bytes = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 commit_count = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string primary_language = 60 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Tip of default_branch, as a node in the vcs.commit graph.
+  string head_revision = 61 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp last_pushed_time = 62 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp last_fetched_time = 63 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Commits behind its upstream, for a fork or mirror.
+  int32 behind_upstream = 64 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+enum RepositoryPhase {
+  REPOSITORY_PHASE_UNSPECIFIED = 0;
+
+  // Declared but not yet cloned or created on the forge.
+  REPOSITORY_PHASE_PENDING = 1;
+
+  REPOSITORY_PHASE_ACTIVE = 2;
+
+  // Exchanging objects with a remote.
+  REPOSITORY_PHASE_SYNCING = 3;
+
+  REPOSITORY_PHASE_ARCHIVED = 4;
+
+  // No remote could be contacted.
+  REPOSITORY_PHASE_UNREACHABLE = 5;
+}
+
+// ---------------------------------------------------------------------------
+// RepositoryGroup
+// ---------------------------------------------------------------------------
+
+// A named set of Repositories, claimed by selector. What an organization, a
+// monorepo constellation, or a vcs.change ChangeSet target list is expressed
+// as.
+message RepositoryGroup {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Which Repositories belong. An empty selector claims nothing, never
+  // everything.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+
+  string summary = 11 [features.field_presence = EXPLICIT];
+
+  // Stamped onto repositories created through this group, which is how a new
+  // repository ends up matching the selector.
+  map<string, string> repository_labels = 12;
+
+  // Settings every member should converge on. A member diverging from these
+  // reports a Condition rather than being silently corrected.
+  Visibility required_visibility = 13;
+  string required_default_branch = 14 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 member_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Members whose settings differ from the required values above.
+  int32 divergent_member_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Summed across members.
+  int32 open_change_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 total_size_bytes = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp last_pushed_time = 56 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// Grant
+// ---------------------------------------------------------------------------
+
+// One subject's access to a Repository or RepositoryGroup. owner_refs points
+// at whichever it applies to, the same kind-polymorphism owner_refs already
+// carries everywhere else.
+message Grant {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The vcs.repository Repository or RepositoryGroup this grant applies to.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // The people.contact Contact or Group receiving access.
+  ref.v1alpha1.ObjectReference subject = 10;
+
+  // Access role as the forge names it: GitHub's read/triage/write/maintain/
+  // admin, GitLab's guest/reporter/developer/maintainer/owner, or a Gerrit
+  // ACL group. Open rather than a closed enum for the same reason
+  // codegen.schema Schema.format is: every forge names its own tiers, and
+  // this repository does not execute permission logic against the value,
+  // only records and syncs it.
+  string role = 11;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  GrantPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Contact who issued this grant, when known.
+  ref.v1alpha1.ObjectReference granted_by = 53 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  google.protobuf.Timestamp granted_time = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp revoked_time = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+enum GrantPhase {
+  GRANT_PHASE_UNSPECIFIED = 0;
+
+  // Invitation sent, not yet accepted.
+  GRANT_PHASE_PENDING = 1;
+
+  GRANT_PHASE_ACTIVE = 2;
+
+  // Access removed but the record retained for audit history.
+  GRANT_PHASE_REVOKED = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Composition
+// ---------------------------------------------------------------------------
+
+// Another vcs.repository Repository nested at a path, pinned to a fixed
+// revision. Unlike Repository.upstream, which tracks a live head, the
+// pinned_revision here changes only when this Composition is explicitly
+// updated -- never by activity in the nested repository.
+message Composition {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The vcs.repository Repository this nested reference lives in.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Path within the parent repository's tree where the nested repository is
+  // mounted.
+  string path = 10;
+
+  // The vcs.repository Repository nested at path.
+  ref.v1alpha1.ObjectReference repository = 11;
+
+  // Declared commit revision to check out.
+  string pinned_revision = 12;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  CompositionPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // What is actually checked out on disk right now. Lags pinned_revision
+  // until the next sync.
+  string resolved_revision = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // resolved_revision equals pinned_revision.
+  bool up_to_date = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp last_synced_time = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+enum CompositionPhase {
+  COMPOSITION_PHASE_UNSPECIFIED = 0;
+  COMPOSITION_PHASE_PENDING = 1;
+  COMPOSITION_PHASE_SYNCED = 2;
+
+  // resolved_revision no longer matches pinned_revision.
+  COMPOSITION_PHASE_DIVERGED = 3;
+
+  COMPOSITION_PHASE_UNREACHABLE = 4;
+}

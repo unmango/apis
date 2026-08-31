@@ -1,0 +1,338 @@
+edition = "2024";
+
+package unmango.codegen.converter.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Tools that turn one representation into another, and how they are grouped:
+//
+//   ConverterRegistry => Converter
+//
+// A Converter is one X-to-Y transformation: an OpenAPI document into Go, a
+// Terraform provider spec into CRDs, a GoReleaser project into a Nix
+// derivation. It declares what it accepts and produces, how it is invoked,
+// and which tool it wraps. It does not declare what to run it on, which is
+// codegen.conversion Conversion's job.
+//
+// A ConverterRegistry claims Converters by label selector, so a converter
+// joins a registry by being labelled rather than by being moved, and one
+// converter can appear in more than one registry.
+//
+// Claiming presumes the Converter is already declared. discovery is how one
+// gets declared in the first place: a registry names where to look, a
+// directory of binaries or a repository's published releases, matching
+// dev.unmango.ux's own Registry/Source split between finding candidates and
+// resolving one into a usable plugin. Anything discovery finds is created
+// and labelled per converter_labels, so from there it joins like any other.
+//
+
+// Converter.platform points at a compute.platform Platform for the tool
+// being wrapped: Buf, tree-sitter, Upjet, GoReleaser. That is the same
+// argument platform.proto already makes. A closed enum of tools would bake a
+// fixed vendor list into the schema, could not express a one-off local
+// script, and would need extending every time a new converter appeared.
+//
+// Port.format is a distinct vocabulary from codegen.schema Schema.format,
+// even though both are open strings for the same reason. A converter's
+// output is usually not a schema at all: it emits Go source, a Nix
+// expression, a set of Kubernetes manifests. Schema.format names an
+// interface description language; Port.format names any shape bytes can
+// take on either side of a conversion, a strictly larger set.
+//
+// entrypoint says where a Converter lives, not how it is called, so
+// invocation_kind names the calling convention as a category rather than
+// restating each tool's own contract: a plain CLI binary such as
+// openapi2go, a subprocess driven over stdin rather than argv (the
+// convention dev.unmango.ux's own plugin protocol uses to talk to the
+// plugins it spawns), or an RPC method such as tdl's GenService. Unlike
+// Platform or an open-string format, invocation_kind stays a closed enum:
+// it names a calling mechanism, not a product, and a Converter's executor
+// needs an actual branch of code per value, the same reason ConverterKind
+// and TypeKind are closed while Platform and *.format are not. A tool that
+// both discovers and executes converters this way, such as ux, is the thing
+// that resolves a codegen.conversion Conversion to one of these entries and
+// runs it, the same relationship a controller has to the resources it
+// reconciles, so it sits outside the set of Converters it resolves against.
+//
+// TestConverter answers a narrower question than a Conversion does: "does
+// this converter still behave the way its declaration claims," rather than
+// "did converting these real inputs succeed." That distinction is why it
+// is a plain RPC rather than another Conversion kind: a conformance run has
+// no inputs worth keeping, produces no codegen.artifact Artifact, and
+// leaves no history beyond Converter.last_conformance_time, unlike a real
+// ConversionRun, which exists to be traced back to later. tdl's own
+// ConformanceService and dev.unmango.ux's plugin conformance suite are
+// both this same idea, one check deep so far, which is why
+// TestConverterResponse carries a flat list of failures rather than a
+// structured taxonomy: there is nothing yet to structure.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// The broad direction of a Converter, for grouping and discovery.
+enum ConverterKind {
+  CONVERTER_KIND_UNSPECIFIED = 0;
+
+  // A schema in, source code out.
+  CONVERTER_KIND_SCHEMA_TO_CODE = 1;
+
+  // A schema in, a schema in another format out.
+  CONVERTER_KIND_SCHEMA_TO_SCHEMA = 2;
+
+  // Source code in, a schema describing it out.
+  CONVERTER_KIND_CODE_TO_SCHEMA = 3;
+
+  // A project tree in, build or packaging definitions out.
+  CONVERTER_KIND_PROJECT_TO_BUILD = 4;
+
+  // Source code in, source code in another language out.
+  CONVERTER_KIND_CODE_TO_CODE = 5;
+
+  CONVERTER_KIND_OTHER = 6;
+}
+
+// One end of a conversion: a shape a Converter accepts or produces.
+message Port {
+  // Stable identifier for the shape: "openapi/3.1", "protobuf", "nix", "go",
+  // "terraform-provider-spec", "pulumi-package-spec".
+  string format = 1;
+
+  // Narrows the format: a Go module path, a Nix attribute path, a proto
+  // package. Absent when the format alone is enough.
+  string qualifier = 2 [features.field_presence = EXPLICIT];
+
+  // An input the converter runs without, or an output it does not always
+  // produce.
+  bool optional = 3;
+}
+
+// The calling convention at a Converter's entrypoint. Unspecified behaves as
+// CLI, since every converter that predates this field is a spawned binary
+// invoked with flags and files.
+enum InvocationKind {
+  INVOCATION_KIND_UNSPECIFIED = 0;
+
+  // Spawned as a subprocess; inputs and outputs travel through CLI flags
+  // and files.
+  INVOCATION_KIND_CLI = 1;
+
+  // Spawned as a subprocess; a command and its arguments travel over stdin
+  // instead of argv.
+  INVOCATION_KIND_STDIN = 2;
+
+  // Called as a network RPC rather than spawned.
+  INVOCATION_KIND_RPC = 3;
+}
+
+// Where to call when invocation_kind is RPC. entrypoint supplies the
+// address to dial; this supplies what protocol is spoken there and what to
+// call once connected.
+message RpcInvocation {
+  // Wire protocol spoken at entrypoint: "grpc", "connect", "jsonrpc". Open
+  // for the same reason Port.format is: a new RPC protocol appearing is not
+  // a proto-shaped event.
+  string protocol = 1;
+
+  // What to call, addressed however protocol addresses calls: a gRPC or
+  // Connect target is "package.Service/Method"
+  // ("unmango.dev.tdl.v1alpha1.GenService/Gen"), a JSON-RPC target is a bare
+  // method name ("gen"). One string rather than separate service and
+  // method fields, the same call entrypoint itself makes: splitting it into
+  // named parts would presume gRPC's own addressing shape, which is exactly
+  // the coupling protocol exists to let a caller avoid.
+  string target = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Converter
+// ---------------------------------------------------------------------------
+
+// One transformation from a set of inputs to a set of outputs.
+message Converter {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+
+  // Also the surface a ConverterRegistry selector matches against.
+  map<string, string> labels = 4;
+
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  ConverterKind kind = 10;
+  repeated Port inputs = 11;
+  repeated Port outputs = 12;
+
+  // The compute.platform Platform for the tool this wraps. Absent for a
+  // converter that is its own tool.
+  ref.v1alpha1.ObjectReference platform = 13 [features.field_presence = EXPLICIT];
+
+  // How the converter is invoked. A plain string so it can address a
+  // dev.unmango.protofs path, an OCI reference, or a flake output without
+  // coupling the packages: "github:UnstoppableMango/a2b#lib.buf.generate".
+  string entrypoint = 14;
+
+  // Pinned version of the wrapped tool. Part of what a codegen.artifact
+  // Artifact hashes over, so bumping it invalidates every cached output.
+  string tool_version = 15 [features.field_presence = EXPLICIT];
+
+  // Options the converter accepts, with the values used when a Conversion
+  // does not override them.
+  map<string, string> default_options = 16;
+
+  // Whether identical inputs always produce byte-identical outputs. False for
+  // a converter whose output embeds a timestamp, a hostname, or a map
+  // iteration order, which is what makes its artifacts uncacheable.
+  bool deterministic = 17;
+
+  // The vcs.repository Repository the converter's own source lives in.
+  ref.v1alpha1.ObjectReference repository = 18 [features.field_presence = EXPLICIT];
+
+  // The calling convention at entrypoint.
+  InvocationKind invocation_kind = 19;
+
+  // Set only when invocation_kind is RPC.
+  RpcInvocation rpc_invocation = 20 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Registries whose selectors currently claim this converter. Makes the
+  // selector edge navigable from the converter side.
+  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // codegen.conversion Conversions naming this converter.
+  int32 conversion_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp last_run_time = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Set by whoever last ran TestConverter.
+  google.protobuf.Timestamp last_conformance_time = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+service ConverterService {
+  // Runs the converter's own conformance suite: does it accept what it
+  // claims on inputs, produce what it claims on outputs, honor
+  // deterministic. Declares nothing and reconciles toward nothing, which is
+  // why it is a bare RPC rather than another Conversion kind.
+  rpc TestConverter(TestConverterRequest) returns (TestConverterResponse);
+}
+
+message TestConverterRequest {
+  string name = 1;
+}
+
+message TestConverterResponse {
+  bool passed = 1;
+
+  // Human-readable description of each failed check. Empty when passed.
+  // Flat rather than a structured failure type because no converter's
+  // conformance suite yet has more than one undifferentiated check to
+  // distinguish between.
+  repeated string failures = 2;
+}
+
+// ---------------------------------------------------------------------------
+// ConverterRegistry
+// ---------------------------------------------------------------------------
+
+// One place to look for Converters that are not yet declared: a directory
+// of binaries, or a repository's published releases.
+message DiscoverySource {
+  oneof kind {
+    DirectorySource directory = 1;
+    ReleaseArtifactSource release_artifact = 2;
+  }
+}
+
+// Scans filesystem directories for binaries matching a naming convention.
+message DirectorySource {
+  oneof root {
+    // Directories listed in this environment variable's value, split on the
+    // host's list separator: "PATH".
+    string variable = 1;
+
+    // A single directory: "./bin".
+    string path = 2;
+  }
+
+  // Regex a filename must match to be treated as a candidate: e.g.
+  // "^[\w-]+2[\w-]+$" for the x2y naming convention a registry might
+  // discover converters by.
+  string name_pattern = 3 [features.field_presence = EXPLICIT];
+}
+
+// Scans a repository's published releases for binaries matching a naming
+// convention. repository is forge-agnostic for the same reason
+// Converter.repository is: which system hosts it is provenance, and naming
+// it here would be the same fixed-vendor-list mistake Platform exists to
+// avoid.
+message ReleaseArtifactSource {
+  // The vcs.repository Repository whose releases are scanned.
+  ref.v1alpha1.ObjectReference repository = 1;
+
+  // Regex a release asset name must match to be treated as a candidate.
+  string asset_pattern = 2 [features.field_presence = EXPLICIT];
+}
+
+// A published collection of Converters, claimed by selector.
+message ConverterRegistry {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Which Converters belong. An empty selector claims nothing, never
+  // everything.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+
+  string summary = 11 [features.field_presence = EXPLICIT];
+
+  // Stamped onto converters created through this registry, which is how a new
+  // converter ends up matching the selector.
+  map<string, string> converter_labels = 12;
+
+  // Where the registry publishes its index for consumers who resolve
+  // converters without talking to this API.
+  string index_uri = 13 [features.field_presence = EXPLICIT];
+
+  // Where to look for Converters that have not been declared yet. Empty
+  // discovers nothing, the same as an empty selector claims nothing.
+  repeated DiscoverySource discovery = 14;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 converter_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_discovery_time = 53 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}

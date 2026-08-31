@@ -1,0 +1,93 @@
+edition = "2024";
+
+package unmango.productivity.project.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+
+// What organizes many Tasks toward one outcome:
+//
+//   Project => Task,  Project -> Project
+//
+// A Project claims independently-existing Tasks by selector, the same
+// Notebook => Note relationship record.note already uses, rather than
+// owning them: a Task predates any Project it joins, and leaving a Project
+// deletes nothing. Sub-projects (a portfolio, a phase breakdown) nest
+// through owner_refs like every other ownership edge in the repository.
+//
+// Project carries no priority or due-time-of-day; those are Task-level
+// executive-function concerns productivity.task Task already owns. What a
+// Project adds is the rollup: how many claimed Tasks exist and how many are
+// done.
+//
+// task.Task carries no reverse claimed_by field the way record.note Note
+// does for Notebook, since adding one means editing task.proto. Reverse
+// lookup is a query for now: list Projects, filter by selector match.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum ProjectPhase {
+  PROJECT_PHASE_UNSPECIFIED = 0;
+  PROJECT_PHASE_PLANNED = 1;
+  PROJECT_PHASE_ACTIVE = 2;
+  PROJECT_PHASE_ON_HOLD = 3;
+  PROJECT_PHASE_COMPLETED = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Project
+// ---------------------------------------------------------------------------
+
+// A grouping of Tasks toward one outcome.
+message Project {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // A parent Project, for a sub-project or phase.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  string summary = 10;
+  string notes = 11 [features.field_presence = EXPLICIT];
+
+  // Which Tasks belong. An empty selector claims nothing, never everything.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
+
+  google.type.Date start_date = 13 [features.field_presence = EXPLICIT];
+
+  // Unset means open-ended.
+  google.type.Date target_date = 14 [features.field_presence = EXPLICIT];
+
+  // Paused organizationally. Does not affect the underlying Tasks.
+  bool on_hold = 15;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ProjectPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 task_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 completed_task_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 overdue_task_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // completed_task_count / task_count.
+  double completion_rate = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp last_activity_time = 57 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}

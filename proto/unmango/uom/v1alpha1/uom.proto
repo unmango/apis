@@ -1,0 +1,54 @@
+edition = "2024";
+
+package unmango.uom.v1alpha1;
+
+// Shared unit-of-measure vocabulary, so a value's unit is comparable across
+// domains instead of being a free-text string each package invents its own
+// convention for. Kept separate from unmango.ref: ref addresses relationships
+// between resources, uom carries the values attached to them, and the two
+// vocabularies grow independently.
+
+// UNIT_CUSTOM pairs with a sibling custom_unit string on the message carrying
+// the Quantity, for a portion size no fixed unit covers: "medium", "slice".
+enum Unit {
+  UNIT_UNSPECIFIED = 0;
+  UNIT_CUSTOM = 1;
+
+  // Mass.
+  UNIT_KILOGRAM = 10;
+  UNIT_GRAM = 11;
+  UNIT_POUND = 12;
+  UNIT_OUNCE = 13;
+
+  // Volume.
+  UNIT_LITER = 20;
+  UNIT_MILLILITER = 21;
+  UNIT_CUP = 22;
+  UNIT_TABLESPOON = 23;
+  UNIT_TEASPOON = 24;
+  UNIT_FLUID_OUNCE = 25;
+
+  // Distance.
+  UNIT_KILOMETER = 30;
+  UNIT_MILE = 31;
+  UNIT_METER = 32;
+
+  // Engine hours, for equipment with no odometer. Not a distance, but shares
+  // the same "how much has this been used" role.
+  UNIT_ENGINE_HOUR = 33;
+
+  // Other.
+  UNIT_PERCENT = 40;
+  UNIT_MILLIGRAMS_PER_DECILITER = 41;
+  UNIT_MILLIMETERS_OF_MERCURY = 42;
+  UNIT_MINUTE = 43;
+}
+
+// A value paired with its unit.
+message Quantity {
+  double value = 1;
+  Unit unit = 2;
+
+  // Set only when unit is UNIT_CUSTOM.
+  string custom_unit = 3 [features.field_presence = EXPLICIT];
+}

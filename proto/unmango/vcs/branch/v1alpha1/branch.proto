@@ -1,0 +1,229 @@
+edition = "2024";
+
+package unmango.vcs.branch.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Named pointers into history:
+//
+//   vcs.repository Repository -> Branch
+//   vcs.repository Repository -> Tag
+//
+// Both are owned by the Repository they live in, so deleting a repository
+// cascades to them.
+//
+// The split between desired and observed state is unusually clean here, and
+// worth stating: a Branch's protection rules are desired, its head commit is
+// observed. Nobody declares where a branch points; they push, and the pointer
+// moves. A Tag inverts this, since the whole purpose of a tag is that its
+// target is declared once and never moves.
+//
+// This group avoids the names `ref` and `uom` on purpose. A package
+// `unmango.vcs.ref` would capture the relative name `ref.v1alpha1` before it
+// reached `unmango.ref.v1alpha1`, silently breaking every reference in the
+// domain. `uom` carries the same trap.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// Rules a Branch enforces against incoming changes. A vcs.change Change
+// targeting this branch is admitted or rejected on these terms.
+message Protection {
+  // Approving reviews required before a change may merge.
+  int32 required_approvals = 1;
+
+  // ci.job Pipeline names that must succeed.
+  repeated string required_checks = 2;
+
+  // Reject merge commits, forcing rebase or squash.
+  bool require_linear_history = 3;
+
+  bool require_signed_commits = 4;
+
+  // Approvals are withdrawn when new commits arrive.
+  bool dismiss_stale_approvals = 5;
+
+  // Require review from an owner of the touched paths.
+  bool require_owner_review = 6;
+
+  bool allow_force_push = 7;
+  bool allow_deletion = 8;
+
+  // Rules apply to repository administrators too.
+  bool enforce_for_admins = 9;
+
+  // people.contact Contacts permitted to push directly, bypassing changes.
+  repeated ref.v1alpha1.ObjectReference push_allowlist = 10;
+}
+
+enum TagType {
+  TAG_TYPE_UNSPECIFIED = 0;
+
+  // A bare pointer with no object of its own.
+  TAG_TYPE_LIGHTWEIGHT = 1;
+
+  // Carries a message, tagger, and timestamp.
+  TAG_TYPE_ANNOTATED = 2;
+
+  // Annotated and cryptographically signed.
+  TAG_TYPE_SIGNED = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Branch
+// ---------------------------------------------------------------------------
+
+// A moving pointer into a Repository's history.
+message Branch {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The vcs.repository Repository this branch lives in.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Ref name as the underlying VCS spells it: "main", "feat/life-domain-apis".
+  string ref_name = 10;
+
+  // The repository's default branch. At most one per Repository.
+  bool default = 11;
+
+  // Rules enforced against changes targeting this branch. Unset means
+  // unprotected.
+  Protection protection = 12 [features.field_presence = EXPLICIT];
+
+  // Branch this one is compared and merged against. Unset means the
+  // repository default.
+  string base_ref_name = 13 [features.field_presence = EXPLICIT];
+
+  // Remote-tracking counterpart, when this branch tracks one.
+  ref.v1alpha1.ObjectReference upstream_remote = 14 [features.field_presence = EXPLICIT];
+  string upstream_ref_name = 15 [features.field_presence = EXPLICIT];
+
+  // Delete automatically once a change merges it.
+  bool delete_on_merge = 16;
+
+  // Observed state. Where the pointer actually is, which nobody declares.
+  // head_revision names a node in the vcs.commit graph.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  BranchPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string head_revision = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string head_message = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ref.v1alpha1.ObjectReference head_author = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp head_commit_time = 56 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Commits this branch has that its base does not, and the reverse.
+  int32 ahead_count = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 behind_count = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Open vcs.change Changes with this branch as their source.
+  int32 open_change_count = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Merged into its base and safe to delete.
+  bool merged = 60 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // No commits for long enough to be a candidate for cleanup.
+  bool stale = 61 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+enum BranchPhase {
+  BRANCH_PHASE_UNSPECIFIED = 0;
+
+  // Receiving commits.
+  BRANCH_PHASE_ACTIVE = 1;
+
+  // Merged into its base, retained but finished.
+  BRANCH_PHASE_MERGED = 2;
+
+  // Quiet long enough to be a cleanup candidate.
+  BRANCH_PHASE_STALE = 3;
+
+  // Diverged from its base in a way that cannot fast-forward.
+  BRANCH_PHASE_DIVERGED = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Tag
+// ---------------------------------------------------------------------------
+
+// A fixed pointer into a Repository's history. Unlike a Branch, its target is
+// declared rather than observed, since a tag that moves is a bug.
+message Tag {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Ref name as the underlying VCS spells it: "v0.36.4".
+  string ref_name = 10;
+
+  // The vcs.commit Commit this tag names. Declared, and never expected to
+  // change.
+  string target_revision = 11 [(google.api.field_behavior) = IMMUTABLE];
+
+  TagType type = 12;
+  string message = 13 [features.field_presence = EXPLICIT];
+
+  // people.contact Contact who created it.
+  ref.v1alpha1.ObjectReference tagger = 14 [features.field_presence = EXPLICIT];
+
+  // Marks a published release rather than an internal marker.
+  bool release = 15;
+
+  string release_notes = 16 [features.field_presence = EXPLICIT];
+
+  // Not yet ready for general use.
+  bool prerelease = 17;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp tagged_time = 52 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  bool signature_verified = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The declared target no longer resolves, or resolves to a different commit
+  // than when the tag was recorded.
+  bool dangling = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Commits between this tag and the previous one, so release size is visible.
+  int32 commits_since_previous = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string previous_ref_name = 56 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}

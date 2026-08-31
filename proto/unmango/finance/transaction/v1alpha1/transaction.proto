@@ -1,0 +1,240 @@
+edition = "2024";
+
+package unmango.finance.transaction.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/calendar_period.proto";
+import "google/type/date.proto";
+import "google/type/money.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Money moving, and the standing arrangements that move it:
+//
+//   RecurringTransaction -> Transaction ~> finance.account Account
+//                           Transaction => claimed by finance.budget Allocation
+//
+// A Transaction attaches to an Account rather than being owned by it: the
+// transaction is a fact that survives the account being closed, and deleting
+// an account should not silently erase spending history.
+//
+// A RecurringTransaction does own the Transactions it predicts, so
+// subscriptions and bills materialize forward on the same expansion pattern
+// the rest of the repository uses. Once a predicted Transaction is matched
+// against a real one, it stops being a prediction.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum TransactionStatus {
+  TRANSACTION_STATUS_UNSPECIFIED = 0;
+
+  // Predicted by a RecurringTransaction, not yet seen at the institution.
+  TRANSACTION_STATUS_PROJECTED = 1;
+
+  // Authorized but not settled. Amount may still change.
+  TRANSACTION_STATUS_PENDING = 2;
+
+  TRANSACTION_STATUS_POSTED = 3;
+
+  // Cancelled before settling.
+  TRANSACTION_STATUS_VOID = 4;
+
+  // Settled, then undone by a later entry.
+  TRANSACTION_STATUS_REVERSED = 5;
+}
+
+enum TransactionDirection {
+  TRANSACTION_DIRECTION_UNSPECIFIED = 0;
+  TRANSACTION_DIRECTION_DEBIT = 1;
+  TRANSACTION_DIRECTION_CREDIT = 2;
+
+  // One leg of a movement between two owned Accounts. Excluded from spending
+  // totals, since no money left the household.
+  TRANSACTION_DIRECTION_TRANSFER = 3;
+}
+
+// Part of a Transaction assigned to one budget envelope. Splits let a single
+// purchase land in several categories without being torn into several
+// transactions.
+message Split {
+  // The finance.budget Allocation this part counts against.
+  ref.v1alpha1.ObjectReference allocation = 1 [features.field_presence = EXPLICIT];
+
+  // Category label, kept alongside the reference so a split stays meaningful
+  // when no budget exists.
+  string category = 2;
+
+  google.type.Money amount = 3;
+
+  string note = 4 [features.field_presence = EXPLICIT];
+}
+
+// ---------------------------------------------------------------------------
+// Transaction
+// ---------------------------------------------------------------------------
+
+// A single movement of money.
+message Transaction {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+
+  // Also the surface a finance.budget Allocation.selector matches against:
+  // the two fields are a cross-package contract neither file imports the
+  // other to enforce, so relabelling transactions can silently stop them
+  // matching an Allocation that expects the old convention.
+  map<string, string> labels = 4;
+
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Templated desired state. TransactionTemplate mirrors 10-39.
+  google.type.Money amount = 10;
+  TransactionDirection direction = 11;
+  string merchant = 12 [features.field_presence = EXPLICIT];
+  string description = 13 [features.field_presence = EXPLICIT];
+
+  // How the amount is distributed across budget envelopes. A single split
+  // covering the full amount is the common case.
+  repeated Split splits = 14;
+
+  string note = 15 [features.field_presence = EXPLICIT];
+
+  // Assigned desired state.
+  // The Account this transaction belongs to. Attachment rather than
+  // ownership: the fact outlives the account.
+  ref.v1alpha1.ObjectReference account = 40;
+
+  // Date the institution assigned. What budget periods bucket on.
+  google.type.Date posted_date = 41;
+
+  // The matching leg, when direction is TRANSFER.
+  ref.v1alpha1.ObjectReference transfer_peer = 42 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Identifier at the institution, used to deduplicate on re-sync.
+  string external_id = 43 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  TransactionStatus status = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp booked_time = 53 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Allocations whose selectors currently claim this transaction. Makes the
+  // selector edge navigable from the transaction side.
+  repeated ref.v1alpha1.ObjectReference claimed_by = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Account balance immediately after this transaction settled.
+  google.type.Money running_balance = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The projected Transaction this one was matched against, if any.
+  ref.v1alpha1.ObjectReference matched_projection = 56 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+// Desired state stamped onto Transactions generated by a RecurringTransaction.
+// Field numbers mirror Transaction 10-39; the assigned band is absent because
+// the account and date are computed per occurrence.
+message TransactionTemplate {
+  map<string, string> labels = 1;
+  map<string, string> annotations = 2;
+
+  google.type.Money amount = 10;
+  TransactionDirection direction = 11;
+  string merchant = 12 [features.field_presence = EXPLICIT];
+  string description = 13 [features.field_presence = EXPLICIT];
+  repeated Split splits = 14;
+  string note = 15 [features.field_presence = EXPLICIT];
+}
+
+// ---------------------------------------------------------------------------
+// RecurringTransaction
+// ---------------------------------------------------------------------------
+
+// A standing arrangement that produces Transactions: a subscription, a salary,
+// a mortgage payment. Owns the projected Transactions it materializes.
+message RecurringTransaction {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Stamped onto each projected Transaction.
+  TransactionTemplate template = 10;
+
+  // Account the projected transactions attach to.
+  ref.v1alpha1.ObjectReference account = 11;
+
+  // How often it recurs.
+  google.type.CalendarPeriod period = 12;
+
+  // Number of periods between occurrences. Two with period MONTH means
+  // every other month.
+  int32 interval = 13;
+
+  google.type.Date start_date = 14;
+
+  // Unset means indefinitely.
+  google.type.Date end_date = 15 [features.field_presence = EXPLICIT];
+
+  // Project occurrences up to this date, bounding how far the chain runs.
+  google.type.Date materialize_through = 16;
+
+  // Which projected Transactions this arrangement claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 17;
+
+  // Stop projecting without deleting the arrangement. What a paused
+  // subscription looks like.
+  bool suspended = 18;
+
+  // Tolerance in days when matching a real transaction to a projection.
+  int32 match_window_days = 19;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 projected_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 matched_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.type.Date next_occurrence_date = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.type.Date last_matched_date = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.type.Date materialized_through = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Mean of matched amounts, which drifts from the templated amount as prices
+  // change.
+  google.type.Money observed_amount = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

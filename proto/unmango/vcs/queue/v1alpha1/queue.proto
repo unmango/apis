@@ -1,0 +1,178 @@
+edition = "2024";
+
+package unmango.vcs.queue.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Serialized, speculatively-tested merges into one branch:
+//
+//   vcs.branch Branch -> MergeQueue -> QueueEntry ~> vcs.change Change
+//
+// A MergeQueue owns the Branch it serializes: deleting the branch cascades
+// to its queue. A QueueEntry is authored independently of the queue (a
+// Change asks to join) and the queue admits or rejects it, batches it with
+// neighbors, and reports the outcome as a Condition -- the same
+// Gateway -> HTTPRoute shape vcs.change Change already uses against its
+// target Branch.
+//
+// Distinct from vcs.change ChangeSet, which sequences one Change per
+// repository across many repositories. A MergeQueue sequences many Changes
+// within one repository against one branch.
+
+// ---------------------------------------------------------------------------
+// MergeQueue
+// ---------------------------------------------------------------------------
+
+// Serializes and speculatively batches Changes proposed against one Branch.
+message MergeQueue {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The vcs.branch Branch this queue serializes merges into.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Entries tested together speculatively. One disables batching.
+  int32 batch_size = 10;
+
+  // Stop admitting new entries without draining the ones already queued.
+  bool suspended = 11;
+
+  // Which QueueEntries this queue claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
+
+  // Rebase an entry onto the branch's current head before testing it.
+  bool require_up_to_date = 13;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  MergeQueuePhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 entry_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 pending_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 batched_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Entry at the front of the queue, mirroring vcs.change ChangeSet.next_change.
+  ref.v1alpha1.ObjectReference head_entry = 56 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  google.protobuf.Timestamp last_merge_time = 57 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+enum MergeQueuePhase {
+  MERGE_QUEUE_PHASE_UNSPECIFIED = 0;
+
+  // No entries waiting.
+  MERGE_QUEUE_PHASE_IDLE = 1;
+
+  // Testing the current batch.
+  MERGE_QUEUE_PHASE_PROCESSING = 2;
+
+  // Suspended and finishing entries already admitted.
+  MERGE_QUEUE_PHASE_DRAINING = 3;
+
+  // Stalled on a failed batch pending eviction of the offending entry.
+  MERGE_QUEUE_PHASE_BLOCKED = 4;
+}
+
+// ---------------------------------------------------------------------------
+// QueueEntry
+// ---------------------------------------------------------------------------
+
+// One Change's position in a MergeQueue. Attaches to the queue it asks to
+// join; the queue admits or rejects it.
+message QueueEntry {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // The MergeQueue this entry asks to join. The queue decides whether to
+  // admit it.
+  ref.v1alpha1.ParentReference parent_ref = 10;
+
+  // The vcs.change Change being queued.
+  ref.v1alpha1.ObjectReference change = 11;
+
+  // Higher merges sooner within its batch eligibility. Zero is default FIFO
+  // order.
+  int32 priority = 12;
+
+  // Assigned desired state.
+  // Which speculative batch this entry currently belongs to. Unset means not
+  // yet batched.
+  string batch_id = 40 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  QueueEntryPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Current position in the queue. Lower merges sooner.
+  int32 position = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Why the queue removed this entry: stale, checks failed, conflicts,
+  // target Protection unmet.
+  string eject_reason = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  google.protobuf.Timestamp queued_time = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp merged_time = 56 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+enum QueueEntryPhase {
+  QUEUE_ENTRY_PHASE_UNSPECIFIED = 0;
+
+  // Admitted, not yet assigned to a batch.
+  QUEUE_ENTRY_PHASE_PENDING = 1;
+
+  QUEUE_ENTRY_PHASE_BATCHED = 2;
+  QUEUE_ENTRY_PHASE_TESTING = 3;
+
+  // Batch passed. Waiting for entries ahead of it to merge.
+  QUEUE_ENTRY_PHASE_READY_TO_MERGE = 4;
+
+  QUEUE_ENTRY_PHASE_MERGED = 5;
+
+  // Removed from the queue without merging. See eject_reason.
+  QUEUE_ENTRY_PHASE_EJECTED = 6;
+}

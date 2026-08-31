@@ -1,0 +1,189 @@
+edition = "2024";
+
+package unmango.music.playlist.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Tracks in a chosen order:
+//
+//   Playlist -> Playlist        (folders)
+//   Playlist -> PlaylistEntry   (entry names a media.title Title)
+//
+// media.library Collection already claims media.title Titles by label
+// selector, which is the whole of what a collection is. A playlist is the
+// ordered counterpart, and a selector cannot express order, so membership here
+// is ownership with an entry per track rather than selection.
+//
+// A Playlist may still carry a PlaylistSource, but the source generates
+// entries rather than being the membership. That keeps a rule-driven playlist
+// and a hand-built one the same kind, differing only in who wrote the entries,
+// the same argument media.library makes for Collection.
+//
+// An entry names a media.title Title rather than a media.library LibraryItem,
+// so a playlist survives re-ripping and stays meaningful for tracks not held.
+// prefer_edition is how an entry asks for a particular release without naming
+// the file that happens to hold it.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// How entries are presented. A category, not a named player's shuffle
+// algorithm.
+enum OrderingStrategy {
+  ORDERING_STRATEGY_UNSPECIFIED = 0;
+
+  // The rank field decides. The only strategy under which rank is meaningful.
+  ORDERING_STRATEGY_MANUAL = 1;
+
+  ORDERING_STRATEGY_ADDED_TIME = 2;
+  ORDERING_STRATEGY_RELEASE_DATE = 3;
+  ORDERING_STRATEGY_TITLE = 4;
+
+  // Rolled up from media.playback.
+  ORDERING_STRATEGY_PLAY_COUNT = 5;
+
+  ORDERING_STRATEGY_SHUFFLE = 6;
+}
+
+// Identifier in an external catalog, so a playlist can be reconciled against
+// whatever service it was exported from. Declared here rather than imported,
+// since a life-domain API imports no other domain.
+message ExternalId {
+  string source = 1;
+  string value = 2;
+}
+
+// A rule that materializes entries. What makes a playlist rule-driven without
+// making the rule the membership.
+message PlaylistSource {
+  // Claims media.title Titles by label.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1;
+
+  // Stop generating past this many entries. Zero means no limit.
+  int32 limit = 2;
+
+  // Labels applied to every generated PlaylistEntry, so generated and
+  // hand-added entries stay distinguishable.
+  map<string, string> entry_labels = 3;
+}
+
+// ---------------------------------------------------------------------------
+// PlaylistEntry
+// ---------------------------------------------------------------------------
+
+// One track in one playlist. Owned by the Playlist and cascades with it.
+message PlaylistEntry {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // The media.title Title, normally one of kind TRACK.
+  ref.v1alpha1.ObjectReference track = 10;
+
+  // Sort key under ORDERING_STRATEGY_MANUAL. A string rather than an integer
+  // position so that inserting a track rewrites one entry instead of every
+  // entry after it: a caller picks any value ordering between its new
+  // neighbors. Entries sort by byte comparison, ties broken by name.
+  string rank = 11;
+
+  // A specific media.title Edition to play, when the release matters. Unset
+  // means any edition of the Title will do.
+  ref.v1alpha1.ObjectReference prefer_edition = 12 [features.field_presence = EXPLICIT];
+
+  // Why this track is here.
+  string note = 13 [features.field_presence = EXPLICIT];
+
+  google.protobuf.Timestamp added_time = 14 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The referenced Title exists. False leaves the entry in place rather than
+  // deleting it, so a playlist survives a catalog that has not caught up.
+  bool resolved = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Mirrored from the Title, or from prefer_edition when set.
+  google.protobuf.Duration runtime = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Position under the playlist's ordering strategy, counting from one.
+  // Derived, since under every strategy but MANUAL nothing declares it.
+  int32 position = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// Playlist
+// ---------------------------------------------------------------------------
+
+// An ordered set of tracks. Nests to form folders, and owns its entries.
+message Playlist {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The parent Playlist, for a playlist filed inside a folder. Absent at the
+  // top level.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  string description = 10 [features.field_presence = EXPLICIT];
+
+  // Generates entries. Unset means every entry was added by hand.
+  PlaylistSource source = 11 [features.field_presence = EXPLICIT];
+
+  OrderingStrategy ordering = 12;
+
+  // Artwork. A plain string so it can address a dev.unmango.protofs path
+  // without coupling the packages.
+  string image_uri = 13 [features.field_presence = EXPLICIT];
+
+  // Shared beyond its owner.
+  bool published = 14;
+
+  repeated ExternalId external_ids = 15;
+
+  // Which child Playlists this one claims as a folder.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 entry_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Child Playlists.
+  int32 child_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Summed over entries, counting only those that resolved.
+  google.protobuf.Duration total_runtime = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Entries whose track reference does not resolve.
+  int32 unresolved_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Entries written by source rather than added by hand.
+  int32 generated_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

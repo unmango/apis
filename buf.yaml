@@ -3,9 +3,18 @@ version: v2
 lint:
   use:
     - STANDARD
+  ignore:
+    - third_party/k8s
 breaking:
   use:
     - FILE
+  ignore:
+    - third_party/k8s
+deps:
+  - buf.build/googleapis/googleapis
 modules:
   - path: proto
     name: buf.build/unmango/apis
+  # k8s.io/apimachinery has no BSR module, so the CLI resolves those imports
+  # from a vendored copy `make vendor` materializes out of the Nix build.
+  - path: third_party/k8s

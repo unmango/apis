@@ -1,0 +1,193 @@
+edition = "2024";
+
+package unmango.asset.vehicle.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "google/type/money.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+import "unmango/uom/v1alpha1/uom.proto";
+
+// Things that move, and their usage history:
+//
+//   Vehicle @ asset.property Space
+//   Vehicle -> OdometerReading
+//
+// A Vehicle binds to the Space it is kept in, the same way a ci.runner
+// Runner binds to a Host: the assignment is made rather than declared, and an
+// unset binding is meaningful.
+//
+// Odometer readings are their own kind rather than a field, because they are
+// an append-only series and because asset.maintenance intervals are
+// expressed in distance as well as time.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum VehicleType {
+  VEHICLE_TYPE_UNSPECIFIED = 0;
+  VEHICLE_TYPE_CAR = 1;
+  VEHICLE_TYPE_TRUCK = 2;
+  VEHICLE_TYPE_SUV = 3;
+  VEHICLE_TYPE_VAN = 4;
+  VEHICLE_TYPE_MOTORCYCLE = 5;
+  VEHICLE_TYPE_BICYCLE = 6;
+  VEHICLE_TYPE_TRAILER = 7;
+  VEHICLE_TYPE_BOAT = 8;
+  VEHICLE_TYPE_RV = 9;
+  VEHICLE_TYPE_LAWN_EQUIPMENT = 10;
+}
+
+enum FuelType {
+  FUEL_TYPE_UNSPECIFIED = 0;
+  FUEL_TYPE_GASOLINE = 1;
+  FUEL_TYPE_DIESEL = 2;
+  FUEL_TYPE_ELECTRIC = 3;
+  FUEL_TYPE_HYBRID = 4;
+  FUEL_TYPE_PLUG_IN_HYBRID = 5;
+  FUEL_TYPE_HUMAN_POWERED = 6;
+}
+
+enum VehicleStatus {
+  VEHICLE_STATUS_UNSPECIFIED = 0;
+  VEHICLE_STATUS_ACTIVE = 1;
+
+  // Off the road for servicing.
+  VEHICLE_STATUS_IN_SERVICE = 2;
+
+  // Owned but not in use.
+  VEHICLE_STATUS_STORED = 3;
+
+  VEHICLE_STATUS_SOLD = 4;
+  VEHICLE_STATUS_TOTALED = 5;
+}
+
+// ---------------------------------------------------------------------------
+// OdometerReading
+// ---------------------------------------------------------------------------
+
+// One observation of a Vehicle's accumulated distance. Append-only.
+message OdometerReading {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  uom.v1alpha1.Quantity reading = 10;
+  google.type.Date observed_date = 11;
+  OdometerSource source = 12;
+  string note = 13 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Difference from the previous reading. Negative flags a rollback or a
+  // mistyped entry.
+  uom.v1alpha1.Quantity delta = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Days since the previous reading.
+  int32 days_since_previous = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+enum OdometerSource {
+  ODOMETER_SOURCE_UNSPECIFIED = 0;
+  ODOMETER_SOURCE_MANUAL = 1;
+  ODOMETER_SOURCE_TELEMATICS = 2;
+
+  // Recorded as part of a maintenance service record.
+  ODOMETER_SOURCE_SERVICE_RECORD = 3;
+
+  ODOMETER_SOURCE_INSPECTION = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Vehicle
+// ---------------------------------------------------------------------------
+
+// Something that moves under its own power or is towed. Owns its odometer
+// history and binds to the Space it is kept in.
+message Vehicle {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  VehicleType type = 10;
+  string make = 11;
+  string model = 12;
+  string trim = 13 [features.field_presence = EXPLICIT];
+  int32 model_year = 14 [features.field_presence = EXPLICIT];
+  FuelType fuel_type = 15;
+  string vin = 16 [features.field_presence = EXPLICIT];
+  string license_plate = 17 [features.field_presence = EXPLICIT];
+  string color = 18 [features.field_presence = EXPLICIT];
+  google.type.Date acquired_date = 19 [features.field_presence = EXPLICIT];
+  google.type.Money purchase_price = 20;
+
+  // Distance unit this vehicle's readings and service intervals use.
+  uom.v1alpha1.Unit distance_unit = 21;
+
+  // Which OdometerReadings this Vehicle claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 22;
+
+  // Registration and insurance renewal dates, surfaced so a
+  // asset.maintenance plan can act on them.
+  google.type.Date registration_expiry = 23 [features.field_presence = EXPLICIT];
+  google.type.Date insurance_expiry = 24 [features.field_presence = EXPLICIT];
+
+  // The finance.account Account carrying its loan or lease.
+  ref.v1alpha1.ObjectReference finance_account = 25 [features.field_presence = EXPLICIT];
+
+  // Assigned desired state.
+  // The asset.property Space it is kept in. Unset means unassigned.
+  ref.v1alpha1.ObjectReference parked_at = 40 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  VehicleStatus status = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // From the most recent OdometerReading.
+  uom.v1alpha1.Quantity current_odometer = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.type.Date last_reading_date = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  int32 reading_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Mean distance per day across the reading history, used to forecast when a
+  // distance-based service interval will come due.
+  double average_daily_distance = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Open asset.maintenance WorkOrders whose subject is this Vehicle.
+  int32 open_work_order_count = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Summed over completed ServiceRecords.
+  google.type.Money lifetime_maintenance_cost = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

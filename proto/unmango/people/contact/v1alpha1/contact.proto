@@ -1,0 +1,277 @@
+edition = "2024";
+
+package unmango.people.contact.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "google/type/phone_number.proto";
+import "google/type/postal_address.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// People, and how they relate:
+//
+//   Contact ~> Relationship ~> Contact
+//   Group   => Contact
+//
+// Contact is the kind the rest of the repository points at whenever a person
+// is involved: a calendar.event Attendance attendee, a ci.job actor, a
+// asset.maintenance assignee, a media.playback viewer.
+//
+// Relationship is its own kind attached to both ends rather than a repeated
+// field on Contact. That is what lets a relationship carry its own facts, an
+// anniversary, a start date, and be edited without touching either person.
+// It also keeps the two directions from drifting out of sync.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// Which context a piece of contact information belongs to.
+enum ContactLabel {
+  CONTACT_LABEL_UNSPECIFIED = 0;
+  CONTACT_LABEL_HOME = 1;
+  CONTACT_LABEL_WORK = 2;
+  CONTACT_LABEL_MOBILE = 3;
+  CONTACT_LABEL_OTHER = 4;
+}
+
+message EmailAddress {
+  string value = 1;
+  ContactLabel label = 2;
+  bool primary = 3;
+}
+
+message PhoneNumber {
+  google.type.PhoneNumber value = 1;
+  ContactLabel label = 2;
+  bool primary = 3;
+}
+
+message Address {
+  google.type.PostalAddress value = 1;
+  ContactLabel label = 2;
+  bool primary = 3;
+}
+
+// A handle on a service outside this API.
+message OnlineProfile {
+  // "github", "discord", "matrix", "signal".
+  string service = 1;
+
+  string handle = 2;
+  string url = 3 [features.field_presence = EXPLICIT];
+}
+
+enum RelationType {
+  RELATION_TYPE_UNSPECIFIED = 0;
+  RELATION_TYPE_SPOUSE = 1;
+  RELATION_TYPE_PARTNER = 2;
+  RELATION_TYPE_PARENT = 3;
+  RELATION_TYPE_CHILD = 4;
+  RELATION_TYPE_SIBLING = 5;
+  RELATION_TYPE_GRANDPARENT = 6;
+  RELATION_TYPE_GRANDCHILD = 7;
+  RELATION_TYPE_FRIEND = 8;
+  RELATION_TYPE_COLLEAGUE = 9;
+  RELATION_TYPE_MANAGER = 10;
+  RELATION_TYPE_REPORT = 11;
+  RELATION_TYPE_NEIGHBOR = 12;
+
+  // A tradesperson, doctor, or other professional relationship. The
+  // counterparty on an asset.maintenance ServiceRecord.
+  RELATION_TYPE_SERVICE_PROVIDER = 13;
+}
+
+enum ContactKind {
+  CONTACT_KIND_UNSPECIFIED = 0;
+  CONTACT_KIND_PERSON = 1;
+  CONTACT_KIND_ORGANIZATION = 2;
+
+  // The account holder. At most one contact should set this.
+  CONTACT_KIND_SELF = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Relationship
+// ---------------------------------------------------------------------------
+
+// A directed edge between two Contacts, carrying its own facts.
+message Relationship {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // The Contact this relationship is asserted from. Attachment rather than
+  // ownership: deleting a person should not silently rewrite the other party's
+  // record of them.
+  ref.v1alpha1.ParentReference parent_ref = 10;
+
+  // The Contact on the other end.
+  ref.v1alpha1.ObjectReference target = 11;
+
+  // Read as "parent is the target's <type>": PARENT means the parent_ref
+  // contact is the target's parent.
+  RelationType type = 12;
+
+  // Free-text override, for something the enum does not cover.
+  string custom_type = 13 [features.field_presence = EXPLICIT];
+
+  google.type.Date since = 14 [features.field_presence = EXPLICIT];
+
+  // Set when the relationship has ended but is worth keeping.
+  google.type.Date until = 15 [features.field_presence = EXPLICIT];
+
+  // Recurs yearly, and is worth a reminder.
+  google.type.Date anniversary = 16 [features.field_presence = EXPLICIT];
+
+  string notes = 17 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Reports whether the source Contact admitted the attachment.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The Relationship asserting the mirror of this edge, when one exists.
+  ref.v1alpha1.ObjectReference inverse = 52 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // No inverse Relationship exists, so the graph is asserted one way only.
+  bool unreciprocated = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // False once until has passed.
+  bool active = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// Contact
+// ---------------------------------------------------------------------------
+
+// A person or organization. The kind every other domain points at when a
+// person is involved.
+message Contact {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+
+  // Also the surface a Group selector matches against.
+  map<string, string> labels = 4;
+
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  ContactKind kind = 10;
+  string given_name = 11 [features.field_presence = EXPLICIT];
+  string family_name = 12 [features.field_presence = EXPLICIT];
+
+  // What they go by, when it differs from the given name.
+  string nickname = 13 [features.field_presence = EXPLICIT];
+
+  repeated EmailAddress emails = 14;
+  repeated PhoneNumber phones = 15;
+  repeated Address addresses = 16;
+  repeated OnlineProfile profiles = 17;
+
+  google.type.Date birthday = 18 [features.field_presence = EXPLICIT];
+
+  // Employer, or the organization this person acts on behalf of.
+  string organization = 19 [features.field_presence = EXPLICIT];
+
+  string job_title = 20 [features.field_presence = EXPLICIT];
+
+  // A plain string so it can address a dev.unmango.protofs path without
+  // coupling the packages.
+  string photo_uri = 21 [features.field_presence = EXPLICIT];
+
+  string notes = 22 [features.field_presence = EXPLICIT];
+
+  // Retained but out of the way. Distinct from deleted.
+  bool archived = 23;
+
+  // Where they live, when it is a modelled asset.property Property.
+  ref.v1alpha1.ObjectReference residence = 24 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Groups whose selectors currently claim this contact.
+  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Relationships asserted from this contact.
+  int32 relationship_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Relationships from other contacts pointing at this one.
+  int32 inbound_relationship_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The next yearly occurrence of birthday, so upcoming dates are queryable
+  // without recomputing the year.
+  google.type.Date next_birthday = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Last calendar.event Event this contact attended.
+  google.protobuf.Timestamp last_interaction_time = 56 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// Group
+// ---------------------------------------------------------------------------
+
+// A named set of Contacts, claimed by selector.
+message Group {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Which Contacts belong. An empty selector claims nothing, never everything.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+
+  string summary = 11 [features.field_presence = EXPLICIT];
+
+  // Stamped onto contacts created through this group.
+  map<string, string> contact_labels = 12;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 member_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Members with a birthday in the next thirty days.
+  int32 upcoming_birthday_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

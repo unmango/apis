@@ -5,14 +5,20 @@ package dev.unmango.cmd.v1alpha1;
 import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
 
+// Deprecated: use dev.unmango.cmd.v1alpha2.BuilderService.
 service ConversionService {
+  option deprecated = true;
+
   // Args converts a typed spec to a command-line argument list.
   // Pack the spec message using google.protobuf.Any before sending.
   // Example (Go): anypb.New(&MySpec{...})
   rpc Args(ArgsRequest) returns (ArgsResponse);
 }
 
+// Deprecated: use dev.unmango.cmd.v1alpha2.ExecutionService.
 service CommandService {
+  option deprecated = true;
+
   rpc Run(RunRequest) returns (RunResponse);
   rpc Exec(ExecRequest) returns (stream ExecResponse);
   rpc Start(StartRequest) returns (StartResponse);

@@ -1,0 +1,241 @@
+edition = "2024";
+
+package unmango.codegen.schema.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Machine-readable descriptions of an API, and the types inside them:
+//
+//   Schema -> TypeDef
+//
+// A Schema is one description of an interface in one format: an OpenAPI
+// document, a protobuf module, a Terraform provider spec, a tree-sitter
+// grammar. It is the input side of the codegen domain, the thing a
+// codegen.converter Converter reads.
+//
+// A Schema owns its TypeDefs, so deleting the schema reaps the types it
+// described. TypeDefs are a kind rather than an embedded list because they
+// are addressed across schemas: a proto message imported by another module,
+// an OpenAPI component referenced by a second document. Both directions of
+// that edge are navigable, TypeDef.referenced_by from the target and
+// TypeRef.schema from the source.
+//
+// Fields and methods are embedded instead, since they have no lifetime apart
+// from the TypeDef that declares them and are never addressed alone. That is
+// the same call ci.job Step makes.
+//
+// A TypeDef is populated by whoever parses the owning Schema, the same
+// reason codegen.artifact Artifact carries no desired state: there is
+// nothing for a user to declare and nothing to reconcile toward. A Schema's
+// format, source_uri, and repository are genuinely desired state, since a
+// caller chooses them; a Schema's TypeDefs are a fact about the bytes at
+// source_uri, discovered, not authored.
+//
+// Schema.digest is the hash the rest of the domain pins against. A
+// codegen.conversion ConversionInput records the digest it consumed, and a
+// codegen.artifact Artifact hashes over it, which is what lets a generated
+// artifact be traced back to the exact schema revision that produced it.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// What shape a TypeDef declares. Deliberately format-neutral: a protobuf
+// message, an OpenAPI object, and a SQL table are all TYPE_KIND_STRUCT.
+enum TypeKind {
+  TYPE_KIND_UNSPECIFIED = 0;
+  TYPE_KIND_STRUCT = 1;
+  TYPE_KIND_ENUM = 2;
+  TYPE_KIND_UNION = 3;
+  TYPE_KIND_ALIAS = 4;
+  TYPE_KIND_SERVICE = 5;
+  TYPE_KIND_SCALAR = 6;
+  TYPE_KIND_LIST = 7;
+  TYPE_KIND_MAP = 8;
+}
+
+// Points at a type, either inside this Schema or in another one.
+message TypeRef {
+  // What this names.
+  oneof name {
+    // Name of the TypeDef within its schema, fully qualified in whatever way
+    // the format qualifies names: "unmango.ref.v1alpha1.ObjectReference".
+    string type_name = 1;
+
+    // A built-in with no TypeDef of its own: "string", "int64", "bytes".
+    string primitive = 3;
+  }
+
+  // The Schema the type lives in. Unset means the referring Schema. Only
+  // meaningful alongside type_name; a primitive has no owning Schema.
+  ref.v1alpha1.ObjectReference schema = 2 [features.field_presence = EXPLICIT];
+
+  // Fills the type parameters of a generic, the element of a list, or the
+  // key and value of a map, in that order.
+  repeated TypeRef type_arguments = 4;
+}
+
+// A named member of a TypeDef. Embedded rather than a kind: no lifetime apart
+// from the TypeDef declaring it, never addressed alone.
+message Field {
+  string name = 1;
+  TypeRef type = 2;
+  bool required = 3;
+
+  // Named is_repeated because `repeated` is a proto keyword.
+  bool is_repeated = 4;
+
+  string docs = 5;
+
+  // Field number, tag, or ordinal, for formats that assign one. Zero when the
+  // format orders by declaration instead.
+  int32 number = 6;
+
+  bool deprecated = 7;
+}
+
+// One operation on a TYPE_KIND_SERVICE TypeDef: a proto rpc, an OpenAPI
+// path operation. Embedded for the same reason Field is.
+message Method {
+  string name = 1;
+  TypeRef input = 2;
+  TypeRef output = 3;
+  bool client_streaming = 4;
+  bool server_streaming = 5;
+  string docs = 6;
+}
+
+// ---------------------------------------------------------------------------
+// Schema
+// ---------------------------------------------------------------------------
+
+// One machine-readable description of an API, in one format.
+message Schema {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // The interface description language this Schema is written in: "protobuf",
+  // "openapi/3.1", "json-schema", "graphql", "sql-ddl",
+  // "terraform-provider-spec", "pulumi-package-spec", "kubernetes-crd",
+  // "tree-sitter-grammar", "tdl". Open rather than a closed enum for the same
+  // reason codegen.converter Port.format is: this repository would need a
+  // proto change every time it learned to parse one more, and learning to
+  // parse a new format belongs in data rather than in the schema.
+  string format = 10;
+
+  // Where the bytes live. A plain string so it can address a
+  // dev.unmango.protofs path or a URL without coupling the packages. The
+  // address a fetcher reads, whether or not repository is also set.
+  string source_uri = 12;
+
+  // Version of the API being described, not of this resource.
+  string version = 13 [features.field_presence = EXPLICIT];
+
+  // The compute.platform Platform whose API this describes: Proxmox, GitHub,
+  // Discord. Absent for a schema that describes no external system.
+  ref.v1alpha1.ObjectReference platform = 14 [features.field_presence = EXPLICIT];
+
+  // Other Schemas this one depends on to resolve its types.
+  repeated ref.v1alpha1.ObjectReference imports = 15;
+
+  // The vcs.repository Repository the source is checked into, when it is
+  // tracked by one. Provenance only: never used to derive source_uri, and
+  // never required to agree with it beyond both describing the same bytes.
+  ref.v1alpha1.ObjectReference repository = 16 [features.field_presence = EXPLICIT];
+
+  // Subdirectory of repository holding the schema: "proto/". Meaningless,
+  // and left unset, when repository is unset.
+  string root_path = 17 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Content hash of the source as last fetched. What a
+  // codegen.conversion ConversionInput pins and a codegen.artifact Artifact
+  // hashes over.
+  string digest = 52 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  int32 type_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 service_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_fetch_time = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Schemas whose imports name this one. Makes the import graph navigable
+  // from either end.
+  repeated ref.v1alpha1.ObjectReference imported_by = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// TypeDef
+// ---------------------------------------------------------------------------
+
+// One named type declared by a Schema.
+message TypeDef {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The Schema that declares this type.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Content, populated when the owning Schema is parsed. Not user-declared,
+  // and there is no reconciliation loop pushing observed state toward it.
+  // Fully qualified within the declaring Schema, and what a TypeRef names.
+  string type_name = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  TypeKind kind = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated Field fields = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Set only when kind is TYPE_KIND_ENUM.
+  repeated string enum_values = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Set only when kind is TYPE_KIND_ALIAS.
+  TypeRef alias_of = 14 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  string docs = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool deprecated = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Set only when kind is TYPE_KIND_SERVICE.
+  repeated Method methods = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Other TypeDefs whose fields, methods, or aliases name this one.
+  repeated ref.v1alpha1.ObjectReference referenced_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 field_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
