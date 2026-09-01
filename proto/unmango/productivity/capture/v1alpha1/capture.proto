@@ -28,9 +28,13 @@ import "unmango/ref/v1alpha1/ref.proto";
 // no owner_refs, no generation, no observed_generation, no conditions.
 // Nothing here is ever declared and reconciled by a controller; a capture is
 // written once and later read or triaged by a human choice, not admitted,
-// bound, or brought into agreement with a desired state. status still
-// exists, since triage is a real fact about the item, just not one anything
-// reconciles toward.
+// bound, or brought into agreement with a desired state.
+//
+// Triage is a real fact about the item, so status, resolved_into, and
+// discard_reason stay; they sit in the declared band because a human writes
+// them, not a controller. They were OUTPUT_ONLY in the 50+ band, which left
+// them unwritable by the only actor that ever sets them. triaged_time is the
+// one fact here nobody declares, and stays server-stamped.
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -87,18 +91,23 @@ message CaptureItem {
 
   repeated string tags = 13;
 
-  reserved 50, 51; // observed_generation, conditions: nothing reconciles a capture
+  // Triage. Written by whoever triages the item, so it belongs in the
+  // declared band with the capture itself rather than the observed one.
+  CaptureStatus status = 14;
 
-  CaptureStatus status = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // What this became once triaged. Unset until status is TRIAGED.
-  ref.v1alpha1.ObjectReference resolved_into = 53 [
-    (google.api.field_behavior) = OUTPUT_ONLY,
+  // What this became once triaged. Set alongside status when it becomes
+  // TRIAGED, and left unset otherwise.
+  ref.v1alpha1.ObjectReference resolved_into = 15 [
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "*"
   ];
 
-  google.protobuf.Timestamp triaged_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // Set only when status is DISCARDED.
-  string discard_reason = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string discard_reason = 16 [(google.api.field_behavior) = OPTIONAL];
+
+  reserved 50, 51; // observed_generation, conditions: nothing reconciles a capture
+
+  // When status last became TRIAGED or DISCARDED. Server-stamped, the one
+  // fact here nobody declares.
+  google.protobuf.Timestamp triaged_time = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
