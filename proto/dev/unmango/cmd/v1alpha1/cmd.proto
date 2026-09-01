@@ -2,6 +2,7 @@ edition = "2024";
 
 package dev.unmango.cmd.v1alpha1;
 
+import "google/api/field_behavior.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
 
@@ -132,10 +133,10 @@ message File {
 }
 
 message User {
-  uint32 uid = 1 [features.field_presence = EXPLICIT];
-  uint32 gid = 2 [features.field_presence = EXPLICIT];
+  uint32 uid = 1 [(google.api.field_behavior) = OPTIONAL];
+  uint32 gid = 2 [(google.api.field_behavior) = OPTIONAL];
   repeated uint32 additional_gids = 3;
-  string username = 4 [features.field_presence = EXPLICIT]; // alternative to uid/gid
+  string username = 4 [(google.api.field_behavior) = OPTIONAL]; // alternative to uid/gid
 }
 
 enum OpenMode {

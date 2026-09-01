@@ -35,7 +35,7 @@ message RunnerScope {
   string owner = 1;
 
   // Single repository to serve. Unset means the whole owner scope.
-  string repository = 2 [features.field_presence = EXPLICIT];
+  string repository = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // How a RunnerPool replaces Runners when its template changes.
@@ -75,16 +75,13 @@ message Runner {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. RunnerTemplate mirrors 10-39.
   // The compute.platform Platform this runner registers with.
@@ -106,7 +103,6 @@ message Runner {
   // Assigned desired state.
   // The Host this Runner is bound to. Unset means unscheduled.
   ref.v1alpha1.ObjectReference host = 40 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.compute.host/Host"
   ];
@@ -118,19 +114,12 @@ message Runner {
 
   // The job currently executing, when phase is BUSY.
   ref.v1alpha1.ObjectReference current_job = 53 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.ci.job/JobRun"
   ];
 
-  google.protobuf.Timestamp bind_time = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp last_heartbeat_time = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp bind_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_heartbeat_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
   int64 completed_job_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
@@ -192,16 +181,13 @@ message RunnerSet {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   int32 replicas = 10;
@@ -247,16 +233,13 @@ message RunnerPool {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   int32 replicas = 10;
@@ -274,8 +257,8 @@ message RunnerPool {
 
   // Lower and upper replica bounds when an autoscaler drives this pool. Unset
   // min disables autoscaling.
-  int32 min_replicas = 15 [features.field_presence = EXPLICIT];
-  int32 max_replicas = 16 [features.field_presence = EXPLICIT];
+  int32 min_replicas = 15 [(google.api.field_behavior) = OPTIONAL];
+  int32 max_replicas = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

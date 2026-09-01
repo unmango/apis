@@ -70,7 +70,7 @@ message Serving {
   uom.v1alpha1.Unit unit = 1;
 
   // Set only when unit is UNIT_CUSTOM: "slice", "medium".
-  string custom_unit = 4 [features.field_presence = EXPLICIT];
+  string custom_unit = 4 [(google.api.field_behavior) = OPTIONAL];
 
   double grams = 2;
 
@@ -94,24 +94,21 @@ message Food {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  string brand = 10 [features.field_presence = EXPLICIT];
+  string brand = 10 [(google.api.field_behavior) = OPTIONAL];
 
   // Portions this food can be measured in. The first is the default.
   repeated Serving servings = 11;
 
-  string barcode = 12 [features.field_presence = EXPLICIT];
+  string barcode = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Where the nutrition data came from: "usda", "label", "estimated".
   string source = 13;
@@ -135,10 +132,7 @@ message Food {
   // FoodEntries currently referencing this food.
   int64 reference_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp last_eaten_time = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_eaten_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // One component of a recipe.
@@ -148,7 +142,7 @@ message Ingredient {
   uom.v1alpha1.Unit unit = 3;
 
   // Set only when unit is UNIT_CUSTOM.
-  string custom_unit = 4 [features.field_presence = EXPLICIT];
+  string custom_unit = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ---------------------------------------------------------------------------
@@ -166,16 +160,13 @@ message FoodEntry {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The catalog Food eaten. Attachment rather than ownership: the entry
@@ -187,10 +178,10 @@ message FoodEntry {
   // Which of the Food's servings the quantity is counted in.
   uom.v1alpha1.Unit unit = 12;
 
-  string note = 13 [features.field_presence = EXPLICIT];
+  string note = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Set only when unit is UNIT_CUSTOM.
-  string custom_unit = 14 [features.field_presence = EXPLICIT];
+  string custom_unit = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -212,8 +203,8 @@ message FoodEntryTemplate {
   ref.v1alpha1.ParentReference food_ref = 10 [(google.api.resource_reference).type = "unmango.health.nutrition/Food"];
   double quantity = 11;
   uom.v1alpha1.Unit unit = 12;
-  string note = 13 [features.field_presence = EXPLICIT];
-  string custom_unit = 14 [features.field_presence = EXPLICIT];
+  string note = 13 [(google.api.field_behavior) = OPTIONAL];
+  string custom_unit = 14 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ---------------------------------------------------------------------------
@@ -230,16 +221,13 @@ message Meal {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. MealTemplate mirrors 10-39.
   MealType type = 10;
@@ -250,7 +238,7 @@ message Meal {
   // Which FoodEntries this Meal claims.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
 
-  string notes = 13 [features.field_presence = EXPLICIT];
+  string notes = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Nutrient budget for this sitting, against which totals are compared.
   Nutrients targets = 14;
@@ -271,10 +259,7 @@ message Meal {
   Nutrients totals = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.type.Money cost = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp eaten_time = 56 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp eaten_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Totals divided by targets, across whichever targets were set.
   double target_attainment = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -295,7 +280,7 @@ message MealTemplate {
 
   // Which FoodEntries a generated Meal claims.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
-  string notes = 13 [features.field_presence = EXPLICIT];
+  string notes = 13 [(google.api.field_behavior) = OPTIONAL];
   Nutrients targets = 14;
 }
 
@@ -314,16 +299,13 @@ message MealPlan {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // One template per sitting in the cycle, each placed by its
@@ -332,7 +314,7 @@ message MealPlan {
 
   int32 cycle_length_days = 11;
   google.type.Date start_date = 12;
-  google.type.Date end_date = 13 [features.field_presence = EXPLICIT];
+  google.type.Date end_date = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Materialize meals up to this date, bounding how far ahead the chain runs.
   google.type.Date materialize_through = 14;

@@ -101,7 +101,7 @@ message ReviewComment {
   bool resolved = 4;
 
   // Concrete replacement the author can apply directly.
-  string suggestion = 5 [features.field_presence = EXPLICIT];
+  string suggestion = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ---------------------------------------------------------------------------
@@ -120,16 +120,13 @@ message Review {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The Change being reviewed. The Change decides whether to admit this.
@@ -139,7 +136,7 @@ message Review {
   ref.v1alpha1.ObjectReference reviewer = 11 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
   ReviewVerdict verdict = 12;
-  string body = 13 [features.field_presence = EXPLICIT];
+  string body = 13 [(google.api.field_behavior) = OPTIONAL];
   repeated ReviewComment comments = 14;
 
   // The head commit this verdict was formed against. What
@@ -156,10 +153,7 @@ message Review {
   // not.
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp submitted_time = 52 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp submitted_time = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 comment_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 unresolved_comment_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -182,7 +176,7 @@ message Change {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -192,14 +186,11 @@ message Change {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. ChangeTemplate mirrors 10-39.
   string title = 10;
-  string body = 11 [features.field_presence = EXPLICIT];
+  string body = 11 [(google.api.field_behavior) = OPTIONAL];
   bool draft = 12;
   MergeStrategy merge_strategy = 13;
 
@@ -208,7 +199,7 @@ message Change {
 
   // people.contact Contact expected to carry the change forward.
   ref.v1alpha1.ObjectReference assignee = 15 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
@@ -236,7 +227,6 @@ message Change {
 
   // people.contact Contact who opened it.
   ref.v1alpha1.ObjectReference author = 44 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
@@ -267,10 +257,7 @@ message Change {
   // No conflicts against the target branch.
   bool mergeable = 60 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string merge_blocked_reason = 61 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string merge_blocked_reason = 61 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string head_revision = 62 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 commit_count = 63 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -278,22 +265,10 @@ message Change {
   int32 additions = 65 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 deletions = 66 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp opened_time = 67 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp merged_time = 68 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp closed_time = 69 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  string merge_commit_revision = 70 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp opened_time = 67 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp merged_time = 68 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp closed_time = 69 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string merge_commit_revision = 70 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // Desired state stamped onto Changes generated by a ChangeSet. Field numbers
@@ -307,12 +282,12 @@ message ChangeTemplate {
   string source_ref_name = 3;
 
   string title = 10;
-  string body = 11 [features.field_presence = EXPLICIT];
+  string body = 11 [(google.api.field_behavior) = OPTIONAL];
   bool draft = 12;
   MergeStrategy merge_strategy = 13;
   repeated ref.v1alpha1.ObjectReference reviewers = 14 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
   ref.v1alpha1.ObjectReference assignee = 15 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
   bool auto_merge = 16;
@@ -337,16 +312,13 @@ message ChangeSet {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Stamped onto each materialized Change.
@@ -358,7 +330,7 @@ message ChangeSet {
   // Or claimed by selector, via a vcs.repository RepositoryGroup. Applied in
   // addition to repositories above.
   ref.v1alpha1.ObjectReference repository_group = 12 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.vcs.repository/RepositoryGroup"
   ];
 
@@ -400,19 +372,12 @@ message ChangeSet {
 
   // The Change at the front of the queue, for SEQUENTIAL and STACKED.
   ref.v1alpha1.ObjectReference next_change = 61 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.vcs.change/Change"
   ];
 
-  google.protobuf.Timestamp first_opened_time = 62 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp completed_time = 63 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp first_opened_time = 62 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp completed_time = 63 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Latest revision of the template. Changes record the revision they were
   // created with.

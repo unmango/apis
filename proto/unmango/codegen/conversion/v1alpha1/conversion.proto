@@ -75,7 +75,7 @@ message ConversionTrigger {
   ConversionTriggerKind kind = 1;
 
   // Set only when kind is CONVERSION_TRIGGER_KIND_SCHEDULE.
-  string schedule = 2 [features.field_presence = EXPLICIT];
+  string schedule = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // One thing fed to a Converter, bound to one of its input Ports.
@@ -90,10 +90,10 @@ message ConversionInput {
   // Pins the input to one revision. Unset follows the source's current
   // digest, which is what makes a Conversion go stale rather than diverge
   // silently. Always set on a ConversionRun.
-  string digest = 3 [features.field_presence = EXPLICIT];
+  string digest = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Narrows the input to part of its source: a subdirectory, a single file.
-  string subpath = 4 [features.field_presence = EXPLICIT];
+  string subpath = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ---------------------------------------------------------------------------
@@ -110,16 +110,13 @@ message Conversion {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The codegen.converter Converter to run.
@@ -141,7 +138,7 @@ message Conversion {
   // instead of writing it in place, which is how a generated SDK gets
   // reviewed before it lands.
   ref.v1alpha1.ObjectReference change_target = 15 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.vcs.branch/Branch"
   ];
 
@@ -152,23 +149,16 @@ message Conversion {
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   ref.v1alpha1.ObjectReference latest_run = 52 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.codegen.conversion/ConversionRun"
   ];
 
   // Digest of the primary codegen.artifact Artifact the latest successful run
   // produced.
-  string latest_artifact_digest = 53 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string latest_artifact_digest = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   int32 run_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp last_success_time = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_success_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // An unpinned input's digest has moved past what latest_run consumed, or
   // the Converter's tool_version has. The output on disk no longer follows
@@ -190,7 +180,7 @@ message ConversionRun {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -199,10 +189,7 @@ message ConversionRun {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state, snapshotted from the Conversion at creation so the run
   // stays reproducible after the Conversion is edited.
@@ -221,7 +208,6 @@ message ConversionRun {
   // The ci.job JobRun executing this run. Unset while pending, exactly as an
   // unscheduled Pod has no node.
   ref.v1alpha1.ObjectReference job_run = 40 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.ci.job/JobRun"
   ];
@@ -231,14 +217,8 @@ message ConversionRun {
   ConversionPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   ConversionTrigger trigger = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp start_time = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp completion_time = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp start_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp completion_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The codegen.artifact Artifacts this run produced, in the order the
   // Converter declares its output Ports.
@@ -257,10 +237,7 @@ message ConversionRun {
   bool cache_hit = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   int32 attempt = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string logs_uri = 60 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string logs_uri = 60 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 output_file_count = 61 [(google.api.field_behavior) = OUTPUT_ONLY];
   int64 output_bytes = 62 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

@@ -83,16 +83,13 @@ message Membership {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The group being joined. The group decides whether to admit this.
@@ -104,10 +101,10 @@ message Membership {
   // What they played: "bass", "backing vocals", "drum programming".
   repeated string roles = 12;
 
-  google.type.Date joined = 13 [features.field_presence = EXPLICIT];
+  google.type.Date joined = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Unset while the membership is current.
-  google.type.Date left = 14 [features.field_presence = EXPLICIT];
+  google.type.Date left = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Present at the group's formation.
   bool founding = 15;
@@ -122,10 +119,7 @@ message Membership {
   // did not.
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp admitted_time = 52 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp admitted_time = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ---------------------------------------------------------------------------
@@ -143,16 +137,13 @@ message ArtistCredit {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The media.title Title being credited on.
@@ -173,7 +164,7 @@ message ArtistCredit {
   bool primary = 14;
 
   // The name printed on this release, when it differs from the Artist's.
-  string credited_as = 15 [features.field_presence = EXPLICIT];
+  string credited_as = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -181,10 +172,7 @@ message ArtistCredit {
   // Reports whether the Title admitted this credit.
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp admitted_time = 52 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp admitted_time = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ---------------------------------------------------------------------------
@@ -202,7 +190,7 @@ message Artist {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -211,10 +199,7 @@ message Artist {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Immutable once set, for the reason media.title Title.kind is: create a new
@@ -227,21 +212,21 @@ message Artist {
 
   // Name normalized for ordering, with leading articles dropped and a person
   // written surname first.
-  string sort_name = 12 [features.field_presence = EXPLICIT];
+  string sort_name = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Distinguishes artists sharing a name: "the Ohio one", "1970s UK punk".
-  string disambiguation = 13 [features.field_presence = EXPLICIT];
+  string disambiguation = 13 [(google.api.field_behavior) = OPTIONAL];
 
-  string summary = 14 [features.field_presence = EXPLICIT];
+  string summary = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Formed, or born, or first active under this name.
-  google.type.Date active_from = 15 [features.field_presence = EXPLICIT];
+  google.type.Date active_from = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Disbanded, or died. Unset while active.
-  google.type.Date active_until = 16 [features.field_presence = EXPLICIT];
+  google.type.Date active_until = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // ISO 3166 code of where the artist is from.
-  string origin_country = 17 [features.field_presence = EXPLICIT];
+  string origin_country = 17 [(google.api.field_behavior) = OPTIONAL];
 
   repeated string genres = 18;
   repeated ExternalId external_ids = 19;
@@ -249,16 +234,16 @@ message Artist {
   // A people.contact Contact when the artist is someone known personally,
   // otherwise unset. The same escape hatch media.title Credit.contact offers.
   ref.v1alpha1.ObjectReference contact = 20 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   // Artwork. A plain string so it can address a dev.unmango.protofs path
   // without coupling the packages.
-  string image_uri = 21 [features.field_presence = EXPLICIT];
+  string image_uri = 21 [(google.api.field_behavior) = OPTIONAL];
 
   // Personal rating, 0 to 100. Distinct from any external score.
-  int32 rating = 22 [features.field_presence = EXPLICIT];
+  int32 rating = 22 [(google.api.field_behavior) = OPTIONAL];
 
   // Which child Artists this one claims.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 23;

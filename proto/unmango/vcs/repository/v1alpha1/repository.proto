@@ -50,16 +50,13 @@ message Remote {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   string url = 10;
@@ -77,18 +74,9 @@ message Remote {
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   bool reachable = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp last_contact_time = 53 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp last_fetch_time = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp last_push_time = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_contact_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_fetch_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_push_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum RemoteDirection {
@@ -124,7 +112,7 @@ message Repository {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Also the surface a RepositoryGroup selector matches against.
   map<string, string> labels = 4;
@@ -133,10 +121,7 @@ message Repository {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The compute.platform Platform whose version control system this
@@ -146,7 +131,7 @@ message Repository {
   // The compute.platform Platform hosting this repository. Unset means
   // a bare repository with no forge in front of it.
   ref.v1alpha1.ObjectReference forge = 11 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.compute.platform/Platform"
   ];
 
@@ -162,11 +147,11 @@ message Repository {
   // vcs.change Change.
   string default_branch = 15;
 
-  string description = 16 [features.field_presence = EXPLICIT];
+  string description = 16 [(google.api.field_behavior) = OPTIONAL];
   repeated string topics = 17;
 
   // SPDX identifier.
-  string license = 18 [features.field_presence = EXPLICIT];
+  string license = 18 [(google.api.field_behavior) = OPTIONAL];
 
   // Read-only. History is retained but nothing new is accepted.
   bool archived = 19;
@@ -177,7 +162,7 @@ message Repository {
   // The repository this one was forked from. Attachment rather than
   // ownership: an upstream has no say in its forks and outlives them.
   ref.v1alpha1.ObjectReference upstream = 21 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
   ];
 
@@ -188,17 +173,13 @@ message Repository {
   // The compute.host Host serving this repository, when it is self-hosted.
   // Unset means the forge hosts it.
   ref.v1alpha1.ObjectReference host = 40 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.compute.host/Host"
   ];
 
   // Working copy on disk. A plain string so it can address a
   // dev.unmango.protofs path without coupling the packages.
-  string working_copy_uri = 41 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string working_copy_uri = 41 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -221,22 +202,13 @@ message Repository {
 
   int64 size_bytes = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
   int64 commit_count = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string primary_language = 60 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string primary_language = 60 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Tip of default_branch, as a node in the vcs.commit graph.
   string head_revision = 61 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp last_pushed_time = 62 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp last_fetched_time = 63 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_pushed_time = 62 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_fetched_time = 63 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Commits behind its upstream, for a fork or mirror.
   int32 behind_upstream = 64 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -275,23 +247,20 @@ message RepositoryGroup {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which Repositories belong. An empty selector claims nothing, never
   // everything.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
 
-  string summary = 11 [features.field_presence = EXPLICIT];
+  string summary = 11 [(google.api.field_behavior) = OPTIONAL];
 
   // Stamped onto repositories created through this group, which is how a new
   // repository ends up matching the selector.
@@ -300,7 +269,7 @@ message RepositoryGroup {
   // Settings every member should converge on. A member diverging from these
   // reports a Condition rather than being silently corrected.
   Visibility required_visibility = 13;
-  string required_default_branch = 14 [features.field_presence = EXPLICIT];
+  string required_default_branch = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -314,10 +283,7 @@ message RepositoryGroup {
   int32 open_change_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   int64 total_size_bytes = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp last_pushed_time = 56 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_pushed_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // ---------------------------------------------------------------------------
@@ -336,7 +302,7 @@ message Grant {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -345,10 +311,7 @@ message Grant {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The people.contact Contact or Group receiving access.
@@ -369,19 +332,12 @@ message Grant {
 
   // Contact who issued this grant, when known.
   ref.v1alpha1.ObjectReference granted_by = 53 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
-  google.protobuf.Timestamp granted_time = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp revoked_time = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp granted_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp revoked_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum GrantPhase {
@@ -413,7 +369,7 @@ message Composition {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -422,10 +378,7 @@ message Composition {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Path within the parent repository's tree where the nested repository is
@@ -450,10 +403,7 @@ message Composition {
   // resolved_revision equals pinned_revision.
   bool up_to_date = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp last_synced_time = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_synced_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum CompositionPhase {

@@ -77,7 +77,7 @@ message MediaFile {
   repeated SubtitleTrack subtitles = 6;
 
   // Content hash, for detecting corruption or duplication.
-  string checksum = 7 [features.field_presence = EXPLICIT];
+  string checksum = 7 [(google.api.field_behavior) = OPTIONAL];
 
   // Part number within a multi-file release, one-based.
   int32 part = 8;
@@ -131,7 +131,7 @@ message LibraryItem {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Also the surface Library and Collection selectors match against.
   map<string, string> labels = 4;
@@ -140,10 +140,7 @@ message LibraryItem {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   OwnershipType ownership = 10;
@@ -155,31 +152,30 @@ message LibraryItem {
   // Where a physical copy sits: an asset.property Space, with the shelf
   // within it, if any, as the ParentReference section.
   ref.v1alpha1.ParentReference location = 12 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.asset.property/Space"
   ];
 
   // Where a digital copy came from: a service name, a rip, a purchase.
-  string source = 13 [features.field_presence = EXPLICIT];
+  string source = 13 [(google.api.field_behavior) = OPTIONAL];
 
-  google.type.Date acquired_date = 14 [features.field_presence = EXPLICIT];
+  google.type.Date acquired_date = 14 [(google.api.field_behavior) = OPTIONAL];
   google.type.Money purchase_price = 15;
 
   // When a rental or loan is due back.
-  google.type.Date due_date = 16 [features.field_presence = EXPLICIT];
+  google.type.Date due_date = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // The people.contact Contact currently holding it, when lent out.
   ref.v1alpha1.ObjectReference lent_to = 17 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
-  string notes = 18 [features.field_presence = EXPLICIT];
+  string notes = 18 [(google.api.field_behavior) = OPTIONAL];
 
   // Assigned desired state.
   // The media.title Edition this is a copy of. Unset means unmatched.
   ref.v1alpha1.ObjectReference edition = 40 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.media.title/Edition"
   ];
@@ -187,7 +183,6 @@ message LibraryItem {
   // The media.title Title, denormalized from the Edition so a Collection can
   // select on it without a join.
   ref.v1alpha1.ObjectReference title = 41 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.media.title/Title"
   ];
@@ -210,10 +205,7 @@ message LibraryItem {
   // Best video height across the files, so quality is sortable.
   int32 max_height = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp last_verified_time = 57 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_verified_time = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // A file recorded in files could not be read at last verification.
   bool has_missing_files = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -234,16 +226,13 @@ message Library {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which LibraryItems belong. An empty selector claims nothing, never
@@ -271,14 +260,8 @@ message Library {
   int32 unmatched_item_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 missing_item_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   int64 total_size_bytes = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp last_scan_time = 56 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp next_scan_time = 57 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_scan_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp next_scan_time = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
   bool scanning = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
@@ -298,29 +281,26 @@ message Collection {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which media.title Titles belong.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
 
-  string summary = 11 [features.field_presence = EXPLICIT];
+  string summary = 11 [(google.api.field_behavior) = OPTIONAL];
 
   // Members in a deliberate order, for a collection whose sequence matters.
   // Anything the selector claims but this omits sorts after these.
   repeated ref.v1alpha1.ObjectReference ordered_members = 12 [(google.api.resource_reference).type = "unmango.media.title/Title"];
 
   // Artwork. A plain string so it can address a dev.unmango.protofs path.
-  string poster_uri = 13 [features.field_presence = EXPLICIT];
+  string poster_uri = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Restrict membership to Titles with a held LibraryItem.
   bool owned_only = 14;

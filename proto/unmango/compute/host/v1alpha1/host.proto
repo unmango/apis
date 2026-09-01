@@ -52,7 +52,7 @@ message SystemInfo {
 // Repels work that does not explicitly tolerate it.
 message Taint {
   string key = 1;
-  string value = 2 [features.field_presence = EXPLICIT];
+  string value = 2 [(google.api.field_behavior) = OPTIONAL];
   TaintEffect effect = 3;
 }
 
@@ -83,16 +83,13 @@ message Host {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   string hostname = 10;
@@ -112,7 +109,7 @@ message Host {
 
   // The asset.property Space this machine physically sits in.
   ref.v1alpha1.ObjectReference location = 15 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.asset.property/Space"
   ];
 
@@ -132,14 +129,8 @@ message Host {
   // Sum of the requests of everything currently bound here.
   uom.v1alpha1.ResourceQuantity allocated = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp boot_time = 58 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp last_heartbeat_time = 59 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp boot_time = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_heartbeat_time = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum HostPhase {
@@ -176,16 +167,13 @@ message Cluster {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which Hosts belong. An empty selector claims nothing, never everything.

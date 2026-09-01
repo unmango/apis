@@ -75,7 +75,7 @@ message RecurrenceRule {
   int32 count = 5;
 
   // Stop on this date. Unset means unbounded.
-  google.type.Date until = 6 [features.field_presence = EXPLICIT];
+  google.type.Date until = 6 [(google.api.field_behavior) = OPTIONAL];
 
   // Dates to skip, for a series with holes in it.
   repeated google.type.Date exclude_dates = 7;
@@ -109,16 +109,13 @@ message Attendance {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The Event being attended. The Event decides whether to admit this.
@@ -135,7 +132,7 @@ message Attendance {
   // Chairs the event. At most one attendance per event should set this.
   bool organizer = 14;
 
-  string comment = 15 [features.field_presence = EXPLICIT];
+  string comment = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -144,10 +141,7 @@ message Attendance {
   // did not.
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp responded_time = 52 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp responded_time = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Whether the attendee is double-booked over this event's interval.
   bool conflicting = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -167,23 +161,20 @@ message Event {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. EventTemplate mirrors 10-39.
   string summary = 10;
-  string description = 11 [features.field_presence = EXPLICIT];
+  string description = 11 [(google.api.field_behavior) = OPTIONAL];
 
   // Free-text location, for somewhere with no modelled Space.
-  string location = 12 [features.field_presence = EXPLICIT];
+  string location = 12 [(google.api.field_behavior) = OPTIONAL];
 
   Transparency transparency = 13;
 
@@ -197,7 +188,7 @@ message Event {
   // shifts: "America/Chicago".
   string time_zone = 16;
 
-  string conference_uri = 17 [features.field_presence = EXPLICIT];
+  string conference_uri = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // Assigned desired state.
   // When it happens. Computed per occurrence for a materialized event.
@@ -205,17 +196,13 @@ message Event {
 
   // The asset.property Space booked for it. Unset means no room is held.
   ref.v1alpha1.ObjectReference space = 41 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.asset.property/Space"
   ];
 
   // Date within the series this occurrence stands for. Set on materialized
   // events, so an occurrence stays identifiable after it is moved.
-  google.type.Date occurrence_date = 42 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.type.Date occurrence_date = 42 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // This occurrence was edited individually and no longer tracks its series.
   bool detached = 43 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -241,13 +228,13 @@ message EventTemplate {
   map<string, string> annotations = 2;
 
   string summary = 10;
-  string description = 11 [features.field_presence = EXPLICIT];
-  string location = 12 [features.field_presence = EXPLICIT];
+  string description = 11 [(google.api.field_behavior) = OPTIONAL];
+  string location = 12 [(google.api.field_behavior) = OPTIONAL];
   Transparency transparency = 13;
   bool all_day = 14;
   repeated google.protobuf.Duration reminders = 15;
   string time_zone = 16;
-  string conference_uri = 17 [features.field_presence = EXPLICIT];
+  string conference_uri = 17 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ---------------------------------------------------------------------------
@@ -264,16 +251,13 @@ message RecurringEvent {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Stamped onto each materialized Event.
@@ -298,7 +282,7 @@ message RecurringEvent {
 
   // The Space every occurrence books, when the series holds a standing room.
   ref.v1alpha1.ObjectReference space = 17 [
-    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.asset.property/Space"
   ];
 
@@ -316,10 +300,7 @@ message RecurringEvent {
   // Occurrences that were edited individually and no longer track the series.
   int32 detached_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.type.Date next_occurrence_date = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.type.Date next_occurrence_date = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.type.Date materialized_through = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Latest revision of the template. Occurrences record the revision they were

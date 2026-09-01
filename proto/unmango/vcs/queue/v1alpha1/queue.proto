@@ -37,7 +37,7 @@ message MergeQueue {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
 
@@ -46,10 +46,7 @@ message MergeQueue {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Entries tested together speculatively. One disables batching.
@@ -75,15 +72,11 @@ message MergeQueue {
 
   // Entry at the front of the queue, mirroring vcs.change ChangeSet.next_change.
   ref.v1alpha1.ObjectReference head_entry = 56 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.vcs.queue/QueueEntry"
   ];
 
-  google.protobuf.Timestamp last_merge_time = 57 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp last_merge_time = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum MergeQueuePhase {
@@ -117,16 +110,13 @@ message QueueEntry {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The MergeQueue this entry asks to join. The queue decides whether to
@@ -143,10 +133,7 @@ message QueueEntry {
   // Assigned desired state.
   // Which speculative batch this entry currently belongs to. Unset means not
   // yet batched.
-  string batch_id = 40 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string batch_id = 40 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -158,19 +145,10 @@ message QueueEntry {
 
   // Why the queue removed this entry: stale, checks failed, conflicts,
   // target Protection unmet.
-  string eject_reason = 54 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string eject_reason = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp queued_time = 55 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
-  google.protobuf.Timestamp merged_time = 56 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp queued_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp merged_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum QueueEntryPhase {

@@ -47,16 +47,13 @@ message Allocation {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. AllocationTemplate mirrors 10-39.
   // Spending category this envelope covers: "groceries", "fuel".
@@ -85,10 +82,10 @@ message Allocation {
 
   // Save toward this total rather than (or alongside) capping spend at
   // limit. Unset means this envelope is spend-down only.
-  google.type.Money target_amount = 16 [features.field_presence = EXPLICIT];
+  google.type.Money target_amount = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Reach target_amount by this date. Unset means no deadline.
-  google.type.Date target_date = 17 [features.field_presence = EXPLICIT];
+  google.type.Date target_date = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -110,23 +107,16 @@ message Allocation {
 
   // Spent divided by target_amount. Only meaningful when target_amount is
   // set.
-  double percent_funded = 57 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  double percent_funded = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Extrapolated from the recent contribution rate. Unset when there isn't
   // enough history to project from.
-  google.type.Date projected_completion_date = 58 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.type.Date projected_completion_date = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The Allocation whose surplus absorbed this one's overspend. Set by
   // whoever reconciles the graph when strict is false and remaining went
   // negative.
   ref.v1alpha1.ObjectReference covered_by = 59 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.finance.budget/Allocation"
   ];
@@ -146,8 +136,8 @@ message AllocationTemplate {
   bool rollover = 13;
   bool strict = 14;
   int32 priority = 15;
-  google.type.Money target_amount = 16 [features.field_presence = EXPLICIT];
-  google.type.Date target_date = 17 [features.field_presence = EXPLICIT];
+  google.type.Money target_amount = 16 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date target_date = 17 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ---------------------------------------------------------------------------
@@ -166,16 +156,13 @@ message BudgetPeriod {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. BudgetPeriodTemplate mirrors 10-39.
   // Envelopes to materialize for this window.
@@ -252,16 +239,13 @@ message Budget {
   };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string display_name = 3 [features.field_presence = EXPLICIT];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // How often a new BudgetPeriod is materialized.
@@ -271,7 +255,7 @@ message Budget {
   google.type.Date start_date = 11;
 
   // Stop materializing after this date. Unset means indefinitely.
-  google.type.Date end_date = 12 [features.field_presence = EXPLICIT];
+  google.type.Date end_date = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Stamped onto each materialized BudgetPeriod. Editing this affects future
   // periods only; existing ones keep the revision they were created with.
@@ -300,7 +284,6 @@ message Budget {
 
   // The period containing today.
   ref.v1alpha1.ObjectReference current_period = 53 [
-    features.field_presence = EXPLICIT,
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference).type = "unmango.finance.budget/BudgetPeriod"
   ];
@@ -354,16 +337,13 @@ message BudgetRevision {
   // Content, fixed at creation and covered by the digest.
   // Previous revision's digest. Empty for the first revision. This is the
   // >> edge.
-  string parent_digest = 10 [
-    features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
-  ];
+  string parent_digest = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Snapshot of Budget.template at the moment this revision was recorded.
   BudgetPeriodTemplate template = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Free-text note describing why the standing intent changed.
-  string note = 12 [features.field_presence = EXPLICIT];
+  string note = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Derived, computed by whoever indexes the graph.
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
