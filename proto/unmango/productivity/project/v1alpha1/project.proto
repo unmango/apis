@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.productivity.project.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -44,6 +45,12 @@ enum ProjectPhase {
 
 // A grouping of Tasks toward one outcome.
 message Project {
+  option (google.api.resource) = {
+    type: "unmango.productivity.project/Project"
+    pattern: "{project}"
+    singular: "project"
+    plural: "projects"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];

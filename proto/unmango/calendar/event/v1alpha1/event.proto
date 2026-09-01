@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.calendar.event.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
@@ -100,6 +101,12 @@ enum AttendeeResponse {
 // One person's relationship to one Event. Authored independently of the Event
 // and admitted by it.
 message Attendance {
+  option (google.api.resource) = {
+    type: "unmango.calendar.event/Attendance"
+    pattern: "{attendance}"
+    singular: "attendance"
+    plural: "attendances"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -115,10 +122,10 @@ message Attendance {
 
   // Desired state.
   // The Event being attended. The Event decides whether to admit this.
-  ref.v1alpha1.ParentReference parent_ref = 10;
+  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.calendar.event/Event"];
 
   // The people.contact Contact attending.
-  ref.v1alpha1.ObjectReference attendee = 11;
+  ref.v1alpha1.ObjectReference attendee = 11 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
   AttendeeResponse response = 12;
 
@@ -152,6 +159,12 @@ message Attendance {
 
 // A single occurrence of scheduled time.
 message Event {
+  option (google.api.resource) = {
+    type: "unmango.calendar.event/Event"
+    pattern: "{event}"
+    singular: "event"
+    plural: "events"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -193,7 +206,8 @@ message Event {
   // The asset.property Space booked for it. Unset means no room is held.
   ref.v1alpha1.ObjectReference space = 41 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.asset.property/Space"
   ];
 
   // Date within the series this occurrence stands for. Set on materialized
@@ -242,6 +256,12 @@ message EventTemplate {
 
 // A repeating series, and the owner of every Event it materializes.
 message RecurringEvent {
+  option (google.api.resource) = {
+    type: "unmango.calendar.event/RecurringEvent"
+    pattern: "{recurring_event}"
+    singular: "recurringEvent"
+    plural: "recurringEvents"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -277,7 +297,10 @@ message RecurringEvent {
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
 
   // The Space every occurrence books, when the series holds a standing room.
-  ref.v1alpha1.ObjectReference space = 17 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference space = 17 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.asset.property/Space"
+  ];
 
   // Stop materializing without deleting the series.
   bool suspended = 18;

@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.pki.issuer.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -41,7 +42,7 @@ message CaConfig {
   // The Issuer whose most recent pki.certificate Certificate signs
   // certificates issued through this one. Forms the CA chain a
   // pki.certificate Certificate's issuer_fingerprint walks.
-  ref.v1alpha1.ObjectReference issuer = 1;
+  ref.v1alpha1.ObjectReference issuer = 1 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
 }
 
 // Where an ACME challenge is answered.
@@ -54,7 +55,10 @@ enum AcmeChallengeKind {
 message AcmeConfig {
   // The compute.platform Platform for the ACME server: Let's Encrypt,
   // ZeroSSL, Google Trust Services.
-  ref.v1alpha1.ObjectReference platform = 1 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference platform = 1 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.compute.platform/Platform"
+  ];
 
   // Directory URL, when platform is absent or does not resolve to one.
   string directory_url = 2 [features.field_presence = EXPLICIT];
@@ -65,7 +69,10 @@ message AcmeConfig {
   // The compute.platform Platform solving challenge_kind: a DNS provider for
   // DNS-01. Absent for HTTP-01, solved by whatever already serves the
   // requested domain.
-  ref.v1alpha1.ObjectReference challenge_solver = 5 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference challenge_solver = 5 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.compute.platform/Platform"
+  ];
 }
 
 message VaultConfig {
@@ -84,6 +91,12 @@ message VaultConfig {
 
 // A signing mechanism certificates are requested from.
 message Issuer {
+  option (google.api.resource) = {
+    type: "unmango.pki.issuer/Issuer"
+    pattern: "{issuer}"
+    singular: "issuer"
+    plural: "issuers"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];

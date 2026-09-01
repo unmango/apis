@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.iac.stack.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
@@ -62,6 +63,12 @@ enum RunPhase {
 
 // A standing instruction to run one Module against one target.
 message Stack {
+  option (google.api.resource) = {
+    type: "unmango.iac.stack/Stack"
+    pattern: "{stack}"
+    singular: "stack"
+    plural: "stacks"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -77,7 +84,7 @@ message Stack {
 
   // Desired state.
   // The iac.module Module to run.
-  ref.v1alpha1.ObjectReference module = 10;
+  ref.v1alpha1.ObjectReference module = 10 [(google.api.resource_reference).type = "unmango.iac.module/Module"];
 
   // Variables passed to the module.
   google.protobuf.Struct inputs = 11;
@@ -101,7 +108,8 @@ message Stack {
 
   ref.v1alpha1.ObjectReference last_run = 54 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.iac.stack/Run"
   ];
   RunPhase last_run_phase = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp last_apply_time = 56 [
@@ -116,6 +124,12 @@ message Stack {
 
 // One execution of a Stack: a plan, an apply, or a destroy.
 message Run {
+  option (google.api.resource) = {
+    type: "unmango.iac.stack/Run"
+    pattern: "{run}"
+    singular: "run"
+    plural: "runs"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -135,7 +149,7 @@ message Run {
   // Desired state, snapshotted from the Stack at creation so the run stays
   // reproducible after the Stack is edited.
   RunKind run_kind = 10;
-  ref.v1alpha1.ObjectReference module = 11;
+  ref.v1alpha1.ObjectReference module = 11 [(google.api.resource_reference).type = "unmango.iac.module/Module"];
   google.protobuf.Struct inputs = 12;
   string target_environment = 13 [features.field_presence = EXPLICIT];
   string state_uri = 14 [features.field_presence = EXPLICIT];
@@ -146,7 +160,8 @@ message Run {
   // unscheduled Pod has no node.
   ref.v1alpha1.ObjectReference job_run = 40 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.ci.job/JobRun"
   ];
 
   // Observed state.

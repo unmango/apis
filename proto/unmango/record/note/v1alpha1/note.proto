@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.record.note.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -43,7 +44,7 @@ enum ContentFormat {
 
 // An edge from a Note to anything else in the graph.
 message Link {
-  ref.v1alpha1.ObjectReference target = 1;
+  ref.v1alpha1.ObjectReference target = 1 [(google.api.resource_reference).type = "*"];
 
   // How the note relates to the target.
   LinkRelation relation = 2;
@@ -81,6 +82,12 @@ message Attachment {
 
 // One piece of written material. Nests to form sub-notes.
 message Note {
+  option (google.api.resource) = {
+    type: "unmango.record.note/Note"
+    pattern: "{note}"
+    singular: "note"
+    plural: "notes"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -132,7 +139,10 @@ message Note {
 
   // Notebooks whose selectors currently claim this note. Makes the selector
   // edge navigable from the note side.
-  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.record.note/Notebook"
+  ];
 
   int32 child_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 link_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -156,6 +166,12 @@ message Note {
 
 // A grouping of Notes, claimed by selector.
 message Notebook {
+  option (google.api.resource) = {
+    type: "unmango.record.note/Notebook"
+    pattern: "{notebook}"
+    singular: "notebook"
+    plural: "notebooks"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -183,7 +199,10 @@ message Notebook {
 
   // The domain this notebook documents, when it is scoped to one: a Vehicle, a
   // Pipeline, a Property.
-  ref.v1alpha1.ObjectReference subject = 14 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference subject = 14 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "*"
+  ];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

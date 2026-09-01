@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.productivity.habit.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -48,6 +49,12 @@ enum HabitFrequency {
 // A behavior worth doing regularly, tracked by its log rather than by
 // materializing scheduled work.
 message Habit {
+  option (google.api.resource) = {
+    type: "unmango.productivity.habit/Habit"
+    pattern: "{habit}"
+    singular: "habit"
+    plural: "habits"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -98,6 +105,12 @@ message Habit {
 
 // One occurrence of a Habit, logged when it happens.
 message HabitLog {
+  option (google.api.resource) = {
+    type: "unmango.productivity.habit/HabitLog"
+    pattern: "{habit_log}"
+    singular: "habitLog"
+    plural: "habitLogs"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];

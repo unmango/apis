@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.pki.certificate.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/interval.proto";
@@ -93,6 +94,12 @@ enum CertificateIssuancePhase {
 // A standing request for a certificate, reissued once its Certificate's
 // remaining lifetime crosses renew_before.
 message CertificateRequest {
+  option (google.api.resource) = {
+    type: "unmango.pki.certificate/CertificateRequest"
+    pattern: "{certificate_request}"
+    singular: "certificateRequest"
+    plural: "certificateRequests"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -108,7 +115,7 @@ message CertificateRequest {
 
   // Desired state.
   // The pki.issuer Issuer to request from.
-  ref.v1alpha1.ObjectReference issuer = 10;
+  ref.v1alpha1.ObjectReference issuer = 10 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
 
   repeated string dns_names = 11;
   string common_name = 12 [features.field_presence = EXPLICIT];
@@ -138,7 +145,8 @@ message CertificateRequest {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   ref.v1alpha1.ObjectReference latest_issuance = 52 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.pki.certificate/CertificateIssuance"
   ];
 
   // Fingerprint of the Certificate the latest successful issuance produced.
@@ -168,6 +176,12 @@ message CertificateRequest {
 
 // One signing attempt for a CertificateRequest.
 message CertificateIssuance {
+  option (google.api.resource) = {
+    type: "unmango.pki.certificate/CertificateIssuance"
+    pattern: "{certificate_issuance}"
+    singular: "certificateIssuance"
+    plural: "certificateIssuances"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -186,7 +200,7 @@ message CertificateIssuance {
 
   // Desired state, snapshotted from the CertificateRequest at creation so the
   // issuance stays reproducible after the request is edited.
-  ref.v1alpha1.ObjectReference issuer = 10;
+  ref.v1alpha1.ObjectReference issuer = 10 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
   repeated string dns_names = 11;
   string common_name = 12 [features.field_presence = EXPLICIT];
   repeated string ip_addresses = 13;
@@ -202,7 +216,8 @@ message CertificateIssuance {
   // as an unscheduled Pod has no node.
   ref.v1alpha1.ObjectReference job_run = 40 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.ci.job/JobRun"
   ];
 
   // Observed state.
@@ -239,6 +254,12 @@ message CertificateIssuance {
 
 // One content-addressed, issued X.509 certificate.
 message Certificate {
+  option (google.api.resource) = {
+    type: "unmango.pki.certificate/Certificate"
+    pattern: "{certificate}"
+    singular: "certificate"
+    plural: "certificates"
+  };
   // Content-addressed identity.
   // SHA-256 over the DER-encoded certificate: "sha256:...". There is no
   // separate name, display_name, or owner_refs: nothing declares a
@@ -262,7 +283,7 @@ message Certificate {
   google.protobuf.Timestamp not_after = 18;
 
   // The pki.issuer Issuer that minted this.
-  ref.v1alpha1.ObjectReference issuer = 19;
+  ref.v1alpha1.ObjectReference issuer = 19 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
 
   // Fingerprint of the Certificate that signed this one. The `>>` edge,
   // fixed at creation because the signer's identity is part of what a
@@ -280,7 +301,10 @@ message Certificate {
   // codegen.artifact Artifact.produced_by is: a retried issuance can reach an
   // identical certificate only by coincidence of inputs, and which attempt
   // got there first is not part of the identity.
-  repeated ref.v1alpha1.ObjectReference issued_by = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference issued_by = 51 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.pki.certificate/CertificateIssuance"
+  ];
 
   bool revoked = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp revoke_time = 53 [
@@ -330,7 +354,10 @@ message ListCertificatesRequest {
   // Field 4 is `issuer` rather than the `owner` this position holds on every
   // mutable kind. A certificate has no owner reference to list by; the
   // issuer is provenance, not ownership.
-  ref.v1alpha1.ObjectReference issuer = 4 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference issuer = 4 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.pki.issuer/Issuer"
+  ];
 
   repeated string dns_names = 5;
 
@@ -349,7 +376,10 @@ message ListCertificatesResponse {
 
 message WatchCertificatesRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1;
-  ref.v1alpha1.ObjectReference issuer = 2 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference issuer = 2 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.pki.issuer/Issuer"
+  ];
 
   // Resume from this point instead of the current state, so a client that
   // drops the stream does not have to replay from nothing. Unset starts from

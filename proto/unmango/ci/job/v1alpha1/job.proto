@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.ci.job.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -54,7 +55,7 @@ message Trigger {
   // Who or what initiated it.
   oneof actor {
     // A people.contact Contact for a human.
-    ref.v1alpha1.ObjectReference contact = 4;
+    ref.v1alpha1.ObjectReference contact = 4 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
     // A schedule name or other non-resource actor.
     string system_actor = 5;
@@ -102,6 +103,12 @@ message Step {
 
 // One execution of a Pipeline.
 message JobRun {
+  option (google.api.resource) = {
+    type: "unmango.ci.job/JobRun"
+    pattern: "{job_run}"
+    singular: "jobRun"
+    plural: "jobRuns"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -126,13 +133,14 @@ message JobRun {
   int32 max_retries = 14;
 
   // JobRuns that must succeed before this one may bind.
-  repeated ref.v1alpha1.ObjectReference depends_on = 15;
+  repeated ref.v1alpha1.ObjectReference depends_on = 15 [(google.api.resource_reference).type = "unmango.ci.job/JobRun"];
 
   // Assigned desired state.
   // The Runner executing this. Unset means queued.
   ref.v1alpha1.ObjectReference runner = 40 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.ci.runner/Runner"
   ];
 
   // Observed state.
@@ -184,7 +192,7 @@ message JobTemplate {
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector runner_selector = 12;
   google.protobuf.Duration timeout = 13;
   int32 max_retries = 14;
-  repeated ref.v1alpha1.ObjectReference depends_on = 15;
+  repeated ref.v1alpha1.ObjectReference depends_on = 15 [(google.api.resource_reference).type = "unmango.ci.job/JobRun"];
 }
 
 // ---------------------------------------------------------------------------
@@ -193,6 +201,12 @@ message JobTemplate {
 
 // Durable definition of a job, and the owner of every JobRun it produces.
 message Pipeline {
+  option (google.api.resource) = {
+    type: "unmango.ci.job/Pipeline"
+    pattern: "{pipeline}"
+    singular: "pipeline"
+    plural: "pipelines"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -217,7 +231,10 @@ message Pipeline {
   string schedule = 12 [features.field_presence = EXPLICIT];
 
   // The vcs.repository Repository this pipeline belongs to.
-  ref.v1alpha1.ObjectReference repository = 13 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference repository = 13 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
 
   // Stop producing new JobRuns without deleting the definition.
   bool suspended = 14;
@@ -238,7 +255,8 @@ message Pipeline {
 
   ref.v1alpha1.ObjectReference last_run = 56 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.ci.job/JobRun"
   ];
   JobPhase last_run_phase = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp last_run_time = 58 [

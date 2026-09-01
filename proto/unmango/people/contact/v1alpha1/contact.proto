@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.people.contact.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
 import "google/type/phone_number.proto";
@@ -99,6 +100,12 @@ enum ContactKind {
 
 // A directed edge between two Contacts, carrying its own facts.
 message Relationship {
+  option (google.api.resource) = {
+    type: "unmango.people.contact/Relationship"
+    pattern: "{relationship}"
+    singular: "relationship"
+    plural: "relationships"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -116,10 +123,10 @@ message Relationship {
   // The Contact this relationship is asserted from. Attachment rather than
   // ownership: deleting a person should not silently rewrite the other party's
   // record of them.
-  ref.v1alpha1.ParentReference parent_ref = 10;
+  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
   // The Contact on the other end.
-  ref.v1alpha1.ObjectReference target = 11;
+  ref.v1alpha1.ObjectReference target = 11 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
   // Read as "parent is the target's <type>": PARENT means the parent_ref
   // contact is the target's parent.
@@ -147,7 +154,8 @@ message Relationship {
   // The Relationship asserting the mirror of this edge, when one exists.
   ref.v1alpha1.ObjectReference inverse = 52 [
     features.field_presence = EXPLICIT,
-    (google.api.field_behavior) = OUTPUT_ONLY
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.people.contact/Relationship"
   ];
 
   // No inverse Relationship exists, so the graph is asserted one way only.
@@ -164,6 +172,12 @@ message Relationship {
 // A person or organization. The kind every other domain points at when a
 // person is involved.
 message Contact {
+  option (google.api.resource) = {
+    type: "unmango.people.contact/Contact"
+    pattern: "{contact}"
+    singular: "contact"
+    plural: "contacts"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -210,14 +224,20 @@ message Contact {
   bool archived = 23;
 
   // Where they live, when it is a modelled asset.property Property.
-  ref.v1alpha1.ObjectReference residence = 24 [features.field_presence = EXPLICIT];
+  ref.v1alpha1.ObjectReference residence = 24 [
+    features.field_presence = EXPLICIT,
+    (google.api.resource_reference).type = "unmango.asset.property/Property"
+  ];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Groups whose selectors currently claim this contact.
-  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.people.contact/Group"
+  ];
 
   // Relationships asserted from this contact.
   int32 relationship_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -245,6 +265,12 @@ message Contact {
 
 // A named set of Contacts, claimed by selector.
 message Group {
+  option (google.api.resource) = {
+    type: "unmango.people.contact/Group"
+    pattern: "{group}"
+    singular: "group"
+    plural: "groups"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];

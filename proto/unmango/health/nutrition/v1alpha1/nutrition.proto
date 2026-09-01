@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.health.nutrition.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
 import "google/type/money.proto";
@@ -85,6 +86,12 @@ message Serving {
 // Referenced by FoodEntry rather than owned by it, so it can be corrected once
 // and take effect everywhere.
 message Food {
+  option (google.api.resource) = {
+    type: "unmango.health.nutrition/Food"
+    pattern: "{food}"
+    singular: "food"
+    plural: "foods"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -136,7 +143,7 @@ message Food {
 
 // One component of a recipe.
 message Ingredient {
-  ref.v1alpha1.ObjectReference food = 1;
+  ref.v1alpha1.ObjectReference food = 1 [(google.api.resource_reference).type = "unmango.health.nutrition/Food"];
   double quantity = 2;
   uom.v1alpha1.Unit unit = 3;
 
@@ -151,6 +158,12 @@ message Ingredient {
 // One portion of one Food within a Meal. Owned by the Meal, attached to the
 // Food.
 message FoodEntry {
+  option (google.api.resource) = {
+    type: "unmango.health.nutrition/FoodEntry"
+    pattern: "{food_entry}"
+    singular: "foodEntry"
+    plural: "foodEntries"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -167,7 +180,7 @@ message FoodEntry {
   // Desired state.
   // The catalog Food eaten. Attachment rather than ownership: the entry
   // records a portion, the Food records the facts.
-  ref.v1alpha1.ParentReference food_ref = 10;
+  ref.v1alpha1.ParentReference food_ref = 10 [(google.api.resource_reference).type = "unmango.health.nutrition/Food"];
 
   double quantity = 11;
 
@@ -196,7 +209,7 @@ message FoodEntryTemplate {
   map<string, string> labels = 1;
   map<string, string> annotations = 2;
 
-  ref.v1alpha1.ParentReference food_ref = 10;
+  ref.v1alpha1.ParentReference food_ref = 10 [(google.api.resource_reference).type = "unmango.health.nutrition/Food"];
   double quantity = 11;
   uom.v1alpha1.Unit unit = 12;
   string note = 13 [features.field_presence = EXPLICIT];
@@ -209,6 +222,12 @@ message FoodEntryTemplate {
 
 // One sitting. Owns the FoodEntries that make it up.
 message Meal {
+  option (google.api.resource) = {
+    type: "unmango.health.nutrition/Meal"
+    pattern: "{meal}"
+    singular: "meal"
+    plural: "meals"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
@@ -287,6 +306,12 @@ message MealTemplate {
 // A repeating cycle of meals. The kind a human edits, and the owner of every
 // Meal it materializes.
 message MealPlan {
+  option (google.api.resource) = {
+    type: "unmango.health.nutrition/MealPlan"
+    pattern: "{meal_plan}"
+    singular: "mealPlan"
+    plural: "mealPlans"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];

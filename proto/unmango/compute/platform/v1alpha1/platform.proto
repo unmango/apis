@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.compute.platform.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 
@@ -52,6 +53,12 @@ enum PlatformKind {
 
 // An external system or tool that other resources point at by reference.
 message Platform {
+  option (google.api.resource) = {
+    type: "unmango.compute.platform/Platform"
+    pattern: "{platform}"
+    singular: "platform"
+    plural: "platforms"
+  };
   string name = 1 [(google.api.field_behavior) = IMMUTABLE];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
   string display_name = 3 [features.field_presence = EXPLICIT];
