@@ -105,9 +105,4 @@
 # agree.
 - included_paths:
     - '**'
-  disabled_rules:
-    # AIP-122 and AIP-123: patterns are "{account}" rather than
-    # "accounts/{account}".
-    - core::0123::resource-pattern-plural
-    - core::0123::resource-name-components-alternate
-    - core::0122::resource-collection-identifiers
+  disabled_rules: []

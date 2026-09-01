@@ -90,7 +90,7 @@ message Task {
 message ServiceRecord {
   option (google.api.resource) = {
     type: "unmango.asset.maintenance/ServiceRecord"
-    pattern: "{service_record}"
+    pattern: "serviceRecords/{service_record}"
     singular: "serviceRecord"
     plural: "serviceRecords"
   };
@@ -165,7 +165,7 @@ message PartUsed {
 message WorkOrder {
   option (google.api.resource) = {
     type: "unmango.asset.maintenance/WorkOrder"
-    pattern: "{work_order}"
+    pattern: "workOrders/{work_order}"
     singular: "workOrder"
     plural: "workOrders"
   };
@@ -263,7 +263,7 @@ message WorkOrderTemplate {
 message MaintenancePlan {
   option (google.api.resource) = {
     type: "unmango.asset.maintenance/MaintenancePlan"
-    pattern: "{maintenance_plan}"
+    pattern: "maintenancePlans/{maintenance_plan}"
     singular: "maintenancePlan"
     plural: "maintenancePlans"
   };

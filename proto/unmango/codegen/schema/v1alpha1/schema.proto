@@ -121,7 +121,7 @@ message Method {
 message Schema {
   option (google.api.resource) = {
     type: "unmango.codegen.schema/Schema"
-    pattern: "{schema}"
+    pattern: "schemas/{schema}"
     singular: "schema"
     plural: "schemas"
   };
@@ -209,7 +209,7 @@ message Schema {
 message TypeDef {
   option (google.api.resource) = {
     type: "unmango.codegen.schema/TypeDef"
-    pattern: "{type_def}"
+    pattern: "typeDefs/{type_def}"
     singular: "typeDef"
     plural: "typeDefs"
   };

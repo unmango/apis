@@ -66,6 +66,8 @@ That last one replaces `features.field_presence = EXPLICIT`, which said nothing:
 Every kind carries a `google.api.resource` option naming its type, and every reference field a `google.api.resource_reference` naming what it may point at.
 The type string is the `ObjectReference` coordinates it stands in for, `unmango.people.contact/Contact`, so a linter can check what previously lived only in the comment above the field.
 The handful of fields that genuinely accept anything, `record.note` `Link.target`, `productivity.capture` `CaptureItem.resolved_into`, `asset.maintenance` `WorkOrder.subject`, use the `"*"` wildcard rather than a false narrowing.
+The `pattern` on that option is the AIP-122 form, the plural collection segment in front of the identifier, so a `name` reads `accounts/my-checking` rather than `my-checking`.
+The collection is not new information, it is the `plural` the option already declared, moved to where a resource name carries it: a name that names its own collection resolves without the `kind` beside it.
 The life domains deliberately define no CRUD services; the service layer is a design pass of its own, deferred until the resource graph settles.
 The exceptions are the read-only graph services on the content-addressed nodes, `vcs.commit` `CommitService` and `codegen.artifact` `ArtifactService`, whose Get/List/Watch and traversal RPCs are part of how those graphs are meant to be read, plus `ConverterService.TestConverter`, a bare conformance check.
 Their Watch RPCs take a `resource_version` to resume from and return one on every event, including a `BOOKMARK` event that advances an idle stream's resume point, so a client that drops its stream never replays from nothing.

@@ -52,7 +52,7 @@ enum HabitFrequency {
 message Habit {
   option (google.api.resource) = {
     type: "unmango.productivity.habit/Habit"
-    pattern: "{habit}"
+    pattern: "habits/{habit}"
     singular: "habit"
     plural: "habits"
   };
@@ -107,7 +107,7 @@ message Habit {
 message HabitLog {
   option (google.api.resource) = {
     type: "unmango.productivity.habit/HabitLog"
-    pattern: "{habit_log}"
+    pattern: "habitLogs/{habit_log}"
     singular: "habitLog"
     plural: "habitLogs"
   };

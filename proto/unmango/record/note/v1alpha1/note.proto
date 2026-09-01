@@ -85,7 +85,7 @@ message Attachment {
 message Note {
   option (google.api.resource) = {
     type: "unmango.record.note/Note"
-    pattern: "{note}"
+    pattern: "notes/{note}"
     singular: "note"
     plural: "notes"
   };
@@ -168,7 +168,7 @@ message Note {
 message Notebook {
   option (google.api.resource) = {
     type: "unmango.record.note/Notebook"
-    pattern: "{notebook}"
+    pattern: "notebooks/{notebook}"
     singular: "notebook"
     plural: "notebooks"
   };

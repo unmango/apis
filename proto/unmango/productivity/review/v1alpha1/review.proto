@@ -44,7 +44,7 @@ enum ReviewCadence {
 message Review {
   option (google.api.resource) = {
     type: "unmango.productivity.review/Review"
-    pattern: "{review}"
+    pattern: "reviews/{review}"
     singular: "review"
     plural: "reviews"
   };

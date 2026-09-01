@@ -56,7 +56,7 @@ enum PlatformKind {
 message Platform {
   option (google.api.resource) = {
     type: "unmango.compute.platform/Platform"
-    pattern: "{platform}"
+    pattern: "platforms/{platform}"
     singular: "platform"
     plural: "platforms"
   };

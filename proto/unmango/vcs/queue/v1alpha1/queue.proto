@@ -32,7 +32,7 @@ import "unmango/ref/v1alpha1/ref.proto";
 message MergeQueue {
   option (google.api.resource) = {
     type: "unmango.vcs.queue/MergeQueue"
-    pattern: "{merge_queue}"
+    pattern: "mergeQueues/{merge_queue}"
     singular: "mergeQueue"
     plural: "mergeQueues"
   };
@@ -110,7 +110,7 @@ enum MergeQueuePhase {
 message QueueEntry {
   option (google.api.resource) = {
     type: "unmango.vcs.queue/QueueEntry"
-    pattern: "{queue_entry}"
+    pattern: "queueEntries/{queue_entry}"
     singular: "queueEntry"
     plural: "queueEntries"
   };

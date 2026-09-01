@@ -66,7 +66,7 @@ enum RunPhase {
 message Stack {
   option (google.api.resource) = {
     type: "unmango.iac.stack/Stack"
-    pattern: "{stack}"
+    pattern: "stacks/{stack}"
     singular: "stack"
     plural: "stacks"
   };
@@ -125,7 +125,7 @@ message Stack {
 message Run {
   option (google.api.resource) = {
     type: "unmango.iac.stack/Run"
-    pattern: "{run}"
+    pattern: "runs/{run}"
     singular: "run"
     plural: "runs"
   };

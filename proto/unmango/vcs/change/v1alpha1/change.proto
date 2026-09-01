@@ -115,7 +115,7 @@ message ReviewComment {
 message Review {
   option (google.api.resource) = {
     type: "unmango.vcs.change/Review"
-    pattern: "{review}"
+    pattern: "reviews/{review}"
     singular: "review"
     plural: "reviews"
   };
@@ -176,7 +176,7 @@ message Review {
 message Change {
   option (google.api.resource) = {
     type: "unmango.vcs.change/Change"
-    pattern: "{change}"
+    pattern: "changes/{change}"
     singular: "change"
     plural: "changes"
   };
@@ -317,7 +317,7 @@ message ChangeTemplate {
 message ChangeSet {
   option (google.api.resource) = {
     type: "unmango.vcs.change/ChangeSet"
-    pattern: "{change_set}"
+    pattern: "changeSets/{change_set}"
     singular: "changeSet"
     plural: "changeSets"
   };

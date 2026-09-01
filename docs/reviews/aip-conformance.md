@@ -17,6 +17,15 @@ Method: `api-linter` 2.3.1 over a `FileDescriptorSet` built by `buf`, all rules
 enabled, no config.
 4,007 findings across 35 rules.
 
+**Status: acted on.**
+The findings are left as measured rather than rewritten, so the reasoning stays
+readable against the diffs that answered it.
+Three rules moved from fix to decline while the work was done, and each says so
+in place.
+[api-linter.yaml](../../api-linter.yaml) is the record of where it landed: its
+final block is empty, so every rule is either satisfied by the tree or declined
+with a reason.
+
 ## Verdict
 
 3,112 of the 4,007 findings, 78%, come from five rules, and all five are

@@ -85,7 +85,7 @@ message Split {
 message Transaction {
   option (google.api.resource) = {
     type: "unmango.finance.transaction/Transaction"
-    pattern: "{transaction}"
+    pattern: "transactions/{transaction}"
     singular: "transaction"
     plural: "transactions"
   };
@@ -186,7 +186,7 @@ message TransactionTemplate {
 message RecurringTransaction {
   option (google.api.resource) = {
     type: "unmango.finance.transaction/RecurringTransaction"
-    pattern: "{recurring_transaction}"
+    pattern: "recurringTransactions/{recurring_transaction}"
     singular: "recurringTransaction"
     plural: "recurringTransactions"
   };

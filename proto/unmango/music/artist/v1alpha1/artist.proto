@@ -78,7 +78,7 @@ message ExternalId {
 message Membership {
   option (google.api.resource) = {
     type: "unmango.music.artist/Membership"
-    pattern: "{membership}"
+    pattern: "memberships/{membership}"
     singular: "membership"
     plural: "memberships"
   };
@@ -137,7 +137,7 @@ message Membership {
 message ArtistCredit {
   option (google.api.resource) = {
     type: "unmango.music.artist/ArtistCredit"
-    pattern: "{artist_credit}"
+    pattern: "artistCredits/{artist_credit}"
     singular: "artistCredit"
     plural: "artistCredits"
   };
@@ -195,7 +195,7 @@ message ArtistCredit {
 message Artist {
   option (google.api.resource) = {
     type: "unmango.music.artist/Artist"
-    pattern: "{artist}"
+    pattern: "artists/{artist}"
     singular: "artist"
     plural: "artists"
   };

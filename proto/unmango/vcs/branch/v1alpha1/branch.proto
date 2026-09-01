@@ -83,7 +83,7 @@ enum TagType {
 message Branch {
   option (google.api.resource) = {
     type: "unmango.vcs.branch/Branch"
-    pattern: "{branch}"
+    pattern: "branches/{branch}"
     singular: "branch"
     plural: "branches"
   };
@@ -183,7 +183,7 @@ enum BranchPhase {
 message Tag {
   option (google.api.resource) = {
     type: "unmango.vcs.branch/Tag"
-    pattern: "{tag}"
+    pattern: "tags/{tag}"
     singular: "tag"
     plural: "tags"
   };

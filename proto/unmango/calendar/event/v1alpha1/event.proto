@@ -104,7 +104,7 @@ enum AttendeeResponse {
 message Attendance {
   option (google.api.resource) = {
     type: "unmango.calendar.event/Attendance"
-    pattern: "{attendance}"
+    pattern: "attendances/{attendance}"
     singular: "attendance"
     plural: "attendances"
   };
@@ -161,7 +161,7 @@ message Attendance {
 message Event {
   option (google.api.resource) = {
     type: "unmango.calendar.event/Event"
-    pattern: "{event}"
+    pattern: "events/{event}"
     singular: "event"
     plural: "events"
   };
@@ -256,7 +256,7 @@ message EventTemplate {
 message RecurringEvent {
   option (google.api.resource) = {
     type: "unmango.calendar.event/RecurringEvent"
-    pattern: "{recurring_event}"
+    pattern: "recurringEvents/{recurring_event}"
     singular: "recurringEvent"
     plural: "recurringEvents"
   };

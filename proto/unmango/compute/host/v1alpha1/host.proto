@@ -78,7 +78,7 @@ enum TaintEffect {
 message Host {
   option (google.api.resource) = {
     type: "unmango.compute.host/Host"
-    pattern: "{host}"
+    pattern: "hosts/{host}"
     singular: "host"
     plural: "hosts"
   };
@@ -167,7 +167,7 @@ enum HostPhase {
 message Cluster {
   option (google.api.resource) = {
     type: "unmango.compute.host/Cluster"
-    pattern: "{cluster}"
+    pattern: "clusters/{cluster}"
     singular: "cluster"
     plural: "clusters"
   };

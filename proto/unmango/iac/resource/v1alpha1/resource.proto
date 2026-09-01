@@ -47,7 +47,7 @@ enum DriftState {
 message Resource {
   option (google.api.resource) = {
     type: "unmango.iac.resource/Resource"
-    pattern: "{resource}"
+    pattern: "resources/{resource}"
     singular: "resource"
     plural: "resources"
   };

@@ -67,7 +67,7 @@ message SyncConfig {
 message Account {
   option (google.api.resource) = {
     type: "unmango.finance.account/Account"
-    pattern: "{account}"
+    pattern: "accounts/{account}"
     singular: "account"
     plural: "accounts"
   };
@@ -133,7 +133,7 @@ message Account {
 message Institution {
   option (google.api.resource) = {
     type: "unmango.finance.account/Institution"
-    pattern: "{institution}"
+    pattern: "institutions/{institution}"
     singular: "institution"
     plural: "institutions"
   };

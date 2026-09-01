@@ -45,7 +45,7 @@ enum Visibility {
 message Remote {
   option (google.api.resource) = {
     type: "unmango.vcs.repository/Remote"
-    pattern: "{remote}"
+    pattern: "remotes/{remote}"
     singular: "remote"
     plural: "remotes"
   };
@@ -112,7 +112,7 @@ enum AuthMethod {
 message Repository {
   option (google.api.resource) = {
     type: "unmango.vcs.repository/Repository"
-    pattern: "{repository}"
+    pattern: "repositories/{repository}"
     singular: "repository"
     plural: "repositories"
   };
@@ -252,7 +252,7 @@ enum RepositoryPhase {
 message RepositoryGroup {
   option (google.api.resource) = {
     type: "unmango.vcs.repository/RepositoryGroup"
-    pattern: "{repository_group}"
+    pattern: "repositoryGroups/{repository_group}"
     singular: "repositoryGroup"
     plural: "repositoryGroups"
   };
@@ -312,7 +312,7 @@ message RepositoryGroup {
 message Grant {
   option (google.api.resource) = {
     type: "unmango.vcs.repository/Grant"
-    pattern: "{grant}"
+    pattern: "grants/{grant}"
     singular: "grant"
     plural: "grants"
   };
@@ -384,7 +384,7 @@ enum GrantPhase {
 message Composition {
   option (google.api.resource) = {
     type: "unmango.vcs.repository/Composition"
-    pattern: "{composition}"
+    pattern: "compositions/{composition}"
     singular: "composition"
     plural: "compositions"
   };

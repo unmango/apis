@@ -105,7 +105,7 @@ message ConversionInput {
 message Conversion {
   option (google.api.resource) = {
     type: "unmango.codegen.conversion/Conversion"
-    pattern: "{conversion}"
+    pattern: "conversions/{conversion}"
     singular: "conversion"
     plural: "conversions"
   };
@@ -180,7 +180,7 @@ message Conversion {
 message ConversionRun {
   option (google.api.resource) = {
     type: "unmango.codegen.conversion/ConversionRun"
-    pattern: "{conversion_run}"
+    pattern: "conversionRuns/{conversion_run}"
     singular: "conversionRun"
     plural: "conversionRuns"
   };

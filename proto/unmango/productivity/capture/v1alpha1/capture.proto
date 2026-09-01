@@ -62,7 +62,7 @@ enum CaptureState {
 message CaptureItem {
   option (google.api.resource) = {
     type: "unmango.productivity.capture/CaptureItem"
-    pattern: "{capture_item}"
+    pattern: "captureItems/{capture_item}"
     singular: "captureItem"
     plural: "captureItems"
   };

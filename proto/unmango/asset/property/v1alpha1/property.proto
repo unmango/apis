@@ -88,7 +88,7 @@ enum AreaUnit {
 message Space {
   option (google.api.resource) = {
     type: "unmango.asset.property/Space"
-    pattern: "{space}"
+    pattern: "spaces/{space}"
     singular: "space"
     plural: "spaces"
   };
@@ -149,7 +149,7 @@ message SpaceTemplate {
 message Property {
   option (google.api.resource) = {
     type: "unmango.asset.property/Property"
-    pattern: "{property}"
+    pattern: "properties/{property}"
     singular: "property"
     plural: "properties"
   };

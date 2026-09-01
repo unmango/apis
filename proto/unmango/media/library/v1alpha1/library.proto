@@ -128,7 +128,7 @@ message SubtitleTrack {
 message LibraryItem {
   option (google.api.resource) = {
     type: "unmango.media.library/LibraryItem"
-    pattern: "{library_item}"
+    pattern: "libraryItems/{library_item}"
     singular: "libraryItem"
     plural: "libraryItems"
   };
@@ -228,7 +228,7 @@ message LibraryItem {
 message Library {
   option (google.api.resource) = {
     type: "unmango.media.library/Library"
-    pattern: "{library}"
+    pattern: "libraries/{library}"
     singular: "library"
     plural: "libraries"
   };
@@ -288,7 +288,7 @@ message Library {
 message Collection {
   option (google.api.resource) = {
     type: "unmango.media.library/Collection"
-    pattern: "{collection}"
+    pattern: "collections/{collection}"
     singular: "collection"
     plural: "collections"
   };

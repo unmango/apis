@@ -97,7 +97,7 @@ message Step {
 message JobRun {
   option (google.api.resource) = {
     type: "unmango.ci.job/JobRun"
-    pattern: "{job_run}"
+    pattern: "jobRuns/{job_run}"
     singular: "jobRun"
     plural: "jobRuns"
   };
@@ -178,7 +178,7 @@ message JobTemplate {
 message Pipeline {
   option (google.api.resource) = {
     type: "unmango.ci.job/Pipeline"
-    pattern: "{pipeline}"
+    pattern: "pipelines/{pipeline}"
     singular: "pipeline"
     plural: "pipelines"
   };

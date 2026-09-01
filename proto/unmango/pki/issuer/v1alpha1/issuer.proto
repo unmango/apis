@@ -94,7 +94,7 @@ message VaultConfig {
 message Issuer {
   option (google.api.resource) = {
     type: "unmango.pki.issuer/Issuer"
-    pattern: "{issuer}"
+    pattern: "issuers/{issuer}"
     singular: "issuer"
     plural: "issuers"
   };

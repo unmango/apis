@@ -89,7 +89,7 @@ message Serving {
 message Food {
   option (google.api.resource) = {
     type: "unmango.health.nutrition/Food"
-    pattern: "{food}"
+    pattern: "foods/{food}"
     singular: "food"
     plural: "foods"
   };
@@ -160,7 +160,7 @@ message Ingredient {
 message FoodEntry {
   option (google.api.resource) = {
     type: "unmango.health.nutrition/FoodEntry"
-    pattern: "{food_entry}"
+    pattern: "foodEntries/{food_entry}"
     singular: "foodEntry"
     plural: "foodEntries"
   };
@@ -226,7 +226,7 @@ message FoodEntryTemplate {
 message Meal {
   option (google.api.resource) = {
     type: "unmango.health.nutrition/Meal"
-    pattern: "{meal}"
+    pattern: "meals/{meal}"
     singular: "meal"
     plural: "meals"
   };
@@ -309,7 +309,7 @@ message MealTemplate {
 message MealPlan {
   option (google.api.resource) = {
     type: "unmango.health.nutrition/MealPlan"
-    pattern: "{meal_plan}"
+    pattern: "mealPlans/{meal_plan}"
     singular: "mealPlan"
     plural: "mealPlans"
   };

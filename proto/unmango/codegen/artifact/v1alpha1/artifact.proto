@@ -85,7 +85,7 @@ message ArtifactInput {
 message Artifact {
   option (google.api.resource) = {
     type: "unmango.codegen.artifact/Artifact"
-    pattern: "{artifact}"
+    pattern: "artifacts/{artifact}"
     singular: "artifact"
     plural: "artifacts"
   };

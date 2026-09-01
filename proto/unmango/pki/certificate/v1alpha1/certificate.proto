@@ -97,7 +97,7 @@ enum CertificateIssuancePhase {
 message CertificateRequest {
   option (google.api.resource) = {
     type: "unmango.pki.certificate/CertificateRequest"
-    pattern: "{certificate_request}"
+    pattern: "certificateRequests/{certificate_request}"
     singular: "certificateRequest"
     plural: "certificateRequests"
   };
@@ -171,7 +171,7 @@ message CertificateRequest {
 message CertificateIssuance {
   option (google.api.resource) = {
     type: "unmango.pki.certificate/CertificateIssuance"
-    pattern: "{certificate_issuance}"
+    pattern: "certificateIssuances/{certificate_issuance}"
     singular: "certificateIssuance"
     plural: "certificateIssuances"
   };
@@ -243,7 +243,7 @@ message CertificateIssuance {
 message Certificate {
   option (google.api.resource) = {
     type: "unmango.pki.certificate/Certificate"
-    pattern: "{certificate}"
+    pattern: "certificates/{certificate}"
     singular: "certificate"
     plural: "certificates"
   };

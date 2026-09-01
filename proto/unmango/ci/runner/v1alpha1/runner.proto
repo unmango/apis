@@ -70,7 +70,7 @@ enum RolloutStrategyType {
 message Runner {
   option (google.api.resource) = {
     type: "unmango.ci.runner/Runner"
-    pattern: "{runner}"
+    pattern: "runners/{runner}"
     singular: "runner"
     plural: "runners"
   };
@@ -181,7 +181,7 @@ message RunnerTemplate {
 message RunnerSet {
   option (google.api.resource) = {
     type: "unmango.ci.runner/RunnerSet"
-    pattern: "{runner_set}"
+    pattern: "runnerSets/{runner_set}"
     singular: "runnerSet"
     plural: "runnerSets"
   };
@@ -238,7 +238,7 @@ message RunnerSet {
 message RunnerPool {
   option (google.api.resource) = {
     type: "unmango.ci.runner/RunnerPool"
-    pattern: "{runner_pool}"
+    pattern: "runnerPools/{runner_pool}"
     singular: "runnerPool"
     plural: "runnerPools"
   };

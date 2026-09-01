@@ -103,7 +103,7 @@ enum InterruptionSource {
 message FocusSession {
   option (google.api.resource) = {
     type: "unmango.productivity.focus/FocusSession"
-    pattern: "{focus_session}"
+    pattern: "focusSessions/{focus_session}"
     singular: "focusSession"
     plural: "focusSessions"
   };
@@ -167,7 +167,7 @@ message FocusSession {
 message Interruption {
   option (google.api.resource) = {
     type: "unmango.productivity.focus/Interruption"
-    pattern: "{interruption}"
+    pattern: "interruptions/{interruption}"
     singular: "interruption"
     plural: "interruptions"
   };

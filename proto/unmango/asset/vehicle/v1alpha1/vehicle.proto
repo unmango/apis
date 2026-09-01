@@ -75,7 +75,7 @@ enum VehicleState {
 message OdometerReading {
   option (google.api.resource) = {
     type: "unmango.asset.vehicle/OdometerReading"
-    pattern: "{odometer_reading}"
+    pattern: "odometerReadings/{odometer_reading}"
     singular: "odometerReading"
     plural: "odometerReadings"
   };
@@ -132,7 +132,7 @@ enum OdometerSource {
 message Vehicle {
   option (google.api.resource) = {
     type: "unmango.asset.vehicle/Vehicle"
-    pattern: "{vehicle}"
+    pattern: "vehicles/{vehicle}"
     singular: "vehicle"
     plural: "vehicles"
   };

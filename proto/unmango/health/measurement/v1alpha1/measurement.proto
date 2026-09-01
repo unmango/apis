@@ -102,7 +102,7 @@ enum GoalPhase {
 message Measurement {
   option (google.api.resource) = {
     type: "unmango.health.measurement/Measurement"
-    pattern: "{measurement}"
+    pattern: "measurements/{measurement}"
     singular: "measurement"
     plural: "measurements"
   };
@@ -174,7 +174,7 @@ message Measurement {
 message Goal {
   option (google.api.resource) = {
     type: "unmango.health.measurement/Goal"
-    pattern: "{goal}"
+    pattern: "goals/{goal}"
     singular: "goal"
     plural: "goals"
   };

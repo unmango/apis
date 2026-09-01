@@ -66,7 +66,7 @@ enum SessionOutcome {
 message PlaySession {
   option (google.api.resource) = {
     type: "unmango.media.playback/PlaySession"
-    pattern: "{play_session}"
+    pattern: "playSessions/{play_session}"
     singular: "playSession"
     plural: "playSessions"
   };
@@ -136,7 +136,7 @@ message PlaySession {
 message PlayState {
   option (google.api.resource) = {
     type: "unmango.media.playback/PlayState"
-    pattern: "{play_state}"
+    pattern: "playStates/{play_state}"
     singular: "playState"
     plural: "playStates"
   };

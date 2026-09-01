@@ -82,7 +82,7 @@ message PlaylistSource {
 message PlaylistEntry {
   option (google.api.resource) = {
     type: "unmango.music.playlist/PlaylistEntry"
-    pattern: "{playlist_entry}"
+    pattern: "playlistEntries/{playlist_entry}"
     singular: "playlistEntry"
     plural: "playlistEntries"
   };
@@ -147,7 +147,7 @@ message PlaylistEntry {
 message Playlist {
   option (google.api.resource) = {
     type: "unmango.music.playlist/Playlist"
-    pattern: "{playlist}"
+    pattern: "playlists/{playlist}"
     singular: "playlist"
     plural: "playlists"
   };

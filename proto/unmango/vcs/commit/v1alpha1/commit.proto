@@ -107,7 +107,7 @@ enum CommitKind {
 message Commit {
   option (google.api.resource) = {
     type: "unmango.vcs.commit/Commit"
-    pattern: "{commit}"
+    pattern: "commits/{commit}"
     singular: "commit"
     plural: "commits"
   };

@@ -157,7 +157,7 @@ message RpcInvocation {
 message Converter {
   option (google.api.resource) = {
     type: "unmango.codegen.converter/Converter"
-    pattern: "{converter}"
+    pattern: "converters/{converter}"
     singular: "converter"
     plural: "converters"
   };
@@ -310,7 +310,7 @@ message ReleaseArtifactSource {
 message ConverterRegistry {
   option (google.api.resource) = {
     type: "unmango.codegen.converter/ConverterRegistry"
-    pattern: "{converter_registry}"
+    pattern: "converterRegistries/{converter_registry}"
     singular: "converterRegistry"
     plural: "converterRegistries"
   };

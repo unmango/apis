@@ -38,7 +38,7 @@ import "unmango/ref/v1alpha1/ref.proto";
 message Module {
   option (google.api.resource) = {
     type: "unmango.iac.module/Module"
-    pattern: "{module}"
+    pattern: "modules/{module}"
     singular: "module"
     plural: "modules"
   };
@@ -103,7 +103,7 @@ message Module {
 message ModuleRegistry {
   option (google.api.resource) = {
     type: "unmango.iac.module/ModuleRegistry"
-    pattern: "{module_registry}"
+    pattern: "moduleRegistries/{module_registry}"
     singular: "moduleRegistry"
     plural: "moduleRegistries"
   };

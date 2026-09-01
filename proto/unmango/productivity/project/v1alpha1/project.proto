@@ -48,7 +48,7 @@ enum ProjectPhase {
 message Project {
   option (google.api.resource) = {
     type: "unmango.productivity.project/Project"
-    pattern: "{project}"
+    pattern: "projects/{project}"
     singular: "project"
     plural: "projects"
   };

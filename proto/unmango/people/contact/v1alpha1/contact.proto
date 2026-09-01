@@ -103,7 +103,7 @@ enum ContactKind {
 message Relationship {
   option (google.api.resource) = {
     type: "unmango.people.contact/Relationship"
-    pattern: "{relationship}"
+    pattern: "relationships/{relationship}"
     singular: "relationship"
     plural: "relationships"
   };
@@ -176,7 +176,7 @@ message Relationship {
 message Contact {
   option (google.api.resource) = {
     type: "unmango.people.contact/Contact"
-    pattern: "{contact}"
+    pattern: "contacts/{contact}"
     singular: "contact"
     plural: "contacts"
   };
@@ -265,7 +265,7 @@ message Contact {
 message Group {
   option (google.api.resource) = {
     type: "unmango.people.contact/Group"
-    pattern: "{group}"
+    pattern: "groups/{group}"
     singular: "group"
     plural: "groups"
   };

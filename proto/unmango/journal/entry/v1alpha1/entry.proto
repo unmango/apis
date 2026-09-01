@@ -92,7 +92,7 @@ enum Visibility {
 message Entry {
   option (google.api.resource) = {
     type: "unmango.journal.entry/Entry"
-    pattern: "{entry}"
+    pattern: "entries/{entry}"
     singular: "entry"
     plural: "entries"
   };

@@ -96,7 +96,7 @@ enum ReleaseFormat {
 message Edition {
   option (google.api.resource) = {
     type: "unmango.media.title/Edition"
-    pattern: "{edition}"
+    pattern: "editions/{edition}"
     singular: "edition"
     plural: "editions"
   };
@@ -157,7 +157,7 @@ message Edition {
 message Title {
   option (google.api.resource) = {
     type: "unmango.media.title/Title"
-    pattern: "{title}"
+    pattern: "titles/{title}"
     singular: "title"
     plural: "titles"
   };

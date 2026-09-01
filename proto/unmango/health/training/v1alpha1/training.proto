@@ -102,7 +102,7 @@ message Targets {
 message Activity {
   option (google.api.resource) = {
     type: "unmango.health.training/Activity"
-    pattern: "{activity}"
+    pattern: "activities/{activity}"
     singular: "activity"
     plural: "activities"
   };
@@ -176,7 +176,7 @@ message Activity {
 message Workout {
   option (google.api.resource) = {
     type: "unmango.health.training/Workout"
-    pattern: "{workout}"
+    pattern: "workouts/{workout}"
     singular: "workout"
     plural: "workouts"
   };
@@ -267,7 +267,7 @@ message WorkoutTemplate {
 message TrainingPlan {
   option (google.api.resource) = {
     type: "unmango.health.training/TrainingPlan"
-    pattern: "{training_plan}"
+    pattern: "trainingPlans/{training_plan}"
     singular: "trainingPlan"
     plural: "trainingPlans"
   };

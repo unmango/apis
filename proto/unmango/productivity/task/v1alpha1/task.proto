@@ -82,7 +82,7 @@ message RecurrenceRule {
 message Task {
   option (google.api.resource) = {
     type: "unmango.productivity.task/Task"
-    pattern: "{task}"
+    pattern: "tasks/{task}"
     singular: "task"
     plural: "tasks"
   };
@@ -193,7 +193,7 @@ message TaskTemplate {
 message RecurringTask {
   option (google.api.resource) = {
     type: "unmango.productivity.task/RecurringTask"
-    pattern: "{recurring_task}"
+    pattern: "recurringTasks/{recurring_task}"
     singular: "recurringTask"
     plural: "recurringTasks"
   };
