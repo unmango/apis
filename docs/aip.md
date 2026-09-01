@@ -56,6 +56,17 @@ Every resource carries a `google.api.resource` option whose `type` is `<package>
 `etag`, `request_id`, and `update_mask` all belong on write RPCs, and the life domains deliberately define none.
 [docs/reviews/api-conventions.md](./reviews/api-conventions.md) records the slots each one will take when the service layer lands.
 
+## Enforcement
+
+[api-linter.yaml](../api-linter.yaml) carries the [Declined](#declined) list below as rule disables, so the linter's silence on one of them is this decision rather than an unread finding.
+A rule that is neither disabled there nor satisfied by the tree is a bug.
+
+`make aip` runs it, and so does the `api-linter` flake check, which means so does CI.
+It covers the life domains only, for the reason [Scope](#scope) gives.
+
+Rules the policy adopts and the tree does not yet satisfy are disabled in a separate block at the end of that file, each with the AIP it belongs to.
+An empty block there means the policy and the protos agree.
+
 ## Declined
 
 Each of these is an AIP the repository declines, for a reason it already committed to elsewhere.

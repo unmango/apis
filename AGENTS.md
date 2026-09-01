@@ -28,7 +28,7 @@ Enter it via:
 nix develop   # or: direnv allow (if using direnv)
 ```
 
-Available tools in the dev shell: `buf`, `gnumake`.
+Available tools in the dev shell: `api-linter`, `buf`, `gnumake`.
 
 ## Commands
 
@@ -39,6 +39,7 @@ Available tools in the dev shell: `buf`, `gnumake`.
 | Update flake inputs | `make update` or `nix flake update` |
 | Vendor third-party protos | `make vendor` (required before bare `buf` in the repo root) |
 | Lint protos | `make lint` (see gotcha below) |
+| Check AIP conformance | `make aip` |
 | Check field bands | `make bands` |
 | Check breaking changes | `make breaking` (override the base ref with `make breaking AGAINST=<ref>`) |
 | Generate code | `buf generate` (only `proto/unmango/*`, see gotcha below) |
@@ -52,6 +53,17 @@ Available tools in the dev shell: `buf`, `gnumake`.
 `.github/workflows/buf.yml` runs `make vendor` before `buf-action`, leaving that job with `buf build` alone.
 Its `lint`, `breaking`, and `format` steps are off: `nix flake check` covers lint and the treefmt `buf` formatter, `make breaking` covers breaking changes, and `buf format` would flag the vendored protos, which are copied in verbatim.
 `push` is off too: `buf push` rejects a module whose dependencies are not themselves named BSR modules, so `buf.build/unmango/apis` cannot be published until `k8s.io/apimachinery` has a BSR module to depend on.
+
+### AIP conformance
+
+[docs/aip.md](./docs/aip.md) is the policy: AIPs are the default for the life domains, and every divergence is named there with its reason.
+[api-linter.yaml](./api-linter.yaml) carries the same list as rule disables, so a rule the linter stays quiet about is a decision rather than an unread finding, and a rule that is neither disabled nor satisfied is a bug.
+`make aip` and the `api-linter` flake check run it over the 44 life-domain files; the infrastructure APIs are excluded rather than configured, since none of them models a resource.
+
+**Gotcha:** `api-linter` compiles editions up to 2023, and handed an edition 2024 descriptor set it reports zero files linted rather than an error.
+`nix/api-linter.nix` works around it by rewriting `edition = "2024"` to `edition = "2023"` in a copy of the workspace before building the descriptor set.
+Nothing in these files uses a feature whose default moved between the two editions.
+Watch the `Linted N proto files` line: a drop to zero means the workaround stopped applying, not that the tree got clean.
 
 ### Field bands
 

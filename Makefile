@@ -1,4 +1,4 @@
-.PHONY: bands build breaking check update format fmt clean lint vendor
+.PHONY: aip bands build breaking check update format fmt clean lint vendor
 
 AGAINST ?= main
 
@@ -18,6 +18,10 @@ vendor:
 	mkdir -p third_party
 	cp -rL $$(nix build --no-link --print-out-paths .#unmangoApis.apimachinery) third_party/k8s
 	chmod -R u+w third_party/k8s
+
+# Also runs as the api-linter flake check; this is the fast local path.
+aip:
+	nix build --no-link .#unmangoApis.apiLinter
 
 # Also runs as the field-bands flake check; this is the fast local path.
 bands:
