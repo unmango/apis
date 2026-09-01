@@ -1,0 +1,306 @@
+edition = "2024";
+
+package unmango.media.library.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "google/type/money.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// What is actually held, and how it is grouped:
+//
+//   Library    => LibraryItem @ media.title Edition
+//   Collection => media.title Title
+//
+// Both Library and Collection claim members by label selector rather than
+// naming them, which is the Service -> Pods relationship. Adding a label to an
+// item joins it to a library; no edit to the library is needed. This is what
+// makes an automatic collection and a hand-curated one the same kind, differing
+// only in how precise the selector is.
+//
+// A LibraryItem binds to an Edition the way a Runner binds to a Host: the
+// binding is made rather than declared, and an item with no edition is an
+// unmatched file waiting to be identified.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum OwnershipType {
+  OWNERSHIP_TYPE_UNSPECIFIED = 0;
+  OWNERSHIP_TYPE_OWNED_PHYSICAL = 1;
+  OWNERSHIP_TYPE_OWNED_DIGITAL = 2;
+  OWNERSHIP_TYPE_RENTED = 3;
+
+  // Available through an active subscription rather than held.
+  OWNERSHIP_TYPE_SUBSCRIBED = 4;
+
+  OWNERSHIP_TYPE_BORROWED = 5;
+  OWNERSHIP_TYPE_LENT_OUT = 6;
+  OWNERSHIP_TYPE_WISHLIST = 7;
+}
+
+enum ItemPhase {
+  ITEM_PHASE_UNSPECIFIED = 0;
+
+  // Present but not yet bound to an Edition.
+  ITEM_PHASE_UNMATCHED = 1;
+
+  // Bound and playable.
+  ITEM_PHASE_AVAILABLE = 2;
+
+  // Files are missing or unreadable.
+  ITEM_PHASE_MISSING = 3;
+
+  // Physically present but out on loan.
+  ITEM_PHASE_LENT = 4;
+}
+
+// One file backing a LibraryItem. Several make up a multi-disc release or a
+// set of alternate encodings.
+message MediaFile {
+  // Where the bytes live. A plain string so it can address a
+  // dev.unmango.protofs path, a local path, or a remote URL without coupling
+  // the packages.
+  string uri = 1;
+
+  int64 size_bytes = 2;
+
+  // "mkv", "flac", "epub", "iso".
+  string container = 3;
+
+  VideoTrack video = 4;
+  repeated AudioTrack audio = 5;
+  repeated SubtitleTrack subtitles = 6;
+
+  // Content hash, for detecting corruption or duplication.
+  string checksum = 7 [features.field_presence = EXPLICIT];
+
+  // Part number within a multi-file release, one-based.
+  int32 part = 8;
+}
+
+message VideoTrack {
+  string codec = 1; // "h264", "hevc", "av1"
+  int32 width = 2;
+  int32 height = 3;
+  double frame_rate = 4;
+  int64 bitrate_bps = 5;
+
+  // "sdr", "hdr10", "dolby-vision".
+  string dynamic_range = 6;
+}
+
+message AudioTrack {
+  string codec = 1; // "aac", "flac", "truehd"
+  int32 channels = 2;
+  int32 sample_rate_hz = 3;
+  int64 bitrate_bps = 4;
+
+  // ISO 639 code.
+  string language = 5;
+
+  // Commentary, described audio, or another non-primary track.
+  bool secondary = 6;
+}
+
+message SubtitleTrack {
+  string codec = 1; // "subrip", "pgs", "ass"
+  string language = 2;
+
+  // Covers only foreign dialogue rather than all speech.
+  bool forced = 3;
+
+  bool hearing_impaired = 4;
+}
+
+// ---------------------------------------------------------------------------
+// LibraryItem
+// ---------------------------------------------------------------------------
+
+// One held copy of something. Binds to the Edition it is a copy of.
+message LibraryItem {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+
+  // Also the surface Library and Collection selectors match against.
+  map<string, string> labels = 4;
+
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  OwnershipType ownership = 10;
+
+  // The files backing this copy. Empty for something owned physically or held
+  // only through a subscription.
+  repeated MediaFile files = 11;
+
+  // Where a physical copy sits: an asset.property Space, with the shelf
+  // within it, if any, as the ParentReference section.
+  ref.v1alpha1.ParentReference location = 12 [features.field_presence = EXPLICIT];
+
+  // Where a digital copy came from: a service name, a rip, a purchase.
+  string source = 13 [features.field_presence = EXPLICIT];
+
+  google.type.Date acquired_date = 14 [features.field_presence = EXPLICIT];
+  google.type.Money purchase_price = 15;
+
+  // When a rental or loan is due back.
+  google.type.Date due_date = 16 [features.field_presence = EXPLICIT];
+
+  // The people.contact Contact currently holding it, when lent out.
+  ref.v1alpha1.ObjectReference lent_to = 17 [features.field_presence = EXPLICIT];
+
+  string notes = 18 [features.field_presence = EXPLICIT];
+
+  // Assigned desired state.
+  // The media.title Edition this is a copy of. Unset means unmatched.
+  ref.v1alpha1.ObjectReference edition = 40 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // The media.title Title, denormalized from the Edition so a Collection can
+  // select on it without a join.
+  ref.v1alpha1.ObjectReference title = 41 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ItemPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Libraries whose selectors currently claim this item. Makes the selector
+  // edge navigable from the item side.
+  repeated ref.v1alpha1.ObjectReference claimed_by = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 file_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 total_size_bytes = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Best video height across the files, so quality is sortable.
+  int32 max_height = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp last_verified_time = 57 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // A file recorded in files could not be read at last verification.
+  bool has_missing_files = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// Library
+// ---------------------------------------------------------------------------
+
+// A managed set of LibraryItems, claimed by selector. The thing a scanner
+// populates and a player browses.
+message Library {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Which LibraryItems belong. An empty selector claims nothing, never
+  // everything.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+
+  // Roots a scanner walks to discover items. Plain strings so they can address
+  // dev.unmango.protofs paths.
+  repeated string scan_uris = 11;
+
+  // Labels stamped onto items discovered by a scan, which is how a scanner
+  // makes them match this library's selector.
+  map<string, string> item_labels = 12;
+
+  // Seconds between scans. Zero disables scanning.
+  int32 scan_interval_seconds = 13;
+
+  // Re-check that recorded files still exist during a scan.
+  bool verify_files = 14;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 item_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 unmatched_item_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 missing_item_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 total_size_bytes = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_scan_time = 56 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp next_scan_time = 57 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  bool scanning = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// Collection
+// ---------------------------------------------------------------------------
+
+// A curated grouping of Titles, claimed by selector. A hand-picked list and an
+// automatic one are the same kind: the difference is only how specific the
+// selector is.
+message Collection {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Which media.title Titles belong.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+
+  string summary = 11 [features.field_presence = EXPLICIT];
+
+  // Members in a deliberate order, for a collection whose sequence matters.
+  // Anything the selector claims but this omits sorts after these.
+  repeated ref.v1alpha1.ObjectReference ordered_members = 12;
+
+  // Artwork. A plain string so it can address a dev.unmango.protofs path.
+  string poster_uri = 13 [features.field_presence = EXPLICIT];
+
+  // Restrict membership to Titles with a held LibraryItem.
+  bool owned_only = 14;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 member_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 owned_member_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Rolled up from media.playback across members.
+  double watched_fraction = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

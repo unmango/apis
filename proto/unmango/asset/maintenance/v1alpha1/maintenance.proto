@@ -1,0 +1,334 @@
+edition = "2024";
+
+package unmango.asset.maintenance.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "google/type/money.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+import "unmango/uom/v1alpha1/uom.proto";
+
+// Upkeep of anything that needs servicing, wherever it lives:
+//
+//   MaintenancePlan ~> {Vehicle | Property | Space | Host}
+//   MaintenancePlan -> WorkOrder -> ServiceRecord
+//
+// The plan attaches to its subject by ParentReference rather than owning it.
+// This is the Gateway -> HTTPRoute relationship, and it is what makes the
+// domain reusable: the same chain services a car, a furnace, and a rack
+// server, and the subject decides whether to admit the plan without knowing
+// anything about maintenance.
+//
+// Below the attachment the relationship is ordinary ownership. A plan
+// materializes WorkOrders when they come due, and a completed WorkOrder owns
+// the ServiceRecord describing what was actually done, which is the durable
+// artifact that outlives both.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// When a plan is next due. Whichever bound arrives first wins, which is how
+// real service schedules read: every 6 months or 5000 miles.
+message MaintenanceInterval {
+  // Zero disables the time bound.
+  int32 every_days = 1;
+
+  // Zero value disables the distance bound.
+  uom.v1alpha1.Quantity every_distance = 2;
+
+  // Recompute from the completion date rather than the scheduled due date, so
+  // a late service pushes the next one out instead of stacking up.
+  bool from_completion = 3;
+}
+
+enum WorkOrderPhase {
+  WORK_ORDER_PHASE_UNSPECIFIED = 0;
+
+  // Materialized ahead of time, not yet due.
+  WORK_ORDER_PHASE_SCHEDULED = 1;
+
+  WORK_ORDER_PHASE_DUE = 2;
+  WORK_ORDER_PHASE_OVERDUE = 3;
+  WORK_ORDER_PHASE_IN_PROGRESS = 4;
+  WORK_ORDER_PHASE_COMPLETED = 5;
+  WORK_ORDER_PHASE_CANCELLED = 6;
+
+  // Deliberately passed over. Distinct from cancelled: the interval still
+  // advances.
+  WORK_ORDER_PHASE_SKIPPED = 7;
+}
+
+enum WorkOrderPriority {
+  WORK_ORDER_PRIORITY_UNSPECIFIED = 0;
+  WORK_ORDER_PRIORITY_LOW = 1;
+  WORK_ORDER_PRIORITY_NORMAL = 2;
+  WORK_ORDER_PRIORITY_HIGH = 3;
+
+  // Subject is unusable until this is done.
+  WORK_ORDER_PRIORITY_URGENT = 4;
+}
+
+// One checklist item within a work order.
+message Task {
+  string description = 1;
+  bool required = 2;
+  bool done = 3;
+}
+
+// ---------------------------------------------------------------------------
+// ServiceRecord
+// ---------------------------------------------------------------------------
+
+// What was actually done, by whom, and what it cost. The durable artifact of
+// the chain: WorkOrders come and go on a schedule, service records accumulate.
+message ServiceRecord {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  google.type.Date performed_date = 10;
+
+  // Who did the work. A shop name, or "self".
+  string provider = 11;
+
+  google.type.Money cost = 12;
+  string summary = 13;
+  string notes = 14 [features.field_presence = EXPLICIT];
+
+  // Reading at the time of service, when the subject tracks distance.
+  uom.v1alpha1.Quantity odometer = 15;
+
+  repeated PartUsed parts = 16;
+
+  // Where the invoice lives. A plain string so it can address a
+  // dev.unmango.protofs path without coupling the packages.
+  string invoice_uri = 17 [features.field_presence = EXPLICIT];
+
+  // Work is guaranteed until this date.
+  google.type.Date warranty_until = 18 [features.field_presence = EXPLICIT];
+
+  // The finance.transaction Transaction that paid for it.
+  ref.v1alpha1.ObjectReference transaction = 19 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Cost plus the cost of every part.
+  google.type.Money total_cost = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // True while warranty_until is in the future.
+  bool under_warranty = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// A component consumed during service.
+message PartUsed {
+  string name = 1;
+  string part_number = 2 [features.field_presence = EXPLICIT];
+  double quantity = 3;
+  google.type.Money unit_cost = 4;
+}
+
+// ---------------------------------------------------------------------------
+// WorkOrder
+// ---------------------------------------------------------------------------
+
+// One occurrence of scheduled work. Materialized by a MaintenancePlan, or
+// created directly for a one-off repair.
+message WorkOrder {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Templated desired state. WorkOrderTemplate mirrors 10-39.
+  string summary = 10;
+  string instructions = 11 [features.field_presence = EXPLICIT];
+  repeated Task tasks = 12;
+  WorkOrderPriority priority = 13;
+  google.type.Money estimated_cost = 14;
+  google.protobuf.Duration estimated_duration = 15;
+
+  // Subject cannot be used until this is completed.
+  bool blocks_use = 16;
+
+  // Assigned desired state. Computed when the occurrence is materialized.
+  // What is being serviced. Copied from the owning plan's parent_ref, or set
+  // directly for a one-off.
+  ref.v1alpha1.ObjectReference subject = 40;
+
+  google.type.Date due_date = 41 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Distance bound, when the subject tracks one.
+  uom.v1alpha1.Quantity due_distance = 42 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The people.contact Contact responsible.
+  ref.v1alpha1.ObjectReference assigned_to = 43 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // The calendar.event Event booked to do the work.
+  ref.v1alpha1.ObjectReference scheduled_event = 44 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  WorkOrderPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.type.Date started_date = 53 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.type.Date completed_date = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // The ServiceRecord this work order produced, once completed.
+  ref.v1alpha1.ObjectReference service_record = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  google.type.Money actual_cost = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Days past due_date. Negative means not yet due.
+  int32 days_overdue = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 completed_task_count = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Desired state stamped onto WorkOrders generated by a MaintenancePlan. Field
+// numbers mirror WorkOrder 10-39; the assigned band is absent because the
+// subject and due bounds are computed per occurrence.
+message WorkOrderTemplate {
+  map<string, string> labels = 1;
+  map<string, string> annotations = 2;
+
+  string summary = 10;
+  string instructions = 11 [features.field_presence = EXPLICIT];
+  repeated Task tasks = 12;
+  WorkOrderPriority priority = 13;
+  google.type.Money estimated_cost = 14;
+  google.protobuf.Duration estimated_duration = 15;
+  bool blocks_use = 16;
+}
+
+// ---------------------------------------------------------------------------
+// MaintenancePlan
+// ---------------------------------------------------------------------------
+
+// A standing schedule attached to something that needs upkeep. The kind a
+// human edits, and the owner of every WorkOrder it materializes.
+message MaintenancePlan {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // What this plan services. Attachment, not ownership: the plan is authored
+  // independently of its subject, deleting it does not touch the subject, and
+  // the subject admits or rejects it. Points at an asset.vehicle Vehicle, an
+  // asset.property Property or Space, or a compute.host Host.
+  ref.v1alpha1.ParentReference parent_ref = 10;
+
+  // When work comes due.
+  MaintenanceInterval interval = 11;
+
+  // Stamped onto each materialized WorkOrder.
+  WorkOrderTemplate template = 12;
+
+  // Materialize occurrences this many days before they come due, so upcoming
+  // work is visible rather than appearing the day it is needed.
+  int32 lead_time_days = 13;
+
+  // Materialize occurrences up to this date, bounding how far ahead the chain
+  // runs.
+  google.type.Date materialize_through = 14;
+
+  // Which WorkOrders this plan claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 15;
+
+  // Stop materializing without deleting the plan. What a seasonal schedule
+  // looks like out of season.
+  bool suspended = 16;
+
+  // Completed WorkOrders to retain. Zero retains all. Their ServiceRecords are
+  // never reaped, since those are the durable history.
+  int32 work_order_history_limit = 17;
+
+  // Baseline for the first occurrence, when the subject has service history
+  // predating this plan.
+  google.type.Date last_serviced_date = 18 [features.field_presence = EXPLICIT];
+  uom.v1alpha1.Quantity last_serviced_distance = 19;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Reports readiness, and whether the subject admitted the attachment.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.type.Date next_due_date = 52 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  uom.v1alpha1.Quantity next_due_distance = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Forecast from the subject's observed usage rate, when the interval has a
+  // distance bound. Earlier than next_due_date for something driven hard.
+  google.type.Date forecast_due_date = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  int32 open_work_order_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 overdue_work_order_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 completed_work_order_count = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.type.Date last_completed_date = 58 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Summed over every ServiceRecord under this plan.
+  google.type.Money lifetime_cost = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.type.Date materialized_through = 60 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

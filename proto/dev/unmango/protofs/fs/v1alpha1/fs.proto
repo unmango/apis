@@ -5,7 +5,10 @@ package dev.unmango.protofs.fs.v1alpha1;
 import "dev/unmango/protofs/file/v1alpha1/file.proto";
 import "google/protobuf/timestamp.proto";
 
+// Deprecated: use dev.unmango.protofs.fs.v1alpha2.FsService.
 service FsService {
+  option deprecated = true;
+
   rpc Chmod(ChmodRequest) returns (ChmodResponse);
   rpc Chown(ChownRequest) returns (ChownResponse);
   rpc Chtimes(ChtimesRequest) returns (ChtimesResponse);

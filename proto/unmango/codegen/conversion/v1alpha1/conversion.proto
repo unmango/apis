@@ -1,0 +1,245 @@
+edition = "2024";
+
+package unmango.codegen.conversion.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Standing instructions to convert something, and their executions:
+//
+//   Conversion -> ConversionRun @ ci.job JobRun
+//
+// A Conversion is the durable definition: this converter, over these inputs,
+// with these options, producing output here. A ConversionRun is one
+// execution of it, owned by the Conversion that produced it.
+//
+// A ConversionRun binds to a ci.job JobRun rather than to a ci.runner Runner
+// directly. ci already models a unit of work, its execution, and its
+// placement on capacity, and duplicating that here would fork it. The
+// binding chain runs ConversionRun -> JobRun -> Runner -> Host, and this
+// domain only owns the first hop. It is the same delegation vcs.change
+// Change makes for its checks.
+//
+// There is no run template, which will surprise a reader coming from ci.job.
+// A ci.job Pipeline exists only to stamp JobRuns, so it carries a JobTemplate
+// and nothing else. A Conversion carries the real specification, so a
+// ConversionRun snapshots it at creation instead. That snapshot is what keeps
+// a finished run reproducible after its Conversion is edited: the run records
+// the converter version, the resolved input digests, and the options it
+// actually used, not the ones in force today.
+//
+// Inputs are pinned by digest or followed. A ConversionInput with no digest
+// tracks whatever its source currently holds, which is what lets a Conversion
+// report itself stale when an upstream schema moves. Once a run is created,
+// its digests are always resolved.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// Lifecycle of a ConversionRun.
+enum ConversionPhase {
+  CONVERSION_PHASE_UNSPECIFIED = 0;
+
+  // Created, no ci.job JobRun bound yet.
+  CONVERSION_PHASE_PENDING = 1;
+
+  CONVERSION_PHASE_RUNNING = 2;
+  CONVERSION_PHASE_SUCCEEDED = 3;
+  CONVERSION_PHASE_FAILED = 4;
+  CONVERSION_PHASE_CANCELLED = 5;
+
+  // The run's input_digest already had artifacts, so nothing executed.
+  CONVERSION_PHASE_CACHED = 6;
+}
+
+// What causes a Conversion to materialize a new ConversionRun.
+enum ConversionTriggerKind {
+  CONVERSION_TRIGGER_KIND_UNSPECIFIED = 0;
+
+  // A source's digest moved past what the last run consumed.
+  CONVERSION_TRIGGER_KIND_INPUT_CHANGED = 1;
+
+  // The Converter's tool_version was bumped.
+  CONVERSION_TRIGGER_KIND_CONVERTER_UPDATED = 2;
+
+  CONVERSION_TRIGGER_KIND_SCHEDULE = 3;
+  CONVERSION_TRIGGER_KIND_MANUAL = 4;
+}
+
+message ConversionTrigger {
+  ConversionTriggerKind kind = 1;
+
+  // Set only when kind is CONVERSION_TRIGGER_KIND_SCHEDULE.
+  string schedule = 2 [features.field_presence = EXPLICIT];
+}
+
+// One thing fed to a Converter, bound to one of its input Ports.
+message ConversionInput {
+  // Matches a Port.format on the Converter's inputs.
+  string port = 1;
+
+  // Where the bytes come from: a codegen.schema Schema, a vcs.repository
+  // Repository, a vcs.commit Commit.
+  ref.v1alpha1.ObjectReference source = 2;
+
+  // Pins the input to one revision. Unset follows the source's current
+  // digest, which is what makes a Conversion go stale rather than diverge
+  // silently. Always set on a ConversionRun.
+  string digest = 3 [features.field_presence = EXPLICIT];
+
+  // Narrows the input to part of its source: a subdirectory, a single file.
+  string subpath = 4 [features.field_presence = EXPLICIT];
+}
+
+// ---------------------------------------------------------------------------
+// Conversion
+// ---------------------------------------------------------------------------
+
+// A standing instruction to run one Converter over one set of inputs.
+message Conversion {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // The codegen.converter Converter to run.
+  ref.v1alpha1.ObjectReference converter = 10;
+
+  repeated ConversionInput inputs = 11;
+
+  // Merged over the Converter's default_options.
+  map<string, string> options = 12;
+
+  // Where output lands. A plain string so it can address a
+  // dev.unmango.protofs path or a repository subdirectory.
+  string output_uri = 13;
+
+  // When to materialize a new run. Empty means only on explicit request.
+  repeated ConversionTrigger triggers = 14;
+
+  // Propose the output as a vcs.change Change against this vcs.branch Branch
+  // instead of writing it in place, which is how a generated SDK gets
+  // reviewed before it lands.
+  ref.v1alpha1.ObjectReference change_target = 15 [features.field_presence = EXPLICIT];
+
+  google.protobuf.Duration timeout = 16;
+  int32 max_retries = 17;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ref.v1alpha1.ObjectReference latest_run = 52 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Digest of the primary codegen.artifact Artifact the latest successful run
+  // produced.
+  string latest_artifact_digest = 53 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  int32 run_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_success_time = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // An unpinned input's digest has moved past what latest_run consumed, or
+  // the Converter's tool_version has. The output on disk no longer follows
+  // from the inputs that are declared.
+  bool stale = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// ConversionRun
+// ---------------------------------------------------------------------------
+
+// One execution of a Conversion.
+message ConversionRun {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The Conversion that materialized this run.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state, snapshotted from the Conversion at creation so the run
+  // stays reproducible after the Conversion is edited.
+  ref.v1alpha1.ObjectReference converter = 10;
+  string converter_tool_version = 11;
+
+  // Digests are always resolved here, never left to follow.
+  repeated ConversionInput inputs = 12;
+
+  map<string, string> options = 13;
+  string output_uri = 14;
+  google.protobuf.Duration timeout = 15;
+  int32 max_retries = 16;
+
+  // Assigned desired state.
+  // The ci.job JobRun executing this run. Unset while pending, exactly as an
+  // unscheduled Pod has no node.
+  ref.v1alpha1.ObjectReference job_run = 40 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ConversionPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ConversionTrigger trigger = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp start_time = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp completion_time = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // The codegen.artifact Artifacts this run produced, in the order the
+  // Converter declares its output Ports.
+  repeated ref.v1alpha1.ObjectReference artifacts = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Hash of the resolved inputs, the options, and the converter version
+  // together. Two runs sharing an input_digest should produce identical
+  // artifacts, so the second can resolve the first's output and skip
+  // execution.
+  string input_digest = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Set when input_digest already had artifacts and nothing executed.
+  bool cache_hit = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 attempt = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string logs_uri = 60 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  int32 output_file_count = 61 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 output_bytes = 62 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

@@ -1,0 +1,191 @@
+edition = "2024";
+
+package unmango.compute.host.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Machines that run work, and the groupings that claim them:
+//
+//   Cluster => Host
+//
+// A Host is the capacity provider that ci.runner Runners and
+// ci.job JobRuns bind to, the Node of this design. A Cluster claims Hosts
+// by label selector rather than naming them, so membership follows labels the
+// way a Kubernetes Service follows Pods.
+//
+// A Host may also carry an asset.maintenance MaintenancePlan, since physical
+// machines need servicing on the same terms as vehicles and properties.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// A reachable endpoint for a Host.
+message Address {
+  AddressType type = 1;
+  string value = 2;
+}
+
+enum AddressType {
+  ADDRESS_TYPE_UNSPECIFIED = 0;
+  ADDRESS_TYPE_HOSTNAME = 1;
+  ADDRESS_TYPE_INTERNAL_IP = 2;
+  ADDRESS_TYPE_EXTERNAL_IP = 3;
+  ADDRESS_TYPE_WIREGUARD_IP = 4;
+}
+
+// What the machine reports about itself.
+message SystemInfo {
+  string os = 1; // "linux", "darwin"
+  string os_image = 2; // "NixOS 25.05"
+  string kernel_version = 3;
+  string architecture = 4; // "amd64", "arm64"
+  string machine_id = 5;
+  string container_runtime_version = 6;
+}
+
+// Repels work that does not explicitly tolerate it.
+message Taint {
+  string key = 1;
+  string value = 2 [features.field_presence = EXPLICIT];
+  TaintEffect effect = 3;
+}
+
+enum TaintEffect {
+  TAINT_EFFECT_UNSPECIFIED = 0;
+
+  // Refuse to bind new work that does not tolerate this taint.
+  TAINT_EFFECT_NO_SCHEDULE = 1;
+
+  // Bind new work only as a last resort.
+  TAINT_EFFECT_PREFER_NO_SCHEDULE = 2;
+
+  // Refuse new work and drain what is already bound.
+  TAINT_EFFECT_NO_EXECUTE = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Host
+// ---------------------------------------------------------------------------
+
+// A machine that work is bound to.
+message Host {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  string hostname = 10;
+
+  // The compute.platform Platform this machine physically runs on or
+  // was provisioned from.
+  ref.v1alpha1.ObjectReference provider = 11;
+
+  // Cordon. Existing work keeps running, nothing new binds.
+  bool unschedulable = 12;
+
+  repeated Taint taints = 13;
+
+  // Capacity held back for the operating system, subtracted from observed
+  // capacity to yield allocatable.
+  ref.v1alpha1.ResourceQuantity reserved = 14;
+
+  // The asset.property Space this machine physically sits in.
+  ref.v1alpha1.ObjectReference location = 15 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  HostPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated Address addresses = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  SystemInfo system_info = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Total compute the machine reports.
+  ref.v1alpha1.ResourceQuantity capacity = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Capacity minus reserved. What work can actually be bound against.
+  ref.v1alpha1.ResourceQuantity allocatable = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Sum of the requests of everything currently bound here.
+  ref.v1alpha1.ResourceQuantity allocated = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp boot_time = 58 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp last_heartbeat_time = 59 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+enum HostPhase {
+  HOST_PHASE_UNSPECIFIED = 0;
+
+  // Registered but not yet reporting.
+  HOST_PHASE_PENDING = 1;
+
+  // Healthy and accepting work.
+  HOST_PHASE_READY = 2;
+
+  // Reporting, but failing a health condition.
+  HOST_PHASE_NOT_READY = 3;
+
+  // Deliberately drained for servicing.
+  HOST_PHASE_MAINTENANCE = 4;
+
+  // Heartbeat lost.
+  HOST_PHASE_UNREACHABLE = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Cluster
+// ---------------------------------------------------------------------------
+
+// A named set of Hosts, claimed by label selector rather than by name. Adding
+// a matching label to a Host joins it; no edit to the Cluster is needed.
+message Cluster {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Which Hosts belong. An empty selector claims nothing, never everything.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+
+  // Applied to every member, so a whole cluster can be drained at once.
+  bool unschedulable = 11;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 member_count = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 ready_member_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Summed across members.
+  ref.v1alpha1.ResourceQuantity capacity = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ref.v1alpha1.ResourceQuantity allocatable = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ref.v1alpha1.ResourceQuantity allocated = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

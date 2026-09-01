@@ -1,0 +1,406 @@
+edition = "2024";
+
+package unmango.vcs.change.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Proposed changes and their review:
+//
+//   ChangeSet -> Change ~> vcs.branch Branch
+//                  ^~ Review ~> people.contact Contact
+//   Change @ ci.job JobRun
+//
+// A Change is one proposal to move a branch: a pull request, a merge request,
+// a Gerrit change. The name is forge-neutral on purpose, since the same shape
+// serves all three.
+//
+// A Change attaches to its target Branch rather than being owned by it, and
+// the Branch admits or rejects it on its Protection rules. That is the
+// Gateway -> HTTPRoute relationship in its most literal form here: required
+// approvals and required checks are the branch's terms, evaluated against a
+// change the branch did not author.
+//
+// A ChangeSet materializes one Change per target repository from a template.
+// That is what a stacked or fleet-wide change is: an edit applied across many
+// repositories, tracked as one thing, where each Change carries an owner
+// reference back and the set reports how far the rollout has progressed.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum ChangePhase {
+  CHANGE_PHASE_UNSPECIFIED = 0;
+
+  // Authored but not yet offered for review.
+  CHANGE_PHASE_DRAFT = 1;
+
+  CHANGE_PHASE_OPEN = 2;
+
+  // Enough approvals, checks green, waiting to merge.
+  CHANGE_PHASE_APPROVED = 3;
+
+  // A reviewer asked for work before this can proceed.
+  CHANGE_PHASE_CHANGES_REQUESTED = 4;
+
+  // Cannot merge: conflicts, failing checks, or an unmet branch rule.
+  CHANGE_PHASE_BLOCKED = 5;
+
+  CHANGE_PHASE_MERGED = 6;
+  CHANGE_PHASE_CLOSED = 7;
+}
+
+enum MergeStrategy {
+  MERGE_STRATEGY_UNSPECIFIED = 0;
+  MERGE_STRATEGY_MERGE_COMMIT = 1;
+  MERGE_STRATEGY_SQUASH = 2;
+  MERGE_STRATEGY_REBASE = 3;
+
+  // Refuse anything that is not already a fast-forward.
+  MERGE_STRATEGY_FAST_FORWARD_ONLY = 4;
+}
+
+enum ReviewVerdict {
+  REVIEW_VERDICT_UNSPECIFIED = 0;
+
+  // Read, with remarks, but no position taken.
+  REVIEW_VERDICT_COMMENT = 1;
+
+  REVIEW_VERDICT_APPROVE = 2;
+  REVIEW_VERDICT_REQUEST_CHANGES = 3;
+}
+
+// How a ChangeSet sequences the Changes it materializes.
+enum RolloutOrder {
+  ROLLOUT_ORDER_UNSPECIFIED = 0;
+
+  // Open every Change at once.
+  ROLLOUT_ORDER_PARALLEL = 1;
+
+  // Open the next only once the previous has merged.
+  ROLLOUT_ORDER_SEQUENTIAL = 2;
+
+  // Each Change targets the branch of the one before it, so the set forms a
+  // dependent stack rather than independent proposals.
+  ROLLOUT_ORDER_STACKED = 3;
+}
+
+// A remark anchored to a location in the diff. Embedded rather than a kind:
+// it has no lifetime apart from its Review and is never addressed alone.
+message ReviewComment {
+  string path = 1;
+
+  // Line in the post-image. Zero means the comment is on the file as a whole.
+  int32 line = 2;
+
+  string body = 3;
+  bool resolved = 4;
+
+  // Concrete replacement the author can apply directly.
+  string suggestion = 5 [features.field_presence = EXPLICIT];
+}
+
+// ---------------------------------------------------------------------------
+// Review
+// ---------------------------------------------------------------------------
+
+// One reviewer's position on one Change. Attached to the Change and admitted
+// by it, so a reviewer can record a verdict without write access to the
+// proposal itself.
+message Review {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // The Change being reviewed. The Change decides whether to admit this.
+  ref.v1alpha1.ParentReference parent_ref = 10;
+
+  // The people.contact Contact reviewing.
+  ref.v1alpha1.ObjectReference reviewer = 11;
+
+  ReviewVerdict verdict = 12;
+  string body = 13 [features.field_presence = EXPLICIT];
+  repeated ReviewComment comments = 14;
+
+  // The head commit this verdict was formed against. What
+  // Protection.dismiss_stale_approvals compares to decide staleness.
+  string reviewed_revision = 15;
+
+  // The reviewer was asked rather than volunteering.
+  bool requested = 16;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Reports whether the Change admitted this review, and why not when it did
+  // not.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp submitted_time = 52 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  int32 comment_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 unresolved_comment_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The Change moved past reviewed_revision, so this verdict no longer
+  // counts toward the target branch's required approvals.
+  bool stale = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// Change
+// ---------------------------------------------------------------------------
+
+// One proposal to move a branch. A pull request, a merge request, a change.
+message Change {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The ChangeSet that materialized this, when it came from one. A change
+  // opened by hand has no owner.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Templated desired state. ChangeTemplate mirrors 10-39.
+  string title = 10;
+  string body = 11 [features.field_presence = EXPLICIT];
+  bool draft = 12;
+  MergeStrategy merge_strategy = 13;
+
+  // people.contact Contacts whose review is requested.
+  repeated ref.v1alpha1.ObjectReference reviewers = 14;
+
+  // people.contact Contact expected to carry the change forward.
+  ref.v1alpha1.ObjectReference assignee = 15 [features.field_presence = EXPLICIT];
+
+  // Merge as soon as the target branch's rules are satisfied.
+  bool auto_merge = 16;
+
+  bool delete_source_on_merge = 17;
+
+  // Which Reviews this Change claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 18;
+
+  // Assigned desired state. Computed per repository when materialized.
+  // The vcs.branch Branch this change targets. Attachment: the branch admits
+  // or rejects on its Protection rules, and was authored independently.
+  ref.v1alpha1.ParentReference target_ref = 40;
+
+  // The vcs.branch Branch holding the proposed commits.
+  ref.v1alpha1.ObjectReference source_branch = 41;
+
+  // The vcs.repository Repository both branches live in.
+  ref.v1alpha1.ObjectReference repository = 42;
+
+  // Forge-assigned number. Zero before the change exists on the forge.
+  int32 number = 43 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // people.contact Contact who opened it.
+  ref.v1alpha1.ObjectReference author = 44 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ChangePhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Reports admission by the target branch, mergeability, and check status.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 review_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 approval_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 rejection_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 unresolved_comment_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Approvals still required by the target branch's Protection.
+  int32 approvals_outstanding = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // ci.job JobRuns triggered by this change.
+  repeated ref.v1alpha1.ObjectReference check_runs = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  bool checks_passed = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // No conflicts against the target branch.
+  bool mergeable = 60 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  string merge_blocked_reason = 61 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  string head_revision = 62 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 commit_count = 63 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 files_changed = 64 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 additions = 65 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 deletions = 66 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp opened_time = 67 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp merged_time = 68 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp closed_time = 69 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  string merge_commit_revision = 70 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+// Desired state stamped onto Changes generated by a ChangeSet. Field numbers
+// mirror Change 10-39; the assigned band is absent because branches,
+// repository, and forge number are resolved per target.
+message ChangeTemplate {
+  map<string, string> labels = 1;
+  map<string, string> annotations = 2;
+
+  // Ref name to create in each target repository for the source branch.
+  string source_ref_name = 3;
+
+  string title = 10;
+  string body = 11 [features.field_presence = EXPLICIT];
+  bool draft = 12;
+  MergeStrategy merge_strategy = 13;
+  repeated ref.v1alpha1.ObjectReference reviewers = 14;
+  ref.v1alpha1.ObjectReference assignee = 15 [features.field_presence = EXPLICIT];
+  bool auto_merge = 16;
+  bool delete_source_on_merge = 17;
+
+  // Which Reviews a generated Change claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 18;
+}
+
+// ---------------------------------------------------------------------------
+// ChangeSet
+// ---------------------------------------------------------------------------
+
+// One edit applied across many repositories, tracked as a single thing. Owns
+// every Change it materializes, so abandoning the set closes all of them.
+message ChangeSet {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Stamped onto each materialized Change.
+  ChangeTemplate template = 10;
+
+  // vcs.repository Repositories to open a Change in. Named explicitly.
+  repeated ref.v1alpha1.ObjectReference repositories = 11;
+
+  // Or claimed by selector, via a vcs.repository RepositoryGroup. Applied in
+  // addition to repositories above.
+  ref.v1alpha1.ObjectReference repository_group = 12 [features.field_presence = EXPLICIT];
+
+  // Which Changes this set claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 13;
+
+  RolloutOrder order = 14;
+
+  // Changes permitted open at once. Zero means unbounded. Ignored when order
+  // is SEQUENTIAL.
+  int32 max_concurrent = 15;
+
+  // Stop opening new Changes without closing the ones already out.
+  bool suspended = 16;
+
+  // Close every open Change if any merged one is reverted.
+  bool rollback_on_revert = 17;
+
+  // Merged Changes to retain. Zero retains all.
+  int32 change_history_limit = 18;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ChangeSetPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Target repositories resolved from repositories and repository_group.
+  int32 target_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 change_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 open_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 approved_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 merged_count = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 closed_count = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 blocked_count = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Merged over target_count, 0.0 to 1.0.
+  double merged_fraction = 60 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The Change at the front of the queue, for SEQUENTIAL and STACKED.
+  ref.v1alpha1.ObjectReference next_change = 61 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  google.protobuf.Timestamp first_opened_time = 62 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.protobuf.Timestamp completed_time = 63 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Latest revision of the template. Changes record the revision they were
+  // created with.
+  string revision = 64 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+enum ChangeSetPhase {
+  CHANGE_SET_PHASE_UNSPECIFIED = 0;
+
+  // Declared, nothing opened yet.
+  CHANGE_SET_PHASE_PENDING = 1;
+
+  // Materializing and merging.
+  CHANGE_SET_PHASE_ROLLING_OUT = 2;
+
+  // Every target merged.
+  CHANGE_SET_PHASE_COMPLETED = 3;
+
+  // Stalled on a blocked Change, for SEQUENTIAL and STACKED.
+  CHANGE_SET_PHASE_STALLED = 4;
+
+  // Given up on, with outstanding Changes closed.
+  CHANGE_SET_PHASE_ABANDONED = 5;
+}

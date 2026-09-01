@@ -1,0 +1,79 @@
+edition = "2024";
+
+package unmango.ref.v1alpha1;
+
+// Vocabulary for expressing relationships between resources across every
+// unmango API. Deliberately tiny: ownership, selection, and status
+// reporting come from k8s.io.apimachinery.pkg.apis.meta.v1, which supplies
+// OwnerReference, LabelSelector, and Condition. Only the reference types that
+// meta/v1 lacks are defined here.
+//
+// The equivalent types in Kubernetes live in k8s.io/api/core/v1, a 6000-line
+// file carrying the entire core API. Gateway API faces the same problem and
+// solves it the same way, by declaring its own ParentReference alongside an
+// imported metav1.Condition.
+
+// Addresses a resource anywhere in the graph. Carries the same coordinates as
+// metav1.OwnerReference minus the ownership flags, so both reference styles
+// read identically at the point of use.
+message ObjectReference {
+  // Proto package of the target, with the version as the final element:
+  // "unmango.compute.host/v1alpha1".
+  string api_version = 1;
+
+  // Kind of the target, matching its message name: "Host".
+  string kind = 2;
+
+  // The target's name field.
+  string name = 3;
+
+  // Scopes the target within a multi-tenant deployment. Unset means today's
+  // single-tenant behavior: the name is unique across the whole graph.
+  string namespace = 4 [features.field_presence = EXPLICIT];
+
+  // Pins the target to a specific observed_generation or resourceVersion-like
+  // value, for optimistic concurrency. Unset means the current value.
+  string resource_version = 5 [features.field_presence = EXPLICIT];
+}
+
+// Names a parent that the referring resource attaches to, where the two were
+// authored independently. The parent decides whether to admit the attachment
+// and reports the outcome as a Condition on the child.
+//
+// This is the Gateway -> HTTPRoute relationship. It differs from ownership:
+// nothing generated the child, and deleting the parent does not cascade.
+message ParentReference {
+  ObjectReference ref = 1;
+
+  // Optional named part of the parent being attached to, when the parent
+  // exposes more than one attachment point.
+  string section = 2 [features.field_presence = EXPLICIT];
+}
+
+// How a delete propagates along owner references. Mirrors the Kubernetes
+// deletion propagation policies, and applies to any resource that owns
+// children through metav1.OwnerReference.
+enum DeletePropagation {
+  DELETE_PROPAGATION_UNSPECIFIED = 0;
+
+  // Delete children first, then the parent. The parent remains readable until
+  // every child with block_owner_deletion set has gone.
+  DELETE_PROPAGATION_FOREGROUND = 1;
+
+  // Delete the parent immediately and reap children asynchronously.
+  DELETE_PROPAGATION_BACKGROUND = 2;
+
+  // Delete the parent and leave children in place with their owner reference
+  // dangling.
+  DELETE_PROPAGATION_ORPHAN = 3;
+}
+
+// Compute available on, or requested from, a capacity provider. Shared by
+// compute.host Host and ci.runner Runner rather than each declaring its own
+// copy, since the two describe the same four numbers.
+message ResourceQuantity {
+  int64 cpu_millicores = 1;
+  int64 memory_bytes = 2;
+  int64 storage_bytes = 3;
+  int32 gpu_count = 4;
+}

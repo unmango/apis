@@ -21,7 +21,10 @@ message FileInfo {
   google.protobuf.Any sys = 6; // platform-specific underlying data; type URL must be agreed out-of-band
 }
 
+// Deprecated: use dev.unmango.protofs.file.v1alpha2.FileService.
 service FileService {
+  option deprecated = true;
+
   rpc Read(ReadRequest) returns (ReadResponse);
   rpc ReadAt(ReadAtRequest) returns (ReadAtResponse);
   rpc Readdir(ReaddirRequest) returns (stream ReaddirResponse);

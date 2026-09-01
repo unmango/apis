@@ -1,0 +1,98 @@
+edition = "2024";
+
+package unmango.iac.resource.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Provisioned infrastructure a Stack manages:
+//
+//   Stack -> Resource
+//
+// A Resource is one thing an iac.stack Run created or is managing: a VM, a
+// storage bucket, a DNS record, a Kubernetes object. It is owned by the
+// Stack whose Runs provision it, not by any single Run, since a resource
+// outlives any one plan or apply and a Stack applies many times against the
+// same resources.
+//
+// type and address are open strings rather than a closed vocabulary,
+// deliberately: a resource type is defined by whichever tool and provider
+// produced it, and this domain has no fixed catalog of either to enumerate.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// Whether a Resource's last-observed state still matches what its Stack
+// declares.
+enum DriftStatus {
+  DRIFT_STATUS_UNSPECIFIED = 0;
+  DRIFT_STATUS_IN_SYNC = 1;
+  DRIFT_STATUS_DRIFTED = 2;
+
+  // Not checked since the last apply, or the tool cannot report drift.
+  DRIFT_STATUS_UNKNOWN = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Resource
+// ---------------------------------------------------------------------------
+
+// One provisioned thing a Stack manages.
+message Resource {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The Stack that provisions this resource.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Tool- and provider-specific kind: "aws_instance",
+  // "kubernetes_deployment", "google_storage_bucket".
+  string type = 10 [(google.api.field_behavior) = IMMUTABLE];
+
+  // The module-local identifier the tool addresses this resource by: a
+  // Terraform resource address, a Pulumi URN.
+  string address = 11 [(google.api.field_behavior) = IMMUTABLE];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The provider-assigned identifier, once created: an ARN, a resource ID,
+  // a UID.
+  string external_id = 52 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Last-known attributes as reported by the provider. Opaque: shape varies
+  // by type and provider, so this domain does not model it further.
+  google.protobuf.Struct attributes = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  DriftStatus drift_status = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The iac.stack Run that last applied changes to this resource.
+  ref.v1alpha1.ObjectReference last_applied_run = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  google.protobuf.Timestamp last_observed_time = 56 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}

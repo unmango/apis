@@ -1,0 +1,130 @@
+edition = "2024";
+
+package unmango.productivity.habit.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/uom/v1alpha1/uom.proto";
+
+// A behavior tracked by logging it, not by scheduling it:
+//
+//   Habit -> HabitLog
+//
+// productivity.task RecurringTask already materializes a full Task, due
+// date, subtasks, dependencies, every period; its skip_missed field even
+// says so directly: "What a daily habit wants." That is the wrong shape for
+// "did I meditate today": there is no due date, no subtask, nothing to
+// triage, only whether it happened. A Habit never materializes a Task.
+// Logging is direct: a HabitLog is created the moment the behavior happens,
+// and current_streak is computed from the log history against frequency and
+// target_count, not from completed occurrences of a generated child.
+//
+// Habit and HabitLog follow FocusSession and Interruption's shape, an owned
+// child with a full identity band and a minimal observed band, rather than
+// CaptureItem's reserved-band shape: a HabitLog genuinely is owned by its
+// Habit, unlike a CaptureItem, which nothing owns.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum HabitFrequency {
+  HABIT_FREQUENCY_UNSPECIFIED = 0;
+  HABIT_FREQUENCY_DAILY = 1;
+
+  // target_count times per week.
+  HABIT_FREQUENCY_WEEKLY = 2;
+
+  // target_count times per month.
+  HABIT_FREQUENCY_MONTHLY = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Habit
+// ---------------------------------------------------------------------------
+
+// A behavior worth doing regularly, tracked by its log rather than by
+// materializing scheduled work.
+message Habit {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  string description = 10 [features.field_presence = EXPLICIT];
+  HabitFrequency frequency = 11;
+
+  // Occurrences per frequency period.
+  int32 target_count = 12;
+
+  // Set only when this habit tracks an amount, e.g. "8 cups water".
+  uom.v1alpha1.Quantity target_quantity = 13 [features.field_presence = EXPLICIT];
+
+  google.protobuf.Duration reminder_lead_time = 14 [features.field_presence = EXPLICIT];
+
+  // Stop expecting occurrences without deleting the habit.
+  bool paused = 15;
+
+  google.protobuf.Timestamp start_time = 16 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Consecutive frequency periods meeting target_count.
+  int32 current_streak = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 longest_streak = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Periods meeting target_count divided by periods elapsed since start_time.
+  double completion_rate = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp last_logged_time = 55 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  int32 total_log_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// One occurrence of a Habit, logged when it happens.
+message HabitLog {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The Habit this occurrence belongs to.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+
+  // When the habit was actually done. May predate create_time for a
+  // backfilled log.
+  google.protobuf.Timestamp logged_time = 10;
+
+  // Set only when the owning Habit tracks target_quantity.
+  uom.v1alpha1.Quantity quantity = 11 [features.field_presence = EXPLICIT];
+  string note = 12 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

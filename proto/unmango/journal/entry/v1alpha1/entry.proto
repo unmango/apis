@@ -1,0 +1,145 @@
+edition = "2024";
+
+package unmango.journal.entry.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// A personal, dated log:
+//
+//   Entry
+//
+// Deliberately not Journal => Entry: unlike record.note's Notebook, there is
+// one continuous stream of entries, not a set worth grouping by selector, so
+// a container buys nothing. A RecurringPrompt -> Entry archetype, scheduled
+// prompts that stamp out entries to answer, was considered and deferred;
+// entries are freeform only for now.
+//
+// Mood is tracked twice, deliberately at different costs. mood and feelings
+// are cheap fields set directly on every Entry. mood_measurement is an
+// optional pointer to a full health.measurement Measurement for anyone who
+// wants a quantified reading behind the coarse scale, a custom
+// MeasurementType, a numeric anxiety score as a Component. Entry does not
+// duplicate Measurement's shape, only points at it.
+//
+// Entry also does not carry record.note's generic Link graph. That is the
+// deliberate difference between the two kinds: a Note is generic written
+// material wired into the rest of the graph; an Entry is dated, personal,
+// and reflective, and its only cross-domain reach is two named optional
+// pointers, author and mood_measurement.
+//
+// The identity band departs from the repository-wide preamble a third way,
+// the same variant productivity.capture CaptureItem uses: no owner_refs, no
+// generation, no observed_generation, no conditions. An Entry is written
+// once and later read, never declared and reconciled by a controller.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum ContentFormat {
+  CONTENT_FORMAT_UNSPECIFIED = 0;
+  CONTENT_FORMAT_MARKDOWN = 1;
+  CONTENT_FORMAT_PLAIN_TEXT = 2;
+  CONTENT_FORMAT_HTML = 3;
+  CONTENT_FORMAT_ORG = 4;
+  CONTENT_FORMAT_ASCIIDOC = 5;
+  CONTENT_FORMAT_TYPST = 6;
+}
+
+// A file attached to an Entry: photo-of-the-day, a voice memo.
+message Attachment {
+  // Where the bytes live. A plain string so it can address a
+  // dev.unmango.protofs path without coupling the packages.
+  string uri = 1;
+
+  string filename = 2;
+  string content_type = 3;
+  int64 size_bytes = 4;
+}
+
+// A coarse, non-clinical five-point scale, always cheap to set. Anyone
+// wanting a quantified or clinical reading should use mood_measurement
+// instead of trying to make this enum carry more than it should.
+enum Mood {
+  MOOD_UNSPECIFIED = 0;
+  MOOD_VERY_LOW = 1;
+  MOOD_LOW = 2;
+  MOOD_NEUTRAL = 3;
+  MOOD_GOOD = 4;
+  MOOD_VERY_GOOD = 5;
+}
+
+// A closed set of access categories, the same kind of thing PlatformKind or
+// AccountType is: the category is fixed even though who a SHARED entry is
+// shared with is not modelled here. Unspecified is treated as PRIVATE by
+// convention: mental-health journaling should default closed, never open.
+enum Visibility {
+  VISIBILITY_UNSPECIFIED = 0;
+  VISIBILITY_PRIVATE = 1;
+  VISIBILITY_SHARED = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Entry
+// ---------------------------------------------------------------------------
+
+// One dated log entry.
+message Entry {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  reserved 6, 7; // owner_refs, generation: nothing owns or reconciles an entry
+
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+
+  // The day this entry is for, authoritative for ordering and range queries.
+  // Distinct from create_time: a backfilled entry is written today with an
+  // entry_date from last week. Not enforced unique per day, the same way
+  // record.note allows more than one note in a day.
+  google.type.Date entry_date = 10;
+
+  string title = 11 [features.field_presence = EXPLICIT];
+  string body = 12;
+  ContentFormat format = 13;
+  Mood mood = 14;
+
+  // Free-text affect tags tied to mood: "anxious", "grateful", "wired".
+  // Open-ended where mood is closed and coarse.
+  repeated string feelings = 15;
+
+  // Human-authored topical tags: "therapy-session", "milestone". Distinct
+  // from labels, which are the machine-matched selector surface.
+  repeated string tags = 16;
+
+  // Optional pointer at a people.contact Contact. Unset means single-user.
+  // A plain reference, not a ~> attachment: nothing admits or rejects it.
+  ref.v1alpha1.ObjectReference author = 17 [features.field_presence = EXPLICIT];
+
+  // Optional pointer at a health.measurement Measurement for a quantified
+  // mood or anxiety reading behind the coarse mood scale.
+  ref.v1alpha1.ObjectReference mood_measurement = 18 [features.field_presence = EXPLICIT];
+
+  repeated Attachment attachments = 19;
+  Visibility visibility = 20;
+
+  // Observed state.
+  reserved 50, 51; // observed_generation, conditions: nothing reconciles an entry
+
+  int32 word_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_edited_time = 53 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}

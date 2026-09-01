@@ -16,7 +16,11 @@ message BackupMetadata {
 }
 
 // ServerBackup is a complete snapshot of a Discord guild.
+//
+// Deprecated: use dev.unmango.discord.backup.v1alpha2.ServerBackup.
 message ServerBackup {
+  option deprecated = true;
+
   BackupMetadata metadata = 1;
   Guild guild = 2;
   repeated Channel channels = 3;

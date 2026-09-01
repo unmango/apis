@@ -6,3 +6,4 @@ bin/
 *.binpb
 .vscode/*
 !.vscode/extensions.json
+/third_party/

@@ -1,0 +1,383 @@
+edition = "2024";
+
+package unmango.vcs.commit.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/interval.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// History as a graph:
+//
+//   Commit >> Commit          (parents, ordered)
+//   vcs.branch Branch -> Commit
+//   vcs.branch Tag -> Commit
+//
+// `>>` is a fifth relationship archetype, distinct from the four the rest of
+// this repository uses. An immutable DAG edge stands apart from all four:
+// the target predates the source, deleting a child never cascades to a
+// parent, and the edge is fixed at creation because it is part of what the
+// identity hashes over. Git's parent pointer is the canonical example.
+//
+// Trees and blobs are deliberately absent. A git tree is a filesystem, and
+// this repository already models one: dev.unmango.protofs. A Commit exposes
+// its tree as a protofs root rather than restating an object model that
+// already exists, so browsing a commit is an ordinary filesystem walk.
+//
+// Field bands differ from the mutable kinds, because nothing here is
+// declared:
+//   1-9    immutable-node identity (see below)
+//   10-39  content, fixed at creation and covered by the hash
+//   50+    derived, computed by whoever indexes the graph
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// Who did something, and when. Author and committer differ whenever a change
+// is rebased, cherry-picked, or applied on someone's behalf.
+message Signature {
+  string name = 1;
+  string email = 2;
+  google.protobuf.Timestamp time = 3;
+
+  // The people.contact Contact this resolves to, when the address is known.
+  ref.v1alpha1.ObjectReference contact = 4 [features.field_presence = EXPLICIT];
+}
+
+// A key-value line in the commit message footer: Co-Authored-By, Signed-off-by,
+// Reviewed-by.
+message Trailer {
+  string key = 1;
+  string value = 2;
+}
+
+message DiffStat {
+  int32 files_changed = 1;
+  int32 additions = 2;
+  int32 deletions = 3;
+}
+
+// Shape of a commit, derived from how many parents it has.
+enum CommitKind {
+  COMMIT_KIND_UNSPECIFIED = 0;
+
+  // No parents. The beginning of history.
+  COMMIT_KIND_ROOT = 1;
+
+  // Exactly one parent.
+  COMMIT_KIND_NORMAL = 2;
+
+  // Two or more parents.
+  COMMIT_KIND_MERGE = 3;
+
+  // Three or more parents.
+  COMMIT_KIND_MULTI_PARENT_MERGE = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Commit
+// ---------------------------------------------------------------------------
+
+// One node in a repository's history graph.
+//
+// The identity band departs from the repository-wide preamble, and the
+// omissions are the point:
+//
+//   no uid           the content hash already is a stable unique identifier
+//   no display_name  a commit has a message, not a name someone chose
+//   no owner_refs    parents are DAG edges, not ownership; nothing cascades
+//   no generation    nothing about a commit is ever declared or reconciled
+//   no delete_time   unreachable objects are garbage collected, not deleted
+//
+// Labels and annotations survive because they are local metadata about the
+// node rather than part of it, which is exactly how a selector should treat a
+// commit.
+message Commit {
+  // Content address or revision identifier, as the underlying VCS names it.
+  // The identity.
+  string revision = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The vcs.repository Repository this commit is observed in. Scope rather
+  // than ownership: the same sha in a fork is the same commit.
+  ref.v1alpha1.ObjectReference repository = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  reserved 3;
+
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  reserved 6, 7;
+
+  // Committer timestamp, promoted into the identity band because it is the
+  // axis the graph is most often walked along.
+  google.protobuf.Timestamp commit_time = 8;
+
+  reserved 9;
+
+  // Content. Fixed at creation and covered by the hash.
+  // Parents, in order. The first is the mainline; the rest are merged
+  // branches. Empty means a root commit. This is the DAG edge.
+  repeated string parent_revisions = 10;
+
+  // Root tree object of this commit.
+  string tree_revision = 11;
+
+  // Full message, subject and body.
+  string message = 12;
+
+  Signature author = 13;
+  Signature committer = 14;
+
+  // Parsed message footer.
+  repeated Trailer trailers = 15;
+
+  // A dev.unmango.protofs root for browsing this commit's tree. A plain
+  // string so the packages stay uncoupled: open it with FsService and walk it
+  // like any other filesystem.
+  string tree_uri = 16 [features.field_presence = EXPLICIT];
+
+  // Detached signature, when the commit carries one.
+  string signature = 17 [features.field_presence = EXPLICIT];
+
+  // Derived. Computed by whoever indexes the graph, not part of the hash.
+  // First line of message.
+  string summary = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  CommitKind kind = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 parent_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool signature_verified = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // vcs.branch Branches and Tags pointing directly at this commit.
+  repeated ref.v1alpha1.ObjectReference refs = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // vcs.change Changes containing this commit.
+  repeated ref.v1alpha1.ObjectReference changes = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  DiffStat stats = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Commit-graph generation number: one greater than the maximum generation
+  // of any parent, roots being one. Lets reachability be decided without
+  // walking, since a commit can never reach one with a higher number.
+  int64 generation_number = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Commits between here and the nearest root along first parents.
+  int32 depth = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Reachable from at least one ref. False means the object survives only
+  // until the next garbage collection.
+  bool reachable = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 60 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// CommitService
+// ---------------------------------------------------------------------------
+
+// Read-only. A commit cannot be created, edited, or deleted through this API,
+// because none of those operations exist for a content-addressed object:
+// writing history produces different commits rather than changing these.
+//
+// Beyond the usual reads, this service is where the graph is actually
+// traversed.
+service CommitService {
+  rpc GetCommit(GetCommitRequest) returns (GetCommitResponse);
+  rpc ListCommits(ListCommitsRequest) returns (ListCommitsResponse);
+  rpc WatchCommits(WatchCommitsRequest) returns (stream WatchCommitsResponse);
+
+  // Walk the graph from a set of tips.
+  rpc WalkCommits(WalkCommitsRequest) returns (stream WalkCommitsResponse);
+
+  // Lowest common ancestors of two or more commits.
+  rpc GetMergeBase(GetMergeBaseRequest) returns (GetMergeBaseResponse);
+
+  // Divergence between two points: ahead, behind, and what lies between.
+  rpc CompareCommits(CompareCommitsRequest) returns (CompareCommitsResponse);
+}
+
+message GetCommitRequest {
+  ref.v1alpha1.ObjectReference repository = 1;
+
+  // Full or abbreviated revision identifier, or a revision expression the
+  // server resolves. Syntax is VCS-specific: git accepts "HEAD", "main~3",
+  // "v1.2.0^{commit}"; other systems resolve their own dialect.
+  string revision = 2;
+}
+
+message GetCommitResponse {
+  Commit commit = 1;
+}
+
+message ListCommitsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 3;
+
+  // Field 4 is `repository` rather than the `owner` this position holds on
+  // every mutable kind. A commit has no owner reference to list by; the
+  // repository is scope, not ownership.
+  ref.v1alpha1.ObjectReference repository = 4;
+
+  // Restricts results to commits within this window, by commit_time.
+  google.type.Interval window = 5;
+
+  // Restricts results to commits authored by this people.contact Contact.
+  ref.v1alpha1.ObjectReference author = 6 [features.field_presence = EXPLICIT];
+
+  repeated CommitKind kinds = 7;
+
+  // Exclude commits no ref can reach.
+  bool reachable_only = 8;
+}
+
+message ListCommitsResponse {
+  repeated Commit commits = 1;
+  string next_page_token = 2;
+}
+
+message WatchCommitsRequest {
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1;
+  ref.v1alpha1.ObjectReference repository = 2;
+
+  // Restricts the stream to commits reachable from these refs.
+  repeated ref.v1alpha1.ObjectReference watch_refs = 3;
+
+  // Resume from this point instead of the current state, so a client that
+  // drops the stream does not have to replay from nothing. Unset starts
+  // from now.
+  string resource_version = 4 [features.field_presence = EXPLICIT];
+}
+
+message WatchCommitsResponse {
+  CommitEventType type = 1;
+  Commit commit = 2;
+}
+
+// A commit is never modified, so the event set is narrower than the mutable
+// kinds. ADDED is a commit becoming visible; DELETED is one becoming
+// unreachable and eligible for collection.
+enum CommitEventType {
+  COMMIT_EVENT_TYPE_UNSPECIFIED = 0;
+  COMMIT_EVENT_TYPE_ADDED = 1;
+  COMMIT_EVENT_TYPE_UNREACHABLE = 2;
+  COMMIT_EVENT_TYPE_DELETED = 3;
+}
+
+message WalkCommitsRequest {
+  ref.v1alpha1.ObjectReference repository = 1;
+
+  // Where the walk begins. Revision expressions, resolved as in GetCommit.
+  repeated string start_revisions = 2;
+
+  // Boundaries. Nothing reachable from these is emitted, which is how a walk
+  // expresses "on this branch but not that one".
+  repeated string exclude_revisions = 3;
+
+  WalkDirection direction = 4;
+  WalkOrder order = 5;
+
+  // Follow only the first parent, collapsing merged branches into the
+  // mainline.
+  bool first_parent_only = 6;
+
+  // Stop after this many edges from the nearest tip. Zero means unbounded.
+  int32 max_depth = 7;
+
+  // Stop after this many commits. Zero means unbounded.
+  int32 limit = 8;
+
+  // Emit only commits touching one of these paths.
+  repeated string paths = 9;
+
+  google.type.Interval window = 10;
+  ref.v1alpha1.ObjectReference author = 11 [features.field_presence = EXPLICIT];
+
+  // Substring match against message.
+  string query = 12 [features.field_presence = EXPLICIT];
+}
+
+message WalkCommitsResponse {
+  Commit commit = 1;
+
+  // Edges traversed from the nearest start revision to reach this commit.
+  int32 depth = 2;
+
+  // True when this commit sits on a side branch rather than the first-parent
+  // mainline.
+  bool off_mainline = 3;
+}
+
+enum WalkDirection {
+  WALK_DIRECTION_UNSPECIFIED = 0;
+
+  // Follow parent edges backward into history. The common case.
+  WALK_DIRECTION_ANCESTORS = 1;
+
+  // Follow parent edges forward. Requires a reverse index, so a server may
+  // refuse it on large graphs.
+  WALK_DIRECTION_DESCENDANTS = 2;
+}
+
+enum WalkOrder {
+  WALK_ORDER_UNSPECIFIED = 0;
+
+  // No commit is emitted before one of its descendants.
+  WALK_ORDER_TOPOLOGICAL = 1;
+
+  // Newest commit_time first. May interleave unrelated branches.
+  WALK_ORDER_DATE = 2;
+
+  // Topological, reversed. Oldest first.
+  WALK_ORDER_REVERSE = 3;
+}
+
+message GetMergeBaseRequest {
+  ref.v1alpha1.ObjectReference repository = 1;
+
+  // Two or more revisions to find the common ancestor of.
+  repeated string revisions = 2;
+
+  // Return every merge base rather than the best one. More than one means
+  // history diverged and re-merged, which a rebase would need to know.
+  bool all = 3;
+}
+
+message GetMergeBaseResponse {
+  repeated Commit merge_bases = 1;
+
+  // No common ancestor exists, so the revisions belong to unrelated histories.
+  bool unrelated = 2;
+}
+
+message CompareCommitsRequest {
+  ref.v1alpha1.ObjectReference repository = 1;
+  string base_revision = 2;
+  string head_revision = 3;
+
+  // Include the commits themselves rather than only the counts.
+  bool include_commits = 4;
+
+  int32 page_size = 5;
+  string page_token = 6;
+}
+
+message CompareCommitsResponse {
+  // Commits head has that base does not, and the reverse.
+  int32 ahead_count = 1;
+  int32 behind_count = 2;
+
+  Commit merge_base = 3;
+
+  // Populated only when include_commits was set. The ahead set.
+  repeated Commit commits = 4;
+
+  DiffStat stats = 5;
+
+  // Head can be reached from base by fast-forward alone.
+  bool fast_forward = 6;
+
+  bool unrelated = 7;
+  string next_page_token = 8;
+}

@@ -1,0 +1,305 @@
+edition = "2024";
+
+package unmango.calendar.event.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "google/type/dayofweek.proto";
+import "google/type/interval.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Scheduled time, and who is coming:
+//
+//   RecurringEvent -> Event @ asset.property Space
+//                       ^~ Attendance ~> people.contact Contact
+//
+// A RecurringEvent materializes concrete Events up to a bounded horizon, so a
+// weekly standing meeting is a template plus a horizon rather than an infinite
+// series. Editing the series affects future occurrences; an occurrence that
+// has been individually modified detaches and is left alone.
+//
+// Attendance is its own kind attached to the Event rather than a field on it.
+// That is the Gateway -> HTTPRoute shape, and it is what lets an invitee
+// respond without holding write access to the event, and lets the event admit
+// or reject them independently.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum EventStatus {
+  EVENT_STATUS_UNSPECIFIED = 0;
+  EVENT_STATUS_CONFIRMED = 1;
+  EVENT_STATUS_TENTATIVE = 2;
+  EVENT_STATUS_CANCELLED = 3;
+}
+
+enum Transparency {
+  TRANSPARENCY_UNSPECIFIED = 0;
+
+  // Consumes the attendee's availability.
+  TRANSPARENCY_BUSY = 1;
+
+  // Visible but does not block other bookings.
+  TRANSPARENCY_FREE = 2;
+}
+
+enum RecurrenceFrequency {
+  RECURRENCE_FREQUENCY_UNSPECIFIED = 0;
+  RECURRENCE_FREQUENCY_DAILY = 1;
+  RECURRENCE_FREQUENCY_WEEKLY = 2;
+  RECURRENCE_FREQUENCY_MONTHLY = 3;
+  RECURRENCE_FREQUENCY_YEARLY = 4;
+}
+
+// How a series repeats. Follows RFC 5545 recurrence semantics without
+// inheriting its string encoding.
+message RecurrenceRule {
+  RecurrenceFrequency frequency = 1;
+
+  // Periods between occurrences. Two with WEEKLY means fortnightly.
+  int32 interval = 2;
+
+  // Days the rule fires. WEEKLY only.
+  repeated google.type.DayOfWeek by_day = 3;
+
+  // Days of the month, 1 to 31, or negative to count back from the end.
+  // MONTHLY and YEARLY only.
+  repeated int32 by_month_day = 4;
+
+  // Stop after this many occurrences. Zero means unbounded.
+  int32 count = 5;
+
+  // Stop on this date. Unset means unbounded.
+  google.type.Date until = 6 [features.field_presence = EXPLICIT];
+
+  // Dates to skip, for a series with holes in it.
+  repeated google.type.Date exclude_dates = 7;
+
+  // Schedule the next occurrence relative to when the last one was completed
+  // rather than when it was due. Mirrors productivity.task's copy of this
+  // field; keep the two in sync when either changes.
+  bool from_completion = 8;
+}
+
+enum AttendeeResponse {
+  ATTENDEE_RESPONSE_UNSPECIFIED = 0;
+  ATTENDEE_RESPONSE_NEEDS_ACTION = 1;
+  ATTENDEE_RESPONSE_ACCEPTED = 2;
+  ATTENDEE_RESPONSE_DECLINED = 3;
+  ATTENDEE_RESPONSE_TENTATIVE = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Attendance
+// ---------------------------------------------------------------------------
+
+// One person's relationship to one Event. Authored independently of the Event
+// and admitted by it.
+message Attendance {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // The Event being attended. The Event decides whether to admit this.
+  ref.v1alpha1.ParentReference parent_ref = 10;
+
+  // The people.contact Contact attending.
+  ref.v1alpha1.ObjectReference attendee = 11;
+
+  AttendeeResponse response = 12;
+
+  // Attendance is expected rather than optional.
+  bool required = 13;
+
+  // Chairs the event. At most one attendance per event should set this.
+  bool organizer = 14;
+
+  string comment = 15 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Reports whether the Event admitted this attendance, and why not when it
+  // did not.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp responded_time = 52 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Whether the attendee is double-booked over this event's interval.
+  bool conflicting = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// Event
+// ---------------------------------------------------------------------------
+
+// A single occurrence of scheduled time.
+message Event {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Templated desired state. EventTemplate mirrors 10-39.
+  string summary = 10;
+  string description = 11 [features.field_presence = EXPLICIT];
+
+  // Free-text location, for somewhere with no modelled Space.
+  string location = 12 [features.field_presence = EXPLICIT];
+
+  Transparency transparency = 13;
+
+  // Occupies whole days, so the interval's times carry no meaning.
+  bool all_day = 14;
+
+  // How far ahead to notify. Multiple entries give multiple reminders.
+  repeated google.protobuf.Duration reminders = 15;
+
+  // IANA identifier, retained so a recurring series survives daylight saving
+  // shifts: "America/Chicago".
+  string time_zone = 16;
+
+  string conference_uri = 17 [features.field_presence = EXPLICIT];
+
+  // Assigned desired state.
+  // When it happens. Computed per occurrence for a materialized event.
+  google.type.Interval when = 40 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The asset.property Space booked for it. Unset means no room is held.
+  ref.v1alpha1.ObjectReference space = 41 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Date within the series this occurrence stands for. Set on materialized
+  // events, so an occurrence stays identifiable after it is moved.
+  google.type.Date occurrence_date = 42 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // This occurrence was edited individually and no longer tracks its series.
+  bool detached = 43 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  EventStatus status = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 attendance_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 accepted_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 declined_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 pending_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Another Event overlaps this one for a shared attendee or the booked Space.
+  bool conflicting = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Desired state stamped onto Events generated by a RecurringEvent. Field
+// numbers mirror Event 10-39; the assigned band is absent because the interval
+// and room booking are computed per occurrence.
+message EventTemplate {
+  map<string, string> labels = 1;
+  map<string, string> annotations = 2;
+
+  string summary = 10;
+  string description = 11 [features.field_presence = EXPLICIT];
+  string location = 12 [features.field_presence = EXPLICIT];
+  Transparency transparency = 13;
+  bool all_day = 14;
+  repeated google.protobuf.Duration reminders = 15;
+  string time_zone = 16;
+  string conference_uri = 17 [features.field_presence = EXPLICIT];
+}
+
+// ---------------------------------------------------------------------------
+// RecurringEvent
+// ---------------------------------------------------------------------------
+
+// A repeating series, and the owner of every Event it materializes.
+message RecurringEvent {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Stamped onto each materialized Event.
+  EventTemplate template = 10;
+
+  RecurrenceRule rule = 11;
+
+  // Local time each occurrence starts, interpreted in template.time_zone.
+  google.type.Date start_date = 12;
+
+  // Seconds after midnight local time. Ignored when the template is all_day.
+  int32 start_seconds = 13;
+
+  google.protobuf.Duration duration = 14;
+
+  // Materialize occurrences up to this date, bounding how far ahead the chain
+  // runs rather than generating an unbounded series.
+  google.type.Date materialize_through = 15;
+
+  // Which Events this series claims. Detached occurrences drop out of it.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
+
+  // The Space every occurrence books, when the series holds a standing room.
+  ref.v1alpha1.ObjectReference space = 17 [features.field_presence = EXPLICIT];
+
+  // Stop materializing without deleting the series.
+  bool suspended = 18;
+
+  // Past occurrences to retain. Zero retains all.
+  int32 occurrence_history_limit = 19;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 occurrence_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Occurrences that were edited individually and no longer track the series.
+  int32 detached_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.type.Date next_occurrence_date = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+  google.type.Date materialized_through = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Latest revision of the template. Occurrences record the revision they were
+  // created with.
+  string revision = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

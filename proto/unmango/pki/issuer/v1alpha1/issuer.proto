@@ -1,0 +1,122 @@
+edition = "2024";
+
+package unmango.pki.issuer.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// A signing mechanism, not the certificates it produces:
+//
+//   pki.certificate CertificateRequest -> pki.certificate CertificateIssuance
+//
+// An Issuer names how certificates get minted: a self-signed root, an
+// existing Issuer's chain acting as an intermediate CA, an ACME account, or a
+// Vault PKI secrets engine mount. It does not declare what to issue, which is
+// pki.certificate CertificateRequest's job, the same split
+// codegen.converter Converter draws from codegen.conversion Conversion and
+// iac.module Module draws from iac.stack Stack.
+//
+// config is a oneof rather than a closed IssuerKind plus per-kind optional
+// fields, the same shape codegen.converter DiscoverySource uses: each
+// mechanism needs different fields, so a field meaningful only for one
+// mechanism does not belong outside its oneof member.
+//
+// AcmeConfig.platform points at a compute.platform Platform for the ACME
+// server's specific provider, Let's Encrypt, ZeroSSL, Google Trust Services,
+// the same argument codegen.converter Converter.platform already makes: a
+// closed enum of providers would bake a fixed vendor list into the schema.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// Signs its own certificate. No fields: there is nothing to configure beyond
+// choosing this mechanism.
+message SelfSignedConfig {}
+
+// Signs through another Issuer's chain, making this one an intermediate CA.
+message CaConfig {
+  // The Issuer whose most recent pki.certificate Certificate signs
+  // certificates issued through this one. Forms the CA chain a
+  // pki.certificate Certificate's issuer_fingerprint walks.
+  ref.v1alpha1.ObjectReference issuer = 1;
+}
+
+// Where an ACME challenge is answered.
+enum AcmeChallengeKind {
+  ACME_CHALLENGE_KIND_UNSPECIFIED = 0;
+  ACME_CHALLENGE_KIND_HTTP01 = 1;
+  ACME_CHALLENGE_KIND_DNS01 = 2;
+}
+
+message AcmeConfig {
+  // The compute.platform Platform for the ACME server: Let's Encrypt,
+  // ZeroSSL, Google Trust Services.
+  ref.v1alpha1.ObjectReference platform = 1 [features.field_presence = EXPLICIT];
+
+  // Directory URL, when platform is absent or does not resolve to one.
+  string directory_url = 2 [features.field_presence = EXPLICIT];
+
+  string account_email = 3;
+  AcmeChallengeKind challenge_kind = 4;
+
+  // The compute.platform Platform solving challenge_kind: a DNS provider for
+  // DNS-01. Absent for HTTP-01, solved by whatever already serves the
+  // requested domain.
+  ref.v1alpha1.ObjectReference challenge_solver = 5 [features.field_presence = EXPLICIT];
+}
+
+message VaultConfig {
+  string address = 1;
+
+  // Mount path of the PKI secrets engine: "pki_int".
+  string mount_path = 2;
+
+  // Role used to sign requests against the mount.
+  string role = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Issuer
+// ---------------------------------------------------------------------------
+
+// A signing mechanism certificates are requested from.
+message Issuer {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  oneof config {
+    SelfSignedConfig self_signed = 10;
+    CaConfig ca = 11;
+    AcmeConfig acme = 12;
+    VaultConfig vault = 13;
+  }
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // This issuer's own signing credential, set once self_signed or ca has
+  // minted it. Absent for acme and vault, which sign against a certificate
+  // this API does not hold.
+  string ca_certificate_fingerprint = 52 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // pki.certificate CertificateRequests naming this issuer.
+  int32 certificate_request_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

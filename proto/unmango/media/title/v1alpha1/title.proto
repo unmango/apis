@@ -1,0 +1,225 @@
+edition = "2024";
+
+package unmango.media.title.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// The catalog: works, and the concrete releases of them.
+//
+//   Title -> Title (Series -> Season -> Episode) -> Edition
+//
+// Title nests through owner references rather than dedicated series and season
+// fields, which keeps a nine-season television show, a two-disc album, and a
+// standalone film the same shape. The MediaKind says which level a title sits
+// at; the ownership edge says what it belongs to.
+//
+// An Edition is a specific release of a Title: a theatrical cut, a remaster, a
+// particular pressing. Bytes on disk belong to media.library, not here, so the
+// catalog stays meaningful for things not owned.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum MediaKind {
+  MEDIA_KIND_UNSPECIFIED = 0;
+  MEDIA_KIND_MOVIE = 1;
+  MEDIA_KIND_SERIES = 2;
+  MEDIA_KIND_SEASON = 3;
+  MEDIA_KIND_EPISODE = 4;
+  MEDIA_KIND_ALBUM = 5;
+  MEDIA_KIND_TRACK = 6;
+  MEDIA_KIND_BOOK = 7;
+  MEDIA_KIND_AUDIOBOOK = 8;
+  MEDIA_KIND_GAME = 9;
+  MEDIA_KIND_PODCAST = 10;
+  MEDIA_KIND_PODCAST_EPISODE = 11;
+  MEDIA_KIND_SHORT = 12;
+}
+
+// Identifier in an external catalog, so records can be reconciled against
+// imdb, tmdb, musicbrainz, isbn, igdb, and the rest.
+message ExternalId {
+  string source = 1;
+  string value = 2;
+}
+
+// Someone who worked on a title.
+message Credit {
+  // A people.contact Contact when the person is known personally,
+  // otherwise unset and identified by name alone.
+  ref.v1alpha1.ObjectReference contact = 1 [features.field_presence = EXPLICIT];
+
+  string person_name = 2;
+
+  // "director", "author", "artist", "developer", "narrator".
+  string role = 3;
+
+  // Ordering within the role. Lower is billed first.
+  int32 billing_order = 4;
+
+  // Part played, for a performing credit.
+  string character = 5 [features.field_presence = EXPLICIT];
+}
+
+enum ReleaseFormat {
+  RELEASE_FORMAT_UNSPECIFIED = 0;
+  RELEASE_FORMAT_THEATRICAL = 1;
+  RELEASE_FORMAT_BLU_RAY = 2;
+  RELEASE_FORMAT_DVD = 3;
+  RELEASE_FORMAT_DIGITAL = 4;
+  RELEASE_FORMAT_VINYL = 5;
+  RELEASE_FORMAT_CD = 6;
+  RELEASE_FORMAT_CASSETTE = 7;
+  RELEASE_FORMAT_HARDCOVER = 8;
+  RELEASE_FORMAT_PAPERBACK = 9;
+  RELEASE_FORMAT_EBOOK = 10;
+  RELEASE_FORMAT_CARTRIDGE = 11;
+  RELEASE_FORMAT_STREAMING = 12;
+}
+
+// ---------------------------------------------------------------------------
+// Edition
+// ---------------------------------------------------------------------------
+
+// A specific release of a Title. What a media.library LibraryItem binds to.
+message Edition {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  ReleaseFormat format = 10;
+
+  // What distinguishes this release: "Director's Cut", "2011 Remaster",
+  // "Deluxe Edition".
+  string edition_name = 11 [features.field_presence = EXPLICIT];
+
+  google.type.Date release_date = 12 [features.field_presence = EXPLICIT];
+
+  // Runtime or length specific to this cut, which may differ from the Title's.
+  google.protobuf.Duration runtime = 13;
+
+  // ISO 639 codes.
+  repeated string languages = 14;
+  repeated string subtitle_languages = 15;
+
+  string publisher = 16 [features.field_presence = EXPLICIT];
+
+  // ISO 3166 code of the release territory.
+  string region = 17 [features.field_presence = EXPLICIT];
+
+  repeated ExternalId external_ids = 18;
+
+  // The release the catalog treats as canonical for its Title.
+  bool preferred = 19;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // media.library LibraryItems holding a copy of this edition.
+  int32 owned_copy_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// Title
+// ---------------------------------------------------------------------------
+
+// A work. Nests to form series and seasons, and owns its Editions.
+message Title {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The parent Title for a season or episode. Absent at the top of a work.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // Immutable once set; create a new Title rather than changing what level
+  // of the hierarchy an existing one occupies. An update must reject a
+  // change to this field.
+  MediaKind kind = 10 [(google.api.field_behavior) = IMMUTABLE];
+
+  // Title as presented.
+  string title = 11;
+
+  // Title normalized for ordering, with leading articles dropped.
+  string sort_title = 12 [features.field_presence = EXPLICIT];
+
+  // Title in the language of origin, when it differs.
+  string original_title = 13 [features.field_presence = EXPLICIT];
+
+  string summary = 14 [features.field_presence = EXPLICIT];
+  google.type.Date release_date = 15 [features.field_presence = EXPLICIT];
+  repeated string genres = 16;
+  google.protobuf.Duration runtime = 17;
+  repeated Credit credits = 18;
+  repeated ExternalId external_ids = 19;
+
+  // Position within the parent. Season number on a season, track or episode
+  // number on a leaf.
+  int32 sequence_number = 20 [features.field_presence = EXPLICIT];
+
+  // Content rating in its issuing system: "PG-13", "TV-MA", "E10+".
+  string content_rating = 21 [features.field_presence = EXPLICIT];
+
+  // ISO 639 code of the original language.
+  string original_language = 22 [features.field_presence = EXPLICIT];
+
+  // Which child Titles and Editions this Title claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 23;
+
+  // Artwork. Plain strings so they can address dev.unmango.protofs paths
+  // without coupling the packages.
+  string poster_uri = 24 [features.field_presence = EXPLICIT];
+  string backdrop_uri = 25 [features.field_presence = EXPLICIT];
+
+  // Personal rating, 0 to 100. Distinct from any external score.
+  int32 rating = 26 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Direct children: seasons under a series, episodes under a season.
+  int32 child_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Leaf titles anywhere beneath this one.
+  int32 descendant_leaf_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 edition_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // At least one Edition has a media.library LibraryItem.
+  bool owned = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Summed over descendants, for a series or album.
+  google.protobuf.Duration total_runtime = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Rolled up from media.playback. Present here so a series can report
+  // progress without the catalog depending on playback.
+  double watched_fraction = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

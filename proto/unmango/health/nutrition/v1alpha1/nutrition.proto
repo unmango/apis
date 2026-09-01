@@ -1,0 +1,342 @@
+edition = "2024";
+
+package unmango.health.nutrition.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "google/type/money.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+import "unmango/uom/v1alpha1/uom.proto";
+
+// What gets eaten, planned and recorded:
+//
+//   MealPlan -> Meal -> FoodEntry ~> Food
+//
+// Food is a catalog kind with its own lifetime: it is referenced by entries
+// rather than owned by them, so correcting a food's nutrition data fixes every
+// meal that used it rather than only the next one.
+//
+// FoodEntry attaches to a Food and is owned by a Meal. It carries the portion,
+// which is the part that varies, while the Food carries the per-serving facts,
+// which do not.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum MealType {
+  MEAL_TYPE_UNSPECIFIED = 0;
+  MEAL_TYPE_BREAKFAST = 1;
+  MEAL_TYPE_LUNCH = 2;
+  MEAL_TYPE_DINNER = 3;
+  MEAL_TYPE_SNACK = 4;
+  MEAL_TYPE_DRINK = 5;
+}
+
+enum MealPhase {
+  MEAL_PHASE_UNSPECIFIED = 0;
+
+  // Materialized from a plan, not yet eaten.
+  MEAL_PHASE_PLANNED = 1;
+
+  MEAL_PHASE_EATEN = 2;
+
+  // Deliberately passed over.
+  MEAL_PHASE_SKIPPED = 3;
+
+  // Replaced by something not in the plan.
+  MEAL_PHASE_SUBSTITUTED = 4;
+}
+
+// Macro and micro nutrients for one serving, or summed across a meal.
+message Nutrients {
+  double calories_kcal = 1;
+  double protein_g = 2;
+  double carbohydrate_g = 3;
+  double fat_g = 4;
+  double fiber_g = 5;
+  double sugar_g = 6;
+  double saturated_fat_g = 7;
+  double sodium_mg = 8;
+  double cholesterol_mg = 9;
+  double potassium_mg = 10;
+}
+
+// A portion size the food is commonly measured in.
+message Serving {
+  uom.v1alpha1.Unit unit = 1;
+
+  // Set only when unit is UNIT_CUSTOM: "slice", "medium".
+  string custom_unit = 4 [features.field_presence = EXPLICIT];
+
+  double grams = 2;
+
+  // Nutrients in exactly one of this serving.
+  Nutrients nutrients = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Food
+// ---------------------------------------------------------------------------
+
+// A catalog entry: an ingredient, a packaged product, or a prepared dish.
+// Referenced by FoodEntry rather than owned by it, so it can be corrected once
+// and take effect everywhere.
+message Food {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  string brand = 10 [features.field_presence = EXPLICIT];
+
+  // Portions this food can be measured in. The first is the default.
+  repeated Serving servings = 11;
+
+  string barcode = 12 [features.field_presence = EXPLICIT];
+
+  // Where the nutrition data came from: "usda", "label", "estimated".
+  string source = 13;
+
+  // Composed of other Foods, as a recipe is.
+  repeated Ingredient ingredients = 14;
+
+  // Servings the whole recipe yields. Only meaningful with ingredients.
+  double recipe_yield = 15;
+
+  google.type.Money typical_cost = 16;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Summed from ingredients and divided by yield, for a recipe. Copied from
+  // the default serving otherwise.
+  Nutrients computed_nutrients = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // FoodEntries currently referencing this food.
+  int64 reference_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp last_eaten_time = 54 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+}
+
+// One component of a recipe.
+message Ingredient {
+  ref.v1alpha1.ObjectReference food = 1;
+  double quantity = 2;
+  uom.v1alpha1.Unit unit = 3;
+
+  // Set only when unit is UNIT_CUSTOM.
+  string custom_unit = 4 [features.field_presence = EXPLICIT];
+}
+
+// ---------------------------------------------------------------------------
+// FoodEntry
+// ---------------------------------------------------------------------------
+
+// One portion of one Food within a Meal. Owned by the Meal, attached to the
+// Food.
+message FoodEntry {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // The catalog Food eaten. Attachment rather than ownership: the entry
+  // records a portion, the Food records the facts.
+  ref.v1alpha1.ParentReference food_ref = 10;
+
+  double quantity = 11;
+
+  // Which of the Food's servings the quantity is counted in.
+  uom.v1alpha1.Unit unit = 12;
+
+  string note = 13 [features.field_presence = EXPLICIT];
+
+  // Set only when unit is UNIT_CUSTOM.
+  string custom_unit = 14 [features.field_presence = EXPLICIT];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The Food's per-serving nutrients scaled by quantity.
+  Nutrients nutrients = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  double grams = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.type.Money cost = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Desired state stamped onto FoodEntries generated by a Meal template. Field
+// numbers mirror FoodEntry 10-39.
+message FoodEntryTemplate {
+  map<string, string> labels = 1;
+  map<string, string> annotations = 2;
+
+  ref.v1alpha1.ParentReference food_ref = 10;
+  double quantity = 11;
+  uom.v1alpha1.Unit unit = 12;
+  string note = 13 [features.field_presence = EXPLICIT];
+  string custom_unit = 14 [features.field_presence = EXPLICIT];
+}
+
+// ---------------------------------------------------------------------------
+// Meal
+// ---------------------------------------------------------------------------
+
+// One sitting. Owns the FoodEntries that make it up.
+message Meal {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Templated desired state. MealTemplate mirrors 10-39.
+  MealType type = 10;
+
+  // Entries to materialize. Editing this changes what the meal consists of.
+  repeated FoodEntryTemplate entries = 11;
+
+  // Which FoodEntries this Meal claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
+
+  string notes = 13 [features.field_presence = EXPLICIT];
+
+  // Nutrient budget for this sitting, against which totals are compared.
+  Nutrients targets = 14;
+
+  // Assigned desired state.
+  google.type.Date meal_date = 40 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Seconds after midnight local time. Zero means unrecorded.
+  int32 meal_seconds = 41 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  MealPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 entry_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Summed over child FoodEntries.
+  Nutrients totals = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.type.Money cost = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp eaten_time = 56 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Totals divided by targets, across whichever targets were set.
+  double target_attainment = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Desired state stamped onto Meals generated by a MealPlan. Field numbers
+// mirror Meal 10-39; the assigned band is absent because dates are computed
+// per cycle.
+message MealTemplate {
+  map<string, string> labels = 1;
+  map<string, string> annotations = 2;
+
+  // Day within the plan's cycle this template fires on, zero-based.
+  int32 cycle_offset_days = 3;
+
+  MealType type = 10;
+  repeated FoodEntryTemplate entries = 11;
+
+  // Which FoodEntries a generated Meal claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
+  string notes = 13 [features.field_presence = EXPLICIT];
+  Nutrients targets = 14;
+}
+
+// ---------------------------------------------------------------------------
+// MealPlan
+// ---------------------------------------------------------------------------
+
+// A repeating cycle of meals. The kind a human edits, and the owner of every
+// Meal it materializes.
+message MealPlan {
+  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string display_name = 3 [features.field_presence = EXPLICIT];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 9 [
+    features.field_presence = EXPLICIT,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Desired state.
+  // One template per sitting in the cycle, each placed by its
+  // cycle_offset_days.
+  repeated MealTemplate meals = 10;
+
+  int32 cycle_length_days = 11;
+  google.type.Date start_date = 12;
+  google.type.Date end_date = 13 [features.field_presence = EXPLICIT];
+
+  // Materialize meals up to this date, bounding how far ahead the chain runs.
+  google.type.Date materialize_through = 14;
+
+  // Which Meals this plan claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 15;
+
+  // Nutrient budget for a whole day, against which each day is compared.
+  Nutrients daily_targets = 16;
+
+  bool suspended = 17;
+
+  // Eaten meals to retain. Zero retains all.
+  int32 meal_history_limit = 18;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 planned_meal_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 eaten_meal_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 skipped_meal_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Eaten divided by materialized, over the retained history.
+  double adherence_rate = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Averaged over the trailing seven days.
+  Nutrients average_daily_totals = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.type.Money average_daily_cost = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.type.Date materialized_through = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string revision = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
