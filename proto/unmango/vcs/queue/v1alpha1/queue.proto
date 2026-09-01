@@ -46,20 +46,22 @@ message MergeQueue {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Entries tested together speculatively. One disables batching.
-  int32 batch_size = 10;
+  int32 batch_size = 11;
 
   // Stop admitting new entries without draining the ones already queued.
-  bool suspended = 11;
+  bool suspended = 12;
 
   // Which QueueEntries this queue claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 12;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 13;
 
   // Rebase an entry onto the branch's current head before testing it.
-  bool require_up_to_date = 13;
+  bool require_up_to_date = 14;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -116,19 +118,21 @@ message QueueEntry {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The MergeQueue this entry asks to join. The queue decides whether to
   // admit it.
-  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.vcs.queue/MergeQueue"];
+  ref.v1alpha1.ParentReference parent_ref = 11 [(google.api.resource_reference).type = "unmango.vcs.queue/MergeQueue"];
 
   // The vcs.change Change being queued.
-  ref.v1alpha1.ObjectReference change = 11 [(google.api.resource_reference).type = "unmango.vcs.change/Change"];
+  ref.v1alpha1.ObjectReference change = 12 [(google.api.resource_reference).type = "unmango.vcs.change/Change"];
 
   // Higher merges sooner within its batch eligibility. Zero is default FIFO
   // order.
-  int32 priority = 12;
+  int32 priority = 13;
 
   // Assigned desired state.
   // Which speculative batch this entry currently belongs to. Unset means not

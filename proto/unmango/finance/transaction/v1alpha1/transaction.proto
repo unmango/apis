@@ -102,19 +102,21 @@ message Transaction {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. TransactionTemplate mirrors 10-39.
-  google.type.Money amount = 10;
-  TransactionDirection direction = 11;
-  string merchant = 12 [(google.api.field_behavior) = OPTIONAL];
-  string description = 13 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Money amount = 11;
+  TransactionDirection direction = 12;
+  string merchant = 13 [(google.api.field_behavior) = OPTIONAL];
+  string description = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // How the amount is distributed across budget envelopes. A single split
   // covering the full amount is the common case.
-  repeated Split splits = 14;
+  repeated Split splits = 15;
 
-  string note = 15 [(google.api.field_behavior) = OPTIONAL];
+  string note = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Assigned desired state.
   // The Account this transaction belongs to. Attachment rather than
@@ -192,39 +194,41 @@ message RecurringTransaction {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Stamped onto each projected Transaction.
-  TransactionTemplate template = 10;
+  TransactionTemplate template = 11;
 
   // Account the projected transactions attach to.
-  ref.v1alpha1.ObjectReference account = 11 [(google.api.resource_reference).type = "unmango.finance.account/Account"];
+  ref.v1alpha1.ObjectReference account = 12 [(google.api.resource_reference).type = "unmango.finance.account/Account"];
 
   // How often it recurs.
-  google.type.CalendarPeriod period = 12;
+  google.type.CalendarPeriod period = 13;
 
   // Number of periods between occurrences. Two with period MONTH means
   // every other month.
-  int32 interval = 13;
+  int32 interval = 14;
 
-  google.type.Date start_date = 14;
+  google.type.Date start_date = 15;
 
   // Unset means indefinitely.
-  google.type.Date end_date = 15 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date end_date = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Project occurrences up to this date, bounding how far the chain runs.
-  google.type.Date materialize_through = 16;
+  google.type.Date materialize_through = 17;
 
   // Which projected Transactions this arrangement claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 17;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 18;
 
   // Stop projecting without deleting the arrangement. What a paused
   // subscription looks like.
-  bool suspended = 18;
+  bool suspended = 19;
 
   // Tolerance in days when matching a real transaction to a projection.
-  int32 match_window_days = 19;
+  int32 match_window_days = 20;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

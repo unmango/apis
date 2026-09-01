@@ -115,24 +115,26 @@ message Attendance {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The Event being attended. The Event decides whether to admit this.
-  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.calendar.event/Event"];
+  ref.v1alpha1.ParentReference parent_ref = 11 [(google.api.resource_reference).type = "unmango.calendar.event/Event"];
 
   // The people.contact Contact attending.
-  ref.v1alpha1.ObjectReference attendee = 11 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  ref.v1alpha1.ObjectReference attendee = 12 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
-  AttendeeResponse response = 12;
+  AttendeeResponse response = 13;
 
   // Attendance is expected rather than optional.
-  bool required = 13;
+  bool required = 14;
 
   // Chairs the event. At most one attendance per event should set this.
-  bool organizer = 14;
+  bool organizer = 15;
 
-  string comment = 15 [(google.api.field_behavior) = OPTIONAL];
+  string comment = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -167,28 +169,30 @@ message Event {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. EventTemplate mirrors 10-39.
-  string summary = 10;
-  string description = 11 [(google.api.field_behavior) = OPTIONAL];
+  string summary = 11;
+  string description = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Free-text location, for somewhere with no modelled Space.
-  string location = 12 [(google.api.field_behavior) = OPTIONAL];
+  string location = 13 [(google.api.field_behavior) = OPTIONAL];
 
-  Transparency transparency = 13;
+  Transparency transparency = 14;
 
   // Occupies whole days, so the interval's times carry no meaning.
-  bool all_day = 14;
+  bool all_day = 15;
 
   // How far ahead to notify. Multiple entries give multiple reminders.
-  repeated google.protobuf.Duration reminders = 15;
+  repeated google.protobuf.Duration reminders = 16;
 
   // IANA identifier, retained so a recurring series survives daylight saving
   // shifts: "America/Chicago".
-  string time_zone = 16;
+  string time_zone = 17;
 
-  string conference_uri = 17 [(google.api.field_behavior) = OPTIONAL];
+  string conference_uri = 18 [(google.api.field_behavior) = OPTIONAL];
 
   // Assigned desired state.
   // When it happens. Computed per occurrence for a materialized event.
@@ -257,40 +261,42 @@ message RecurringEvent {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Stamped onto each materialized Event.
-  EventTemplate template = 10;
+  EventTemplate template = 11;
 
-  RecurrenceRule rule = 11;
+  RecurrenceRule rule = 12;
 
   // Local time each occurrence starts, interpreted in template.time_zone.
-  google.type.Date start_date = 12;
+  google.type.Date start_date = 13;
 
   // Seconds after midnight local time. Ignored when the template is all_day.
-  int32 start_seconds = 13;
+  int32 start_seconds = 14;
 
-  google.protobuf.Duration duration = 14;
+  google.protobuf.Duration duration = 15;
 
   // Materialize occurrences up to this date, bounding how far ahead the chain
   // runs rather than generating an unbounded series.
-  google.type.Date materialize_through = 15;
+  google.type.Date materialize_through = 16;
 
   // Which Events this series claims. Detached occurrences drop out of it.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 17;
 
   // The Space every occurrence books, when the series holds a standing room.
-  ref.v1alpha1.ObjectReference space = 17 [
+  ref.v1alpha1.ObjectReference space = 18 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.asset.property/Space"
   ];
 
   // Stop materializing without deleting the series.
-  bool suspended = 18;
+  bool suspended = 19;
 
   // Past occurrences to retain. Zero retains all.
-  int32 occurrence_history_limit = 19;
+  int32 occurrence_history_limit = 20;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

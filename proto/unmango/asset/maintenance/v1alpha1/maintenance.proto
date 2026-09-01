@@ -101,32 +101,34 @@ message ServiceRecord {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  google.type.Date performed_date = 10;
+  google.type.Date performed_date = 11;
 
   // Who did the work. A shop name, or "self".
-  string provider = 11;
+  string provider = 12;
 
-  google.type.Money cost = 12;
-  string summary = 13;
-  string notes = 14 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Money cost = 13;
+  string summary = 14;
+  string notes = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Reading at the time of service, when the subject tracks distance.
-  uom.v1alpha1.Quantity odometer = 15;
+  uom.v1alpha1.Quantity odometer = 16;
 
-  repeated PartUsed parts = 16;
+  repeated PartUsed parts = 17;
 
   // Where the invoice lives. A plain string so it can address a
   // dev.unmango.protofs path without coupling the packages.
-  string invoice_uri = 17 [(google.api.field_behavior) = OPTIONAL];
+  string invoice_uri = 18 [(google.api.field_behavior) = OPTIONAL];
 
   // Work is guaranteed until this date.
-  google.type.Date warranty_until = 18 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date warranty_until = 19 [(google.api.field_behavior) = OPTIONAL];
 
   // The finance.transaction Transaction that paid for it.
-  ref.v1alpha1.ObjectReference transaction = 19 [
+  ref.v1alpha1.ObjectReference transaction = 20 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.finance.transaction/Transaction"
   ];
@@ -171,18 +173,20 @@ message WorkOrder {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. WorkOrderTemplate mirrors 10-39.
-  string summary = 10;
-  string instructions = 11 [(google.api.field_behavior) = OPTIONAL];
-  repeated Task tasks = 12;
-  WorkOrderPriority priority = 13;
-  google.type.Money estimated_cost = 14;
-  google.protobuf.Duration estimated_duration = 15;
+  string summary = 11;
+  string instructions = 12 [(google.api.field_behavior) = OPTIONAL];
+  repeated Task tasks = 13;
+  WorkOrderPriority priority = 14;
+  google.type.Money estimated_cost = 15;
+  google.protobuf.Duration estimated_duration = 16;
 
   // Subject cannot be used until this is completed.
-  bool blocks_use = 16;
+  bool blocks_use = 17;
 
   // Assigned desired state. Computed when the occurrence is materialized.
   // What is being serviced. Copied from the owning plan's parent_ref, or set
@@ -264,44 +268,46 @@ message MaintenancePlan {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // What this plan services. Attachment, not ownership: the plan is authored
   // independently of its subject, deleting it does not touch the subject, and
   // the subject admits or rejects it. Points at an asset.vehicle Vehicle, an
   // asset.property Property or Space, or a compute.host Host.
-  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "*"];
+  ref.v1alpha1.ParentReference parent_ref = 11 [(google.api.resource_reference).type = "*"];
 
   // When work comes due.
-  MaintenanceInterval interval = 11;
+  MaintenanceInterval interval = 12;
 
   // Stamped onto each materialized WorkOrder.
-  WorkOrderTemplate template = 12;
+  WorkOrderTemplate template = 13;
 
   // Materialize occurrences this many days before they come due, so upcoming
   // work is visible rather than appearing the day it is needed.
-  int32 lead_time_days = 13;
+  int32 lead_time_days = 14;
 
   // Materialize occurrences up to this date, bounding how far ahead the chain
   // runs.
-  google.type.Date materialize_through = 14;
+  google.type.Date materialize_through = 15;
 
   // Which WorkOrders this plan claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 15;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
 
   // Stop materializing without deleting the plan. What a seasonal schedule
   // looks like out of season.
-  bool suspended = 16;
+  bool suspended = 17;
 
   // Completed WorkOrders to retain. Zero retains all. Their ServiceRecords are
   // never reaped, since those are the durable history.
-  int32 work_order_history_limit = 17;
+  int32 work_order_history_limit = 18;
 
   // Baseline for the first occurrence, when the subject has service history
   // predating this plan.
-  google.type.Date last_serviced_date = 18 [(google.api.field_behavior) = OPTIONAL];
-  uom.v1alpha1.Quantity last_serviced_distance = 19;
+  google.type.Date last_serviced_date = 19 [(google.api.field_behavior) = OPTIONAL];
+  uom.v1alpha1.Quantity last_serviced_distance = 20;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

@@ -76,6 +76,11 @@ message ArtifactInput {
 // ---------------------------------------------------------------------------
 
 // One content-addressed unit of generated output.
+//
+// The identity band reserves what an immutable node has no use for,
+// display_name, owner_refs, generation, update_time, and delete_time, rather
+// than compacting around them, so 4 is labels, 5 is annotations, and 8 is
+// create_time here exactly as on every mutable kind.
 message Artifact {
   option (google.api.resource) = {
     type: "unmango.codegen.artifact/Artifact"
@@ -91,34 +96,36 @@ message Artifact {
   string digest = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-  map<string, string> labels = 3;
-  map<string, string> annotations = 4;
-  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  reserved 3, 6, 7, 9, 10; // display_name, owner_refs, generation, update_time, delete_time: nothing declares, owns, or rewrites an artifact
 
   // Content, fixed at creation and covered by the digest.
   // What this was built from. Ordered, and the first is the primary source,
   // matching the mainline-first convention vcs.commit uses for parents.
-  repeated ArtifactInput inputs = 10;
+  repeated ArtifactInput inputs = 11;
 
   // The codegen.converter Converter that produced it.
-  ref.v1alpha1.ObjectReference converter = 11 [(google.api.resource_reference).type = "unmango.codegen.converter/Converter"];
+  ref.v1alpha1.ObjectReference converter = 12 [(google.api.resource_reference).type = "unmango.codegen.converter/Converter"];
 
-  string converter_tool_version = 12;
-  map<string, string> options = 13;
+  string converter_tool_version = 13;
+  map<string, string> options = 14;
 
   // Shape of the output, matching the Converter's output Port: "go", "nix",
   // "kubernetes-crd".
-  string format = 14;
+  string format = 15;
 
   // Narrows the format, as Port.qualifier does: a Go module path, a Nix
   // attribute path.
-  string qualifier = 15 [(google.api.field_behavior) = OPTIONAL];
+  string qualifier = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // A dev.unmango.protofs root holding the generated tree.
-  string tree_uri = 16;
+  string tree_uri = 17;
 
-  int64 size_bytes = 17;
-  int32 file_count = 18;
+  int64 size_bytes = 18;
+  int32 file_count = 19;
 
   // Derived, computed by whoever indexes the graph.
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

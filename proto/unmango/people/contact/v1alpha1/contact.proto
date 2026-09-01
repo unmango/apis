@@ -114,33 +114,35 @@ message Relationship {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The Contact this relationship is asserted from. Attachment rather than
   // ownership: deleting a person should not silently rewrite the other party's
   // record of them.
-  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  ref.v1alpha1.ParentReference parent_ref = 11 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
   // The Contact on the other end.
-  ref.v1alpha1.ObjectReference target = 11 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  ref.v1alpha1.ObjectReference target = 12 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
   // Read as "parent is the target's <type>": PARENT means the parent_ref
   // contact is the target's parent.
-  RelationType type = 12;
+  RelationType type = 13;
 
   // Free-text override, for something the enum does not cover.
-  string custom_type = 13 [(google.api.field_behavior) = OPTIONAL];
+  string custom_type = 14 [(google.api.field_behavior) = OPTIONAL];
 
-  google.type.Date since = 14 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date since = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Set when the relationship has ended but is worth keeping.
-  google.type.Date until = 15 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date until = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Recurs yearly, and is worth a reminder.
-  google.type.Date anniversary = 16 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date anniversary = 17 [(google.api.field_behavior) = OPTIONAL];
 
-  string notes = 17 [(google.api.field_behavior) = OPTIONAL];
+  string notes = 18 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -185,39 +187,41 @@ message Contact {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  ContactKind kind = 10;
-  string given_name = 11 [(google.api.field_behavior) = OPTIONAL];
-  string family_name = 12 [(google.api.field_behavior) = OPTIONAL];
+  ContactKind kind = 11;
+  string given_name = 12 [(google.api.field_behavior) = OPTIONAL];
+  string family_name = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // What they go by, when it differs from the given name.
-  string nickname = 13 [(google.api.field_behavior) = OPTIONAL];
+  string nickname = 14 [(google.api.field_behavior) = OPTIONAL];
 
-  repeated EmailAddress emails = 14;
-  repeated PhoneNumber phones = 15;
-  repeated Address addresses = 16;
-  repeated OnlineProfile profiles = 17;
+  repeated EmailAddress emails = 15;
+  repeated PhoneNumber phones = 16;
+  repeated Address addresses = 17;
+  repeated OnlineProfile profiles = 18;
 
-  google.type.Date birthday = 18 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date birthday = 19 [(google.api.field_behavior) = OPTIONAL];
 
   // Employer, or the organization this person acts on behalf of.
-  string organization = 19 [(google.api.field_behavior) = OPTIONAL];
+  string organization = 20 [(google.api.field_behavior) = OPTIONAL];
 
-  string job_title = 20 [(google.api.field_behavior) = OPTIONAL];
+  string job_title = 21 [(google.api.field_behavior) = OPTIONAL];
 
   // A plain string so it can address a dev.unmango.protofs path without
   // coupling the packages.
-  string photo_uri = 21 [(google.api.field_behavior) = OPTIONAL];
+  string photo_uri = 22 [(google.api.field_behavior) = OPTIONAL];
 
-  string notes = 22 [(google.api.field_behavior) = OPTIONAL];
+  string notes = 23 [(google.api.field_behavior) = OPTIONAL];
 
   // Retained but out of the way. Distinct from deleted.
-  bool archived = 23;
+  bool archived = 24;
 
   // Where they live, when it is a modelled asset.property Property.
-  ref.v1alpha1.ObjectReference residence = 24 [
+  ref.v1alpha1.ObjectReference residence = 25 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.asset.property/Property"
   ];
@@ -266,16 +270,18 @@ message Group {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which Contacts belong. An empty selector claims nothing, never everything.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
 
-  string summary = 11 [(google.api.field_behavior) = OPTIONAL];
+  string summary = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Stamped onto contacts created through this group.
-  map<string, string> contact_labels = 12;
+  map<string, string> contact_labels = 13;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

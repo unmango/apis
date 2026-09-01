@@ -52,28 +52,30 @@ message Module {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The compute.platform Platform for the tool that reads this module:
   // Terraform, Pulumi, Ansible, Helm, kubectl.
-  ref.v1alpha1.ObjectReference tool = 10 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
+  ref.v1alpha1.ObjectReference tool = 11 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
 
   // The vcs.repository Repository the module's source lives in.
-  ref.v1alpha1.ObjectReference repository = 11 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+  ref.v1alpha1.ObjectReference repository = 12 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Subdirectory within the repository, when the module is not at its root.
-  string path = 12 [(google.api.field_behavior) = OPTIONAL];
+  string path = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Where the module lives for tools that resolve modules by address rather
   // than by repository checkout: a Terraform registry source, a Helm chart
   // reference, an OCI reference.
-  string entrypoint = 13 [(google.api.field_behavior) = OPTIONAL];
+  string entrypoint = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // Pinned version of the tool this module is written against. Part of what
   // an iac.stack Run snapshots, so a stack can report itself stale when it
   // moves.
-  string tool_version = 14 [(google.api.field_behavior) = OPTIONAL];
+  string tool_version = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -109,23 +111,25 @@ message ModuleRegistry {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which Modules belong. An empty selector claims nothing, never
   // everything.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
 
-  string summary = 11 [(google.api.field_behavior) = OPTIONAL];
+  string summary = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Stamped onto modules created through this registry, which is how a new
   // module ends up matching the selector.
-  map<string, string> module_labels = 12;
+  map<string, string> module_labels = 13;
 
   // The vcs.repository Repository scanned for Modules that have not been
   // declared yet. Unset discovers nothing, the same as an empty selector
   // claims nothing.
-  ref.v1alpha1.ObjectReference discovery_repository = 13 [
+  ref.v1alpha1.ObjectReference discovery_repository = 14 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
   ];

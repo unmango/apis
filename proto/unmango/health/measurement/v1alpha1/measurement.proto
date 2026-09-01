@@ -116,28 +116,30 @@ message Measurement {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state. Recorded facts, since a Measurement is authored after the
   // observation.
-  MeasurementType type = 10;
-  google.protobuf.Timestamp observed_time = 11;
+  MeasurementType type = 11;
+  google.protobuf.Timestamp observed_time = 12;
 
   // The numbers. One entry for a scalar reading, several for a composite.
-  repeated Component components = 12;
+  repeated Component components = 13;
 
   // What took the reading: a scale, a wearable, a lab, or a person.
-  string source = 13;
+  string source = 14;
 
-  ref.v1alpha1.ObjectReference source_device = 14 [
+  ref.v1alpha1.ObjectReference source_device = 15 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "*"
   ];
-  string notes = 15 [(google.api.field_behavior) = OPTIONAL];
+  string notes = 16 [(google.api.field_behavior) = OPTIONAL];
 
   // Conditions the reading was taken under, which determine whether two
   // readings are comparable: "fasted", "post-workout", "morning".
-  repeated string context = 16;
+  repeated string context = 17;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -180,44 +182,46 @@ message Goal {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which Measurements count toward this goal. Selection rather than
   // ownership: the measurements exist independently and several goals may
   // watch the same series.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
 
   // Narrows the selector to one kind of reading.
-  MeasurementType measurement_type = 11;
+  MeasurementType measurement_type = 12;
 
   // Which component of the reading the target applies to.
-  string component = 12;
+  string component = 13;
 
-  GoalDirection direction = 13;
+  GoalDirection direction = 14;
 
-  double target_value = 14;
+  double target_value = 15;
 
   // Acceptable band around the target, for MAINTAIN.
-  double tolerance = 15;
+  double tolerance = 16;
 
-  uom.v1alpha1.Unit unit = 16;
+  uom.v1alpha1.Unit unit = 17;
 
   // Set only when unit is UNIT_CUSTOM.
-  string custom_unit = 21 [(google.api.field_behavior) = OPTIONAL];
+  string custom_unit = 22 [(google.api.field_behavior) = OPTIONAL];
 
   // Value at the time the goal was set, so progress is measurable rather than
   // only distance-to-target.
-  double baseline_value = 17 [(google.api.field_behavior) = OPTIONAL];
+  double baseline_value = 18 [(google.api.field_behavior) = OPTIONAL];
 
-  google.type.Date start_date = 18;
+  google.type.Date start_date = 19;
 
   // Unset means open-ended.
-  google.type.Date target_date = 19 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date target_date = 20 [(google.api.field_behavior) = OPTIONAL];
 
   // Readings to average before comparing against the target, which keeps day
   // to day noise from flipping the phase.
-  int32 smoothing_window = 20;
+  int32 smoothing_window = 21;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

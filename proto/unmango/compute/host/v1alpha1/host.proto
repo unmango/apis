@@ -89,26 +89,28 @@ message Host {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  string hostname = 10;
+  string hostname = 11;
 
   // The compute.platform Platform this machine physically runs on or
   // was provisioned from.
-  ref.v1alpha1.ObjectReference provider = 11 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
+  ref.v1alpha1.ObjectReference provider = 12 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
 
   // Cordon. Existing work keeps running, nothing new binds.
-  bool unschedulable = 12;
+  bool unschedulable = 13;
 
-  repeated Taint taints = 13;
+  repeated Taint taints = 14;
 
   // Capacity held back for the operating system, subtracted from observed
   // capacity to yield allocatable.
-  uom.v1alpha1.ResourceQuantity reserved = 14;
+  uom.v1alpha1.ResourceQuantity reserved = 15;
 
   // The asset.property Space this machine physically sits in.
-  ref.v1alpha1.ObjectReference location = 15 [
+  ref.v1alpha1.ObjectReference location = 16 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.asset.property/Space"
   ];
@@ -173,14 +175,16 @@ message Cluster {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which Hosts belong. An empty selector claims nothing, never everything.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
 
   // Applied to every member, so a whole cluster can be drained at once.
-  bool unschedulable = 11;
+  bool unschedulable = 12;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

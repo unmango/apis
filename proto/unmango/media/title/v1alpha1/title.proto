@@ -107,33 +107,35 @@ message Edition {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  ReleaseFormat format = 10;
+  ReleaseFormat format = 11;
 
   // What distinguishes this release: "Director's Cut", "2011 Remaster",
   // "Deluxe Edition".
-  string edition_name = 11 [(google.api.field_behavior) = OPTIONAL];
+  string edition_name = 12 [(google.api.field_behavior) = OPTIONAL];
 
-  google.type.Date release_date = 12 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date release_date = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Runtime or length specific to this cut, which may differ from the Title's.
-  google.protobuf.Duration runtime = 13;
+  google.protobuf.Duration runtime = 14;
 
   // ISO 639 codes.
-  repeated string languages = 14;
-  repeated string subtitle_languages = 15;
+  repeated string languages = 15;
+  repeated string subtitle_languages = 16;
 
-  string publisher = 16 [(google.api.field_behavior) = OPTIONAL];
+  string publisher = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // ISO 3166 code of the release territory.
-  string region = 17 [(google.api.field_behavior) = OPTIONAL];
+  string region = 18 [(google.api.field_behavior) = OPTIONAL];
 
-  repeated ExternalId external_ids = 18;
+  repeated ExternalId external_ids = 19;
 
   // The release the catalog treats as canonical for its Title.
-  bool preferred = 19;
+  bool preferred = 20;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -166,50 +168,52 @@ message Title {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Immutable once set; create a new Title rather than changing what level
   // of the hierarchy an existing one occupies. An update must reject a
   // change to this field.
-  MediaKind kind = 10 [(google.api.field_behavior) = IMMUTABLE];
+  MediaKind kind = 11 [(google.api.field_behavior) = IMMUTABLE];
 
   // Title as presented.
-  string title = 11;
+  string title = 12;
 
   // Title normalized for ordering, with leading articles dropped.
-  string sort_title = 12 [(google.api.field_behavior) = OPTIONAL];
+  string sort_title = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Title in the language of origin, when it differs.
-  string original_title = 13 [(google.api.field_behavior) = OPTIONAL];
+  string original_title = 14 [(google.api.field_behavior) = OPTIONAL];
 
-  string summary = 14 [(google.api.field_behavior) = OPTIONAL];
-  google.type.Date release_date = 15 [(google.api.field_behavior) = OPTIONAL];
-  repeated string genres = 16;
-  google.protobuf.Duration runtime = 17;
-  repeated Credit credits = 18;
-  repeated ExternalId external_ids = 19;
+  string summary = 15 [(google.api.field_behavior) = OPTIONAL];
+  google.type.Date release_date = 16 [(google.api.field_behavior) = OPTIONAL];
+  repeated string genres = 17;
+  google.protobuf.Duration runtime = 18;
+  repeated Credit credits = 19;
+  repeated ExternalId external_ids = 20;
 
   // Position within the parent. Season number on a season, track or episode
   // number on a leaf.
-  int32 sequence_number = 20 [(google.api.field_behavior) = OPTIONAL];
+  int32 sequence_number = 21 [(google.api.field_behavior) = OPTIONAL];
 
   // Content rating in its issuing system: "PG-13", "TV-MA", "E10+".
-  string content_rating = 21 [(google.api.field_behavior) = OPTIONAL];
+  string content_rating = 22 [(google.api.field_behavior) = OPTIONAL];
 
   // ISO 639 code of the original language.
-  string original_language = 22 [(google.api.field_behavior) = OPTIONAL];
+  string original_language = 23 [(google.api.field_behavior) = OPTIONAL];
 
   // Which child Titles and Editions this Title claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 23;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 24;
 
   // Artwork. Plain strings so they can address dev.unmango.protofs paths
   // without coupling the packages.
-  string poster_uri = 24 [(google.api.field_behavior) = OPTIONAL];
-  string backdrop_uri = 25 [(google.api.field_behavior) = OPTIONAL];
+  string poster_uri = 25 [(google.api.field_behavior) = OPTIONAL];
+  string backdrop_uri = 26 [(google.api.field_behavior) = OPTIONAL];
 
   // Personal rating, 0 to 100. Distinct from any external score.
-  int32 rating = 26 [(google.api.field_behavior) = OPTIONAL];
+  int32 rating = 27 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

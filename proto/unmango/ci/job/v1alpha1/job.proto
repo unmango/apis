@@ -108,20 +108,22 @@ message JobRun {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. JobTemplate mirrors 10-39.
-  repeated Step steps = 10;
-  map<string, string> parameters = 11;
+  repeated Step steps = 11;
+  map<string, string> parameters = 12;
 
   // Restricts which Runners may pick this up.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector runner_selector = 12;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector runner_selector = 13;
 
-  google.protobuf.Duration timeout = 13;
-  int32 max_retries = 14;
+  google.protobuf.Duration timeout = 14;
+  int32 max_retries = 15;
 
   // JobRuns that must succeed before this one may bind.
-  repeated ref.v1alpha1.ObjectReference depends_on = 15 [(google.api.resource_reference).type = "unmango.ci.job/JobRun"];
+  repeated ref.v1alpha1.ObjectReference depends_on = 16 [(google.api.resource_reference).type = "unmango.ci.job/JobRun"];
 
   // Assigned desired state.
   // The Runner executing this. Unset means queued.
@@ -184,32 +186,34 @@ message Pipeline {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Stamped onto every generated JobRun.
-  JobTemplate template = 10;
+  JobTemplate template = 11;
 
   // Which trigger kinds produce a JobRun.
-  repeated TriggerKind triggers = 11;
+  repeated TriggerKind triggers = 12;
 
   // Cron expression, when TRIGGER_KIND_SCHEDULE is enabled.
-  string schedule = 12 [(google.api.field_behavior) = OPTIONAL];
+  string schedule = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // The vcs.repository Repository this pipeline belongs to.
-  ref.v1alpha1.ObjectReference repository = 13 [
+  ref.v1alpha1.ObjectReference repository = 14 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
   ];
 
   // Stop producing new JobRuns without deleting the definition.
-  bool suspended = 14;
+  bool suspended = 15;
 
   // Completed JobRuns to retain. Zero retains all.
-  int32 run_history_limit = 15;
+  int32 run_history_limit = 16;
 
   // Cancel an in-flight JobRun when a newer one is triggered for the same ref.
-  bool cancel_superseded = 16;
+  bool cancel_superseded = 17;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

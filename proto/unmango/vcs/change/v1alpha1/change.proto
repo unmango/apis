@@ -126,25 +126,27 @@ message Review {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The Change being reviewed. The Change decides whether to admit this.
-  ref.v1alpha1.ParentReference parent_ref = 10 [(google.api.resource_reference).type = "unmango.vcs.change/Change"];
+  ref.v1alpha1.ParentReference parent_ref = 11 [(google.api.resource_reference).type = "unmango.vcs.change/Change"];
 
   // The people.contact Contact reviewing.
-  ref.v1alpha1.ObjectReference reviewer = 11 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  ref.v1alpha1.ObjectReference reviewer = 12 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
-  ReviewVerdict verdict = 12;
-  string body = 13 [(google.api.field_behavior) = OPTIONAL];
-  repeated ReviewComment comments = 14;
+  ReviewVerdict verdict = 13;
+  string body = 14 [(google.api.field_behavior) = OPTIONAL];
+  repeated ReviewComment comments = 15;
 
   // The head commit this verdict was formed against. What
   // Protection.dismiss_stale_approvals compares to decide staleness.
-  string reviewed_revision = 15;
+  string reviewed_revision = 16;
 
   // The reviewer was asked rather than volunteering.
-  bool requested = 16;
+  bool requested = 17;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -186,30 +188,32 @@ message Change {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Templated desired state. ChangeTemplate mirrors 10-39.
-  string title = 10;
-  string body = 11 [(google.api.field_behavior) = OPTIONAL];
-  bool draft = 12;
-  MergeStrategy merge_strategy = 13;
+  string title = 11;
+  string body = 12 [(google.api.field_behavior) = OPTIONAL];
+  bool draft = 13;
+  MergeStrategy merge_strategy = 14;
 
   // people.contact Contacts whose review is requested.
-  repeated ref.v1alpha1.ObjectReference reviewers = 14 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  repeated ref.v1alpha1.ObjectReference reviewers = 15 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
 
   // people.contact Contact expected to carry the change forward.
-  ref.v1alpha1.ObjectReference assignee = 15 [
+  ref.v1alpha1.ObjectReference assignee = 16 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
   // Merge as soon as the target branch's rules are satisfied.
-  bool auto_merge = 16;
+  bool auto_merge = 17;
 
-  bool delete_source_on_merge = 17;
+  bool delete_source_on_merge = 18;
 
   // Which Reviews this Change claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 18;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 19;
 
   // Assigned desired state. Computed per repository when materialized.
   // The vcs.branch Branch this change targets. Attachment: the branch admits
@@ -318,39 +322,41 @@ message ChangeSet {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Stamped onto each materialized Change.
-  ChangeTemplate template = 10;
+  ChangeTemplate template = 11;
 
   // vcs.repository Repositories to open a Change in. Named explicitly.
-  repeated ref.v1alpha1.ObjectReference repositories = 11 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+  repeated ref.v1alpha1.ObjectReference repositories = 12 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Or claimed by selector, via a vcs.repository RepositoryGroup. Applied in
   // addition to repositories above.
-  ref.v1alpha1.ObjectReference repository_group = 12 [
+  ref.v1alpha1.ObjectReference repository_group = 13 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.vcs.repository/RepositoryGroup"
   ];
 
   // Which Changes this set claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 13;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 14;
 
-  RolloutOrder order = 14;
+  RolloutOrder order = 15;
 
   // Changes permitted open at once. Zero means unbounded. Ignored when order
   // is SEQUENTIAL.
-  int32 max_concurrent = 15;
+  int32 max_concurrent = 16;
 
   // Stop opening new Changes without closing the ones already out.
-  bool suspended = 16;
+  bool suspended = 17;
 
   // Close every open Change if any merged one is reverted.
-  bool rollback_on_revert = 17;
+  bool rollback_on_revert = 18;
 
   // Merged Changes to retain. Zero retains all.
-  int32 change_history_limit = 18;
+  int32 change_history_limit = 19;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

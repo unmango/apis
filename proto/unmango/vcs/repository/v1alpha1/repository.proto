@@ -56,19 +56,21 @@ message Remote {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  string url = 10;
-  RemoteDirection direction = 11;
-  AuthMethod auth = 12;
+  string url = 11;
+  RemoteDirection direction = 12;
+  AuthMethod auth = 13;
 
   // The remote a bare `push` or `fetch` uses. At most one per Repository.
-  bool default = 13;
+  bool default = 14;
 
   // Ref patterns this remote fetches, in the underlying VCS's own syntax.
   // Empty means the forge default.
-  repeated string fetch_refs = 14;
+  repeated string fetch_refs = 15;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -121,53 +123,55 @@ message Repository {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The compute.platform Platform whose version control system this
   // repository uses.
-  ref.v1alpha1.ObjectReference vcs = 10 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
+  ref.v1alpha1.ObjectReference vcs = 11 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
 
   // The compute.platform Platform hosting this repository. Unset means
   // a bare repository with no forge in front of it.
-  ref.v1alpha1.ObjectReference forge = 11 [
+  ref.v1alpha1.ObjectReference forge = 12 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.compute.platform/Platform"
   ];
 
   // Namespace on the forge: an organization or a user.
-  string owner = 12;
+  string owner = 13;
 
   // Repository name within that namespace.
-  string slug = 13;
+  string slug = 14;
 
-  Visibility visibility = 14;
+  Visibility visibility = 15;
 
   // Branch a fresh clone checks out, and the default target for a
   // vcs.change Change.
-  string default_branch = 15;
+  string default_branch = 16;
 
-  string description = 16 [(google.api.field_behavior) = OPTIONAL];
-  repeated string topics = 17;
+  string description = 17 [(google.api.field_behavior) = OPTIONAL];
+  repeated string topics = 18;
 
   // SPDX identifier.
-  string license = 18 [(google.api.field_behavior) = OPTIONAL];
+  string license = 19 [(google.api.field_behavior) = OPTIONAL];
 
   // Read-only. History is retained but nothing new is accepted.
-  bool archived = 19;
+  bool archived = 20;
 
   // Which Remotes and vcs.branch Branches this Repository claims.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 20;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 21;
 
   // The repository this one was forked from. Attachment rather than
   // ownership: an upstream has no say in its forks and outlives them.
-  ref.v1alpha1.ObjectReference upstream = 21 [
+  ref.v1alpha1.ObjectReference upstream = 22 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
   ];
 
   // Tracks its upstream automatically rather than diverging.
-  bool mirror = 22;
+  bool mirror = 23;
 
   // Assigned desired state.
   // The compute.host Host serving this repository, when it is self-hosted.
@@ -253,23 +257,25 @@ message RepositoryGroup {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Which Repositories belong. An empty selector claims nothing, never
   // everything.
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 10;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
 
-  string summary = 11 [(google.api.field_behavior) = OPTIONAL];
+  string summary = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // Stamped onto repositories created through this group, which is how a new
   // repository ends up matching the selector.
-  map<string, string> repository_labels = 12;
+  map<string, string> repository_labels = 13;
 
   // Settings every member should converge on. A member diverging from these
   // reports a Condition rather than being silently corrected.
-  Visibility required_visibility = 13;
-  string required_default_branch = 14 [(google.api.field_behavior) = OPTIONAL];
+  Visibility required_visibility = 14;
+  string required_default_branch = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -311,11 +317,13 @@ message Grant {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // The people.contact Contact or Group receiving access.
-  ref.v1alpha1.ObjectReference subject = 10 [(google.api.resource_reference).type = "*"];
+  ref.v1alpha1.ObjectReference subject = 11 [(google.api.resource_reference).type = "*"];
 
   // Access role as the forge names it: GitHub's read/triage/write/maintain/
   // admin, GitLab's guest/reporter/developer/maintainer/owner, or a Gerrit
@@ -323,7 +331,7 @@ message Grant {
   // codegen.schema Schema.format is: every forge names its own tiers, and
   // this repository does not execute permission logic against the value,
   // only records and syncs it.
-  string role = 11;
+  string role = 12;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -378,18 +386,20 @@ message Composition {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
   // Path within the parent repository's tree where the nested repository is
   // mounted.
-  string path = 10;
+  string path = 11;
 
   // The vcs.repository Repository nested at path.
-  ref.v1alpha1.ObjectReference repository = 11 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+  ref.v1alpha1.ObjectReference repository = 12 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
 
   // Declared commit revision to check out.
-  string pinned_revision = 12;
+  string pinned_revision = 13;
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

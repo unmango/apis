@@ -63,24 +63,26 @@ message Habit {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
-  string description = 10 [(google.api.field_behavior) = OPTIONAL];
-  HabitFrequency frequency = 11;
+  string description = 11 [(google.api.field_behavior) = OPTIONAL];
+  HabitFrequency frequency = 12;
 
   // Occurrences per frequency period.
-  int32 target_count = 12;
+  int32 target_count = 13;
 
   // Set only when this habit tracks an amount, e.g. "8 cups water".
-  uom.v1alpha1.Quantity target_quantity = 13 [(google.api.field_behavior) = OPTIONAL];
+  uom.v1alpha1.Quantity target_quantity = 14 [(google.api.field_behavior) = OPTIONAL];
 
-  google.protobuf.Duration reminder_lead_time = 14 [(google.api.field_behavior) = OPTIONAL];
+  google.protobuf.Duration reminder_lead_time = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // Stop expecting occurrences without deleting the habit.
-  bool paused = 15;
+  bool paused = 16;
 
-  google.protobuf.Timestamp start_time = 16 [(google.api.field_behavior) = OPTIONAL];
+  google.protobuf.Timestamp start_time = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -116,17 +118,19 @@ message HabitLog {
 
   int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp delete_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Desired state.
 
   // When the habit was actually done. May predate create_time for a
   // backfilled log.
-  google.protobuf.Timestamp logged_time = 10;
+  google.protobuf.Timestamp logged_time = 11;
 
   // Set only when the owning Habit tracks target_quantity.
-  uom.v1alpha1.Quantity quantity = 11 [(google.api.field_behavior) = OPTIONAL];
-  string note = 12 [(google.api.field_behavior) = OPTIONAL];
+  uom.v1alpha1.Quantity quantity = 12 [(google.api.field_behavior) = OPTIONAL];
+  string note = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
