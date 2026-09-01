@@ -365,7 +365,14 @@ message WatchCertificatesRequest {
 
 message WatchCertificatesResponse {
   CertificateEventType type = 1;
-  Certificate certificate = 2;
+
+  // Unset on a BOOKMARK event, which carries only the resume point.
+  Certificate certificate = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Resume point as of this event. A client stores it and sends it back as
+  // WatchCertificatesRequest.resource_version after a dropped stream, so the
+  // request's resume token has somewhere to come from.
+  string resource_version = 3;
 }
 
 // A certificate is never modified, so the event set matches vcs.commit and
@@ -376,6 +383,11 @@ enum CertificateEventType {
   CERTIFICATE_EVENT_TYPE_ADDED = 1;
   CERTIFICATE_EVENT_TYPE_REVOKED = 2;
   CERTIFICATE_EVENT_TYPE_DELETED = 3;
+
+  // No change to any certificate. Carries a resource_version so an idle
+  // stream still advances the client's resume point, rather than leaving it
+  // pinned at the last real event. This is the Kubernetes BOOKMARK event.
+  CERTIFICATE_EVENT_TYPE_BOOKMARK = 4;
 }
 
 message WalkChainRequest {
