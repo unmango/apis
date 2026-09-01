@@ -14,6 +14,7 @@ Everything lives under `unmango.*`: the life domains below, and the infrastructu
 The `dev.unmango.*` namespace is deprecated in full; each of its packages has a replacement under `unmango.*` and is marked deprecated in place.
 
 The life-domain APIs take their design from the relationships between resources in the Kubernetes resource graph, not its `ObjectMeta`/`spec`/`status` layout.
+They follow [Google's API Improvement Proposals](https://google.aip.dev) by default; [docs/aip.md](./docs/aip.md) records which AIPs the repository adopts, which it declines, and why.
 The infrastructure APIs are the exception to everything the rest of this document describes: they define services, carry no resource identity, and follow none of the field-band or annotation conventions below.
 
 Every field describes a class of thing, never a specific instance of one.

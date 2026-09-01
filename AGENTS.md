@@ -11,6 +11,7 @@ It is language-agnostic: the proto definitions are the source of truth, and clie
 
 - Life domains (calendar, finance, asset, media, health, compute, ci, codegen, vcs, people, record, and the rest) modeled on the Kubernetes resource graph.
   See [README.md](./README.md) for the domain architecture, relationship notation, and field-numbering convention; it is the primary reference for those packages, not this file.
+  They are written against [Google's AIPs](https://google.aip.dev); [docs/aip.md](./docs/aip.md) is the conformance policy, and it governs whether a new field or message is correct.
 - Infrastructure: `cli`/`cmd` (command-line parsing and process execution), `protofs` (Go `io/fs` over gRPC), and `discord/backup` (Discord guild backup schema).
   These define services and carry no resource identity, so the domain conventions do not apply to them.
 
