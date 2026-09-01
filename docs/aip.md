@@ -77,7 +77,7 @@ Three read-only graph services exist, `vcs.commit` `CommitService`, `codegen.art
 A `Commit` has no `name` field because a revision already is a stable unique identifier, so `GetCommitRequest` cannot take one.
 
 **AIP-140, prepositions in field names.**
-`valid_not_before`, `covered_by`, `resolved_into`, and `blocked_by` are the domain's own vocabulary, and the direction of the relationship is the whole content of the name.
+`covered_by`, `resolved_into`, `played_on`, and `blocked_by_subtasks` are the domain's own vocabulary, and the direction of the relationship is the whole content of the name.
 Dropping the preposition loses it.
 
 **AIP-122, the `_name` suffix.**
