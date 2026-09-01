@@ -70,7 +70,7 @@ message Remote {
   AuthMethod auth = 13;
 
   // The remote a bare `push` or `fetch` uses. At most one per Repository.
-  bool default = 14;
+  bool is_default = 14;
 
   // Ref patterns this remote fetches, in the underlying VCS's own syntax.
   // Empty means the forge default.

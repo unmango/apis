@@ -41,7 +41,7 @@ import "unmango/ref/v1alpha1/ref.proto";
 message Signature {
   string name = 1;
   string email = 2;
-  google.protobuf.Timestamp time = 3;
+  google.protobuf.Timestamp sign_time = 3;
 
   // The people.contact Contact this resolves to, when the address is known.
   ref.v1alpha1.ObjectReference contact = 4 [

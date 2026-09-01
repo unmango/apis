@@ -55,6 +55,23 @@
     # The rule asks for proto3. These files are edition 2024.
     - core::0191::proto-version
 
+    # Files are sectioned by concept under banner comments, shared vocabulary
+    # first and each resource under its own heading. Hoisting every message
+    # above every enum would separate the banners from the declarations they
+    # name, which costs more readability than the ordering buys.
+    - core::0191::file-layout
+
+    # Enums live at file scope across all 97 of them, under the same banner
+    # sections, so a value object and a resource can share one. Nesting the
+    # five lifecycle enums alone would make the convention apply to some
+    # enums and not others.
+    - core::0216::nesting
+
+    # productivity.capture CaptureItem.state is triage, which a human performs
+    # through a client. Nothing reconciles a capture, so an OUTPUT_ONLY state
+    # would be a field nothing can legally write.
+    - core::0216::state-field-output-only
+
     # buf.gen.yaml managed mode sets these from outside the protos. The linter
     # reads the proto rather than the generator config, so it reports them
     # regardless.
@@ -89,21 +106,6 @@
 - included_paths:
     - '**'
   disabled_rules:
-    # AIP-191: files lead with their enums and put services last.
-    - core::0191::file-layout
-
-    # AIP-216: seven lifecycle enums are named Status.
-    - core::0216::synonyms
-
-    # AIP-143: content_type is mime_type, language is language_code.
-    - core::0143::standardized-codes
-
-    # AIP-142: not_before, not_after, and Signature.time lack the _time suffix.
-    - core::0142::time-field-names
-
-    # AIP-140: two booleans are named `default`.
-    - core::0140::reserved-words
-
     # AIP-122 and AIP-123: patterns are "{account}" rather than
     # "accounts/{account}".
     - core::0123::resource-pattern-plural

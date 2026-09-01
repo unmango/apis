@@ -271,8 +271,8 @@ message Certificate {
   KeyAlgorithm key_algorithm = 15;
   repeated CertificateUsage usages = 16;
   bool is_ca = 17;
-  google.protobuf.Timestamp not_before = 18;
-  google.protobuf.Timestamp not_after = 19;
+  google.protobuf.Timestamp not_before_time = 18;
+  google.protobuf.Timestamp not_after_time = 19;
 
   // The pki.issuer Issuer that minted this.
   ref.v1alpha1.ObjectReference issuer = 20 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
@@ -302,7 +302,7 @@ message Certificate {
   google.protobuf.Timestamp revoke_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   string revocation_reason = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // not_after has passed.
+  // not_after_time has passed.
   bool expired = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
@@ -347,7 +347,7 @@ message ListCertificatesRequest {
 
   repeated string dns_names = 5 [(google.api.field_behavior) = OPTIONAL];
 
-  // Restricts results to certificates whose not_before falls within this
+  // Restricts results to certificates whose not_before_time falls within this
   // window.
   google.type.Interval window = 6 [(google.api.field_behavior) = OPTIONAL];
 

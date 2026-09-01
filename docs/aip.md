@@ -36,7 +36,7 @@ List and walk RPCs take `page_size` and `page_token` and return `next_page_token
 Numbered pages are not used anywhere.
 
 **AIP-191, file structure.**
-One package per file path segment, one API version per directory, messages before top-level enums, services before messages.
+One package per file path segment, one API version per directory.
 
 **AIP-203, field behavior.**
 `google.api.field_behavior` is set on every field whose behavior is not the default: `IDENTIFIER` on a resource name, `OUTPUT_ONLY` on observed state, `IMMUTABLE` on identity, `OPTIONAL` and `REQUIRED` on request fields.
@@ -46,7 +46,8 @@ The annotation is what makes the field bands machine-readable rather than a comm
 `google.type.Money`, `Date`, `Interval`, `PostalAddress`, and `LatLng` are used in place of hand-rolled scalar pairs.
 
 **AIP-216, states.**
-A lifecycle enum is named `<Resource>State`, not `<Resource>Status`.
+A lifecycle enum is named `<Resource>State`, not `<Resource>Status`, and the field holding one is `state`.
+The enum stays at file scope rather than nested in the resource, since every enum here does, and a `state` a human writes rather than a controller stays writable; `productivity.capture` `CaptureItem` is the one case.
 
 **AIP-122 and AIP-123, resource names and types.**
 Every resource carries a `google.api.resource` option whose `type` is `<package>/<Kind>` and whose `pattern` is the plural collection segment followed by the identifier, `accounts/{account}`.
@@ -97,6 +98,11 @@ The flagged fields, `branch_name`, `person_name`, `common_name`, hold a literal 
 
 **AIP-146, `google.protobuf.Any`.**
 Used only by the Discord backup schema, which is out of scope.
+
+**AIP-191, declaration order.**
+Files are sectioned by concept under banner comments, the shared vocabulary first and each resource under its own heading.
+Hoisting every message above every enum would separate the banners from the declarations they name.
+The ordering rule exists for readability, and here it would cost more of it than it buys.
 
 **AIP-191, `java_package`, `java_outer_classname`, `java_multiple_files`, and proto3 syntax.**
 File options are set by buf managed mode in [buf.gen.yaml](../buf.gen.yaml) rather than written into the protos, which is what keeps 60 files from carrying three generator options each.

@@ -23,8 +23,8 @@ enabled, no config.
 decisions the repository has already made and defended in writing.
 They collapse into five rule disables.
 
-709 findings across 14 rules are worth acting on, and thirteen of the fourteen
-are mechanical: an annotation to add, a name to change, a declaration to move.
+664 findings across 13 rules are worth acting on, and twelve of the thirteen
+are mechanical: an annotation to add or a name to change.
 
 The one that is not mechanical is the resource pattern: all 91 resources declare
 `pattern: "{account}"` where AIP-123 wants `pattern: "accounts/{account}"`.
@@ -45,7 +45,7 @@ The one that is not mechanical is the resource pattern: all 91 resources declare
 | `0203::resource-name-identifier` | 87 | 40 | fix |
 | `0203::field-behavior-required` | 65 | 4 | fix |
 | `0140::prepositions` | 46 | 24 | decline |
-| `0191::file-layout` | 45 | 41 | fix |
+| `0191::file-layout` | 45 | 41 | decline |
 | `0191::java-multiple-files` | 44 | 44 | fix, in `buf.gen.yaml` |
 | `0191::java-outer-classname` | 44 | 44 | fix, in `buf.gen.yaml` |
 | `0191::java-package` | 44 | 44 | fix, in `buf.gen.yaml` |
@@ -161,14 +161,6 @@ the rule.
 accessor has to be escaped or mangled in three of the languages this schema is
 meant to be consumed from.
 
-### 45 declarations sit out of AIP-191 order
-
-Messages should precede top-level enums, and services should precede messages.
-41 files are affected: most lead with their enums under a `Shared types` banner, and
-the three files with services put them last.
-This is a reordering, not a rewrite, and `buf breaking` does not consider
-declaration order.
-
 ### The Java file options belong in managed mode
 
 `java_package`, `java_outer_classname`, and `java_multiple_files` are required by
@@ -240,6 +232,19 @@ by the fields AIP-132 allows.
 These are content-addressed nodes, the `>>` archetype `README.md` names as the
 one relationship Kubernetes has no answer for, and the standard-method AIPs have
 no answer for it either.
+
+**`0191::file-layout`, 45 findings.**
+Messages should precede top-level enums, and services should precede messages.
+41 files are affected: most lead with their enums under a `Shared types`
+banner, and the three files with services put them last.
+Reordering is mechanical and `buf breaking` does not consider declaration
+order, so this was listed as a fix on the first pass.
+Attempting it is what changed the answer: the banner comments name sections
+that mix enums and messages, `AccountType` and `InstitutionKind` and
+`SyncConfig` under one `Shared types` heading, so hoisting the messages leaves
+the heading on whatever happens to follow it.
+The rule exists for readability and paying it here costs more of it than it
+buys.
 
 **`0191::proto-version`, 44 findings.**
 The rule asks for proto3.

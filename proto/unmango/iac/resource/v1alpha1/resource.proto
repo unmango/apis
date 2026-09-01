@@ -30,13 +30,13 @@ import "unmango/ref/v1alpha1/ref.proto";
 
 // Whether a Resource's last-observed state still matches what its Stack
 // declares.
-enum DriftStatus {
-  DRIFT_STATUS_UNSPECIFIED = 0;
-  DRIFT_STATUS_IN_SYNC = 1;
-  DRIFT_STATUS_DRIFTED = 2;
+enum DriftState {
+  DRIFT_STATE_UNSPECIFIED = 0;
+  DRIFT_STATE_IN_SYNC = 1;
+  DRIFT_STATE_DRIFTED = 2;
 
   // Not checked since the last apply, or the tool cannot report drift.
-  DRIFT_STATUS_UNKNOWN = 3;
+  DRIFT_STATE_UNKNOWN = 3;
 }
 
 // ---------------------------------------------------------------------------
@@ -90,7 +90,7 @@ message Resource {
   // by type and provider, so this domain does not model it further.
   google.protobuf.Struct attributes = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  DriftStatus drift_status = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+  DriftState drift_state = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The iac.stack Run that last applied changes to this resource.
   ref.v1alpha1.ObjectReference last_applied_run = 55 [

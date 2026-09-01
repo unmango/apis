@@ -110,7 +110,7 @@ message Branch {
   string ref_name = 11;
 
   // The repository's default branch. At most one per Repository.
-  bool default = 12;
+  bool is_default = 12;
 
   // Rules enforced against changes targeting this branch. Unset means
   // unprotected.

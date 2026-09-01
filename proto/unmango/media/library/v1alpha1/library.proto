@@ -102,7 +102,7 @@ message AudioTrack {
   int64 bitrate_bps = 4;
 
   // ISO 639 code.
-  string language = 5;
+  string language_code = 5;
 
   // Commentary, described audio, or another non-primary track.
   bool secondary = 6;
@@ -110,7 +110,9 @@ message AudioTrack {
 
 message SubtitleTrack {
   string codec = 1; // "subrip", "pgs", "ass"
-  string language = 2;
+
+  // ISO 639 code.
+  string language_code = 2;
 
   // Covers only foreign dialogue rather than all speech.
   bool forced = 3;

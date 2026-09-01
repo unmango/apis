@@ -46,14 +46,14 @@ enum FocusTechnique {
   FOCUS_TECHNIQUE_FLOWTIME = 5;
 }
 
-enum FocusSessionStatus {
-  FOCUS_SESSION_STATUS_UNSPECIFIED = 0;
-  FOCUS_SESSION_STATUS_PLANNED = 1;
-  FOCUS_SESSION_STATUS_IN_PROGRESS = 2;
-  FOCUS_SESSION_STATUS_COMPLETED = 3;
+enum FocusSessionState {
+  FOCUS_SESSION_STATE_UNSPECIFIED = 0;
+  FOCUS_SESSION_STATE_PLANNED = 1;
+  FOCUS_SESSION_STATE_IN_PROGRESS = 2;
+  FOCUS_SESSION_STATE_COMPLETED = 3;
 
   // Ended before planned_duration elapsed and without reaching intention.
-  FOCUS_SESSION_STATUS_ABANDONED = 4;
+  FOCUS_SESSION_STATE_ABANDONED = 4;
 }
 
 // A coarse, always-cheap-to-set self-report, the same treatment
@@ -150,7 +150,7 @@ message FocusSession {
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
-  FocusSessionStatus status = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  FocusSessionState state = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp start_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp end_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Duration actual_duration = 55 [(google.api.field_behavior) = OUTPUT_ONLY];

@@ -28,16 +28,16 @@ import "unmango/ref/v1alpha1/ref.proto";
 // Shared types
 // ---------------------------------------------------------------------------
 
-enum TaskStatus {
-  TASK_STATUS_UNSPECIFIED = 0;
-  TASK_STATUS_PENDING = 1;
-  TASK_STATUS_IN_PROGRESS = 2;
+enum TaskState {
+  TASK_STATE_UNSPECIFIED = 0;
+  TASK_STATE_PENDING = 1;
+  TASK_STATE_IN_PROGRESS = 2;
 
   // Waiting on a dependency or on someone else.
-  TASK_STATUS_BLOCKED = 3;
+  TASK_STATE_BLOCKED = 3;
 
-  TASK_STATUS_DONE = 4;
-  TASK_STATUS_CANCELLED = 5;
+  TASK_STATE_DONE = 4;
+  TASK_STATE_CANCELLED = 5;
 }
 
 enum TaskPriority {
@@ -146,7 +146,7 @@ message Task {
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
-  TaskStatus status = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  TaskState state = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp started_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp completion_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];

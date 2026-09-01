@@ -32,11 +32,11 @@ import "unmango/ref/v1alpha1/ref.proto";
 // Shared types
 // ---------------------------------------------------------------------------
 
-enum EventStatus {
-  EVENT_STATUS_UNSPECIFIED = 0;
-  EVENT_STATUS_CONFIRMED = 1;
-  EVENT_STATUS_TENTATIVE = 2;
-  EVENT_STATUS_CANCELLED = 3;
+enum EventState {
+  EVENT_STATE_UNSPECIFIED = 0;
+  EVENT_STATE_CONFIRMED = 1;
+  EVENT_STATE_TENTATIVE = 2;
+  EVENT_STATE_CANCELLED = 3;
 }
 
 enum Transparency {
@@ -220,7 +220,7 @@ message Event {
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
-  EventStatus status = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  EventState state = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 attendance_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 accepted_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];

@@ -53,18 +53,18 @@ enum FuelType {
   FUEL_TYPE_HUMAN_POWERED = 6;
 }
 
-enum VehicleStatus {
-  VEHICLE_STATUS_UNSPECIFIED = 0;
-  VEHICLE_STATUS_ACTIVE = 1;
+enum VehicleState {
+  VEHICLE_STATE_UNSPECIFIED = 0;
+  VEHICLE_STATE_ACTIVE = 1;
 
   // Off the road for servicing.
-  VEHICLE_STATUS_IN_SERVICE = 2;
+  VEHICLE_STATE_IN_SERVICE = 2;
 
   // Owned but not in use.
-  VEHICLE_STATUS_STORED = 3;
+  VEHICLE_STATE_STORED = 3;
 
-  VEHICLE_STATUS_SOLD = 4;
-  VEHICLE_STATUS_TOTALED = 5;
+  VEHICLE_STATE_SOLD = 4;
+  VEHICLE_STATE_TOTALED = 5;
 }
 
 // ---------------------------------------------------------------------------
@@ -190,7 +190,7 @@ message Vehicle {
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
-  VehicleStatus status = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  VehicleState state = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // From the most recent OdometerReading.

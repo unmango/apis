@@ -73,7 +73,7 @@ message Attachment {
   string uri = 1;
 
   string filename = 2;
-  string content_type = 3;
+  string mime_type = 3;
   int64 size_bytes = 4;
 }
 
