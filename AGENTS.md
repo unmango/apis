@@ -7,11 +7,16 @@ This file provides guidance to AI agents when working with code in this reposito
 This is a Protocol Buffer API definition repository (`buf.build/unmango/apis`).
 It is language-agnostic: the proto definitions are the source of truth, and client/server code is generated from them.
 
-Two proto namespaces coexist under `proto/`:
+`unmango.*` is the namespace. It holds two kinds of API:
 
-- `unmango.*`: life-domain APIs (calendar, finance, asset, media, health, compute, ci, codegen, vcs, people, record) modeled on the Kubernetes resource graph.
-  See [README.md](./README.md) for the domain architecture, relationship notation, and field-numbering convention; it is the primary reference for this namespace, not this file.
-- `dev.unmango.*`: infrastructure APIs, `protofs` (Go `io/fs` over gRPC) and `discord/backup` (Discord guild backup schema).
+- Life domains (calendar, finance, asset, media, health, compute, ci, codegen, vcs, people, record, and the rest) modeled on the Kubernetes resource graph.
+  See [README.md](./README.md) for the domain architecture, relationship notation, and field-numbering convention; it is the primary reference for those packages, not this file.
+- Infrastructure: `cli`/`cmd` (command-line parsing and process execution), `protofs` (Go `io/fs` over gRPC), and `discord/backup` (Discord guild backup schema).
+  These define services and carry no resource identity, so the domain conventions do not apply to them.
+
+`dev.unmango.*` is deprecated in full.
+Every package under it has a replacement in `unmango.*` and is marked deprecated at file scope pointing there.
+Nothing new belongs in that namespace.
 
 ## Development Environment
 
@@ -63,13 +68,16 @@ To diff-check several files, repeat `--path`: `buf format -d --path a.proto --pa
 
 - `proto/unmango/<domain>/<package>/<version>/`: life-domain APIs (`calendar`, `finance`, `asset`, `media`, `health`, `compute`, `ci`, `codegen`, `vcs`, `people`, `record`, plus the shared `ref` and `uom` vocabularies).
   Domain-by-domain design and the `->`/`~>`/`=>`/`@`/`>>` relationship notation are documented in [README.md](./README.md), not here.
-- `proto/dev/unmango/protofs/{file,fs}/v1alpha1/`: `FileService` (Go `io/fs.File` over gRPC: Read, Write, Stat, Truncate, Readdir) and `FsService` (filesystem-level RPCs: Chmod, Create, Open, Remove, Rename).
+- `proto/unmango/{cli,cmd}/`: CLI parsing and process execution.
+  `unmango.cli.v1alpha1` carries the CST, the parser, and the flag conventions; `unmango.cmd.v1alpha2` builds a `Process` from a spec and runs it.
+  `unmango.cmd.v1alpha1` is deprecated: its `Run` took a `cli` `Utility` rather than a `Process`.
+- `proto/unmango/protofs/{file,fs}/{v1alpha1,v1alpha2}/`: `FileService` (Go `io/fs.File` over gRPC: Read, Write, Stat, Truncate, Readdir) and `FsService` (filesystem-level RPCs: Chmod, Create, Open, Remove, Rename).
   Mode/perm fields are `uint32` bitmasks; `FileModeConst` documents the named bit constants.
-- `proto/dev/unmango/discord/backup/v1alpha1/`: Discord guild backup/restore schema (`ServerBackup`, `Guild`, `Channel`, `Message`, etc.).
-- `proto/dev/unmango/{cli,cmd}/` and `proto/unmango/{cli,cmd}/`: CLI/command-execution APIs; both namespaces currently have live versions, check git history before assuming which is canonical for new work.
+- `proto/unmango/discord/backup/{v1alpha1,v1alpha2}/`: Discord guild backup/restore schema (`ServerBackup`, `Guild`, `Channel`, `Message`, etc.).
+- `proto/dev/unmango/**`: the deprecated copies of the four packages above, kept in place per the version-coexistence policy.
 
 **Gotcha:** `buf.gen.yaml` only lists `proto/unmango` under `inputs.paths`, so `buf generate` silently produces no Go code for anything under `proto/dev/unmango/*`.
-If you add a `dev.unmango.*` package that needs generated code, update `buf.gen.yaml` too.
+That is deliberate now that every package there is deprecated and has a replacement under `proto/unmango`.
 
 **Gotcha:** no domain package may be named `ref` or `uom`.
 A package `unmango.<domain>.ref` (or `.uom`) would capture the relative name before it reached `unmango.ref.v1alpha1` (or `unmango.uom.v1alpha1`), silently breaking every reference in that domain.
@@ -116,4 +124,5 @@ Generating from the workspace root covers the vendored modules too, so the `gith
 Bump the vendored googleapis with `make update` (`nix flake update`).
 The `apimachinery` input is pinned to a tag in its URL, so `make update` leaves it alone; bumping it means editing the URL in `flake.nix` and running `nix flake lock --update-input apimachinery`.
 
-When adding new proto files, place them under `proto/unmango/<domain>/<package>/<version>/` (life-domain APIs) or `proto/dev/unmango/<package>/<version>/` (infrastructure APIs), following the existing pattern.
+When adding new proto files, place them under `proto/unmango/<domain>/<package>/<version>/` for a life domain or `proto/unmango/<package>/<version>/` for an infrastructure API, following the existing pattern.
+Never add to `proto/dev/unmango/`.
