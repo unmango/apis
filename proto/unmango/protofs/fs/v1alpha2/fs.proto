@@ -1,14 +1,9 @@
 edition = "2024";
 
-package dev.unmango.protofs.fs.v1alpha2;
+package unmango.protofs.fs.v1alpha2;
 
-import "dev/unmango/protofs/file/v1alpha2/file.proto";
 import "google/protobuf/timestamp.proto";
-
-// Deprecated: use unmango.protofs.fs.v1alpha2.
-// The same API under the namespace that is staying; the dev.unmango namespace
-// is being retired.
-option deprecated = true;
+import "unmango/protofs/file/v1alpha2/file.proto";
 
 service FsService {
   rpc Chmod(ChmodRequest) returns (ChmodResponse);
