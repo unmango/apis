@@ -1,15 +1,10 @@
-edition = "2024";
+edition = "2023";
 
-package dev.unmango.discord.backup.v1alpha2;
+package unmango.discord.backup.v1alpha1;
 
-import "dev/unmango/discord/backup/v1alpha2/types.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
-
-// Deprecated: use unmango.discord.backup.v1alpha2.
-// The same schema under the namespace that is staying; the dev.unmango
-// namespace is being retired.
-option deprecated = true;
+import "unmango/discord/backup/v1alpha1/types.proto";
 
 // Attachment represents a file attached to a message.
 message Attachment {

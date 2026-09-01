@@ -6,6 +6,11 @@ import "dev/unmango/discord/backup/v1alpha1/types.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 
+// Deprecated: use unmango.discord.backup.v1alpha2.
+// The dev.unmango namespace is being retired; this package's replacement moved
+// with it.
+option deprecated = true;
+
 // Attachment represents a file attached to a message.
 message Attachment {
   string id = 1;

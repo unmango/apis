@@ -5,6 +5,11 @@ package dev.unmango.discord.backup.v1alpha2;
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 
+// Deprecated: use unmango.discord.backup.v1alpha2.
+// The same schema under the namespace that is staying; the dev.unmango
+// namespace is being retired.
+option deprecated = true;
+
 // Note: proto enum integer values in this file do NOT match Discord's raw API
 // integers. Discord uses 0 for real values (e.g. GUILD_TEXT=0, NONE=0) which
 // conflicts with the buf STANDARD requirement for an _UNSPECIFIED=0 zero value.

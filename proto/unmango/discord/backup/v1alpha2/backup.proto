@@ -1,16 +1,11 @@
-edition = "2023";
+edition = "2024";
 
-package dev.unmango.discord.backup.v1alpha1;
+package unmango.discord.backup.v1alpha2;
 
-import "dev/unmango/discord/backup/v1alpha1/guild.proto";
-import "dev/unmango/discord/backup/v1alpha1/message.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
-
-// Deprecated: use unmango.discord.backup.v1alpha2.
-// The dev.unmango namespace is being retired; this package's replacement moved
-// with it.
-option deprecated = true;
+import "unmango/discord/backup/v1alpha2/guild.proto";
+import "unmango/discord/backup/v1alpha2/message.proto";
 
 // BackupMetadata holds information about a backup snapshot itself.
 message BackupMetadata {
@@ -22,11 +17,7 @@ message BackupMetadata {
 }
 
 // ServerBackup is a complete snapshot of a Discord guild.
-//
-// Deprecated: use dev.unmango.discord.backup.v1alpha2.ServerBackup.
 message ServerBackup {
-  option deprecated = true;
-
   BackupMetadata metadata = 1;
   Guild guild = 2;
   repeated Channel channels = 3;
