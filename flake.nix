@@ -66,6 +66,14 @@
             touch "$out"
           '';
 
+          # The identity band is a convention repeated across every resource
+          # rather than a shared message type, so nothing in the compiler stops
+          # a new kind from putting labels at 3. This does.
+          checks.field-bands = pkgs.runCommand "field-bands" { } ''
+            ${pkgs.python3}/bin/python3 ${./hack/check-field-bands.py} ${./proto}
+            touch "$out"
+          '';
+
           devShells.default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               buf

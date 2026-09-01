@@ -1,4 +1,4 @@
-.PHONY: build breaking check update format fmt clean lint vendor
+.PHONY: bands build breaking check update format fmt clean lint vendor
 
 AGAINST ?= main
 
@@ -18,6 +18,10 @@ vendor:
 	mkdir -p third_party
 	cp -rL $$(nix build --no-link --print-out-paths .#unmangoApis.apimachinery) third_party/k8s
 	chmod -R u+w third_party/k8s
+
+# Also runs as the field-bands flake check; this is the fast local path.
+bands:
+	python3 hack/check-field-bands.py proto
 
 update:
 	nix flake update
