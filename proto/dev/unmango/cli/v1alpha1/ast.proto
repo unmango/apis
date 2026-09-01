@@ -2,6 +2,11 @@ edition = "2024";
 
 package dev.unmango.cli.v1alpha1;
 
+// Deprecated: use unmango.cli.v1alpha1.
+// That package carries these same types alongside the CST and the parser,
+// instead of a second copy of them. The dev.unmango namespace is being retired.
+option deprecated = true;
+
 // https://stackoverflow.com/questions/8957222/are-there-standards-for-linux-command-line-switches-and-arguments
 // - http://www.gnu.org/prep/standards/html_node/Command_002dLine-Interfaces.html
 // - http://catb.org/~esr/writings/taoup/html/ch10s05.html
