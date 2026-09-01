@@ -1,13 +1,8 @@
 edition = "2024";
 
-package dev.unmango.cmd.v1alpha2;
+package unmango.cmd.v1alpha2;
 
 import "google/protobuf/any.proto";
-
-// Deprecated: use unmango.cmd.v1alpha2.
-// The same API under the namespace that is staying; the dev.unmango namespace
-// is being retired.
-option deprecated = true;
 
 service BuilderService {
   // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE

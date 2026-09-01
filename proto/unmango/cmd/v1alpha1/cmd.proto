@@ -4,6 +4,11 @@ package unmango.cmd.v1alpha1;
 
 import "unmango/cli/v1alpha1/cli.proto";
 
+// Deprecated: use unmango.cmd.v1alpha2.
+// Run there takes a Process, which names an executable and its arguments
+// directly, rather than a cli Utility that still has to be rendered into one.
+option deprecated = true;
+
 service ExecutionService {
   rpc Run(RunRequest) returns (RunResponse);
 }
