@@ -219,12 +219,15 @@ service CommitService {
 }
 
 message GetCommitRequest {
-  ref.v1alpha1.ObjectReference repository = 1 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+  ref.v1alpha1.ObjectReference repository = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
 
   // Full or abbreviated revision identifier, or a revision expression the
   // server resolves. Syntax is VCS-specific: git accepts "HEAD", "main~3",
   // "v1.2.0^{commit}"; other systems resolve their own dialect.
-  string revision = 2;
+  string revision = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetCommitResponse {
@@ -232,17 +235,20 @@ message GetCommitResponse {
 }
 
 message ListCommitsRequest {
-  int32 page_size = 1;
-  string page_token = 2;
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 3;
+  int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Field 4 is `repository` rather than the `owner` this position holds on
   // every mutable kind. A commit has no owner reference to list by; the
   // repository is scope, not ownership.
-  ref.v1alpha1.ObjectReference repository = 4 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+  ref.v1alpha1.ObjectReference repository = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
 
   // Restricts results to commits within this window, by commit_time.
-  google.type.Interval window = 5;
+  google.type.Interval window = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Restricts results to commits authored by this people.contact Contact.
   ref.v1alpha1.ObjectReference author = 6 [
@@ -250,10 +256,10 @@ message ListCommitsRequest {
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
   ];
 
-  repeated CommitKind kinds = 7;
+  repeated CommitKind kinds = 7 [(google.api.field_behavior) = OPTIONAL];
 
   // Exclude commits no ref can reach.
-  bool reachable_only = 8;
+  bool reachable_only = 8 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message ListCommitsResponse {
@@ -262,11 +268,17 @@ message ListCommitsResponse {
 }
 
 message WatchCommitsRequest {
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1;
-  ref.v1alpha1.ObjectReference repository = 2 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1 [(google.api.field_behavior) = OPTIONAL];
+  ref.v1alpha1.ObjectReference repository = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
 
   // Restricts the stream to commits reachable from these refs.
-  repeated ref.v1alpha1.ObjectReference watch_refs = 3 [(google.api.resource_reference).type = "*"];
+  repeated ref.v1alpha1.ObjectReference watch_refs = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "*"
+  ];
 
   // Resume from this point instead of the current state, so a client that
   // drops the stream does not have to replay from nothing. Unset starts
@@ -302,32 +314,35 @@ enum CommitEventType {
 }
 
 message WalkCommitsRequest {
-  ref.v1alpha1.ObjectReference repository = 1 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+  ref.v1alpha1.ObjectReference repository = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
 
   // Where the walk begins. Revision expressions, resolved as in GetCommit.
-  repeated string start_revisions = 2;
+  repeated string start_revisions = 2 [(google.api.field_behavior) = REQUIRED];
 
   // Boundaries. Nothing reachable from these is emitted, which is how a walk
   // expresses "on this branch but not that one".
-  repeated string exclude_revisions = 3;
+  repeated string exclude_revisions = 3 [(google.api.field_behavior) = OPTIONAL];
 
-  WalkDirection direction = 4;
-  WalkOrder order = 5;
+  WalkDirection direction = 4 [(google.api.field_behavior) = OPTIONAL];
+  WalkOrder order = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Follow only the first parent, collapsing merged branches into the
   // mainline.
-  bool first_parent_only = 6;
+  bool first_parent_only = 6 [(google.api.field_behavior) = OPTIONAL];
 
   // Stop after this many edges from the nearest tip. Zero means unbounded.
-  int32 max_depth = 7;
+  int32 max_depth = 7 [(google.api.field_behavior) = OPTIONAL];
 
   // Stop after this many commits. Zero means unbounded.
-  int32 limit = 8;
+  int32 limit = 8 [(google.api.field_behavior) = OPTIONAL];
 
   // Emit only commits touching one of these paths.
-  repeated string paths = 9;
+  repeated string paths = 9 [(google.api.field_behavior) = OPTIONAL];
 
-  google.type.Interval window = 10;
+  google.type.Interval window = 10 [(google.api.field_behavior) = OPTIONAL];
   ref.v1alpha1.ObjectReference author = 11 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.people.contact/Contact"
@@ -373,14 +388,17 @@ enum WalkOrder {
 }
 
 message GetMergeBaseRequest {
-  ref.v1alpha1.ObjectReference repository = 1 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+  ref.v1alpha1.ObjectReference repository = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
 
   // Two or more revisions to find the common ancestor of.
-  repeated string revisions = 2;
+  repeated string revisions = 2 [(google.api.field_behavior) = REQUIRED];
 
   // Return every merge base rather than the best one. More than one means
   // history diverged and re-merged, which a rebase would need to know.
-  bool all = 3;
+  bool all = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message GetMergeBaseResponse {
@@ -391,15 +409,18 @@ message GetMergeBaseResponse {
 }
 
 message CompareCommitsRequest {
-  ref.v1alpha1.ObjectReference repository = 1 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
-  string base_revision = 2;
-  string head_revision = 3;
+  ref.v1alpha1.ObjectReference repository = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
+  string base_revision = 2 [(google.api.field_behavior) = REQUIRED];
+  string head_revision = 3 [(google.api.field_behavior) = REQUIRED];
 
   // Include the commits themselves rather than only the counts.
-  bool include_commits = 4;
+  bool include_commits = 4 [(google.api.field_behavior) = OPTIONAL];
 
-  int32 page_size = 5;
-  string page_token = 6;
+  int32 page_size = 5 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 6 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message CompareCommitsResponse {

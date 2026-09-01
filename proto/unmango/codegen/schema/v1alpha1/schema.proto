@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.codegen.schema.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -124,8 +125,11 @@ message Schema {
     singular: "schema"
     plural: "schemas"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -209,8 +213,11 @@ message TypeDef {
     singular: "typeDef"
     plural: "typeDefs"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

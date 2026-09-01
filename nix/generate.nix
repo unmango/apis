@@ -20,6 +20,14 @@ bufLib.generate {
           file_option = "go_package_prefix";
           value = "github.com/unmango/apis/go";
         }
+        {
+          file_option = "java_package_prefix";
+          value = "com";
+        }
+        {
+          file_option = "java_multiple_files";
+          value = true;
+        }
       ];
     };
 

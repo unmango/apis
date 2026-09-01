@@ -110,7 +110,7 @@ def check_message(kind, body):
 
 def is_resource(body):
     """A resource declares an identity at field 1 and a uid, or is content-addressed."""
-    if "string name = 1 [(google.api.field_behavior) = IMMUTABLE];" in body:
+    if "string name = 1 [(google.api.field_behavior) = IDENTIFIER];" in body:
         return True
     return bool(
         re.search(r"^  string \w+ = 1 \[\(google\.api\.field_behavior\) = OUTPUT_ONLY\];", body, re.M)

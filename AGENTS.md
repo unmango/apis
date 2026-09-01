@@ -110,7 +110,7 @@ Both versions stay checked in until a separate decision is made to delete the ol
 - Breaking change detection: `FILE` ruleset
 - Module roots: `proto/` and the gitignored `third_party/k8s`, which is ignored by both rulesets
 - Remote dependency: `buf.build/googleapis/googleapis`
-- `buf.gen.yaml` sets `go_package_prefix` to `github.com/unmango/apis/go`, so generated Go lands under `go/` mirroring the proto path
+- `buf.gen.yaml` sets `go_package_prefix` to `github.com/unmango/apis/go`, so generated Go lands under `go/` mirroring the proto path, and sets the Java options AIP-191 asks for from managed mode rather than from 60 protos
 
 Third-party protos are not checked in.
 The Nix build vendors them into its own workspace (see below), and `make vendor` materializes the apimachinery half into `third_party/k8s` for the CLI.

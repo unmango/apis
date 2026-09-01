@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.codegen.artifact.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/interval.proto";
@@ -65,10 +66,10 @@ message ArtifactInput {
   // Content hash of the input as consumed. Equals artifact_digest when one is
   // set, and records the source's digest at consumption time otherwise, so a
   // moving source cannot rewrite history.
-  string digest = 3;
+  string digest = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Which codegen.converter Converter input Port this satisfied.
-  string port = 4;
+  string port = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // ---------------------------------------------------------------------------
@@ -95,7 +96,10 @@ message Artifact {
   // name it, own it, or revise it.
   string digest = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -179,7 +183,7 @@ service ArtifactService {
 
 message GetArtifactRequest {
   // Full or abbreviated digest.
-  string digest = 1;
+  string digest = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetArtifactResponse {
@@ -187,9 +191,9 @@ message GetArtifactResponse {
 }
 
 message ListArtifactsRequest {
-  int32 page_size = 1;
-  string page_token = 2;
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 3;
+  int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Field 4 is `converter` rather than the `owner` this position holds on
   // every mutable kind. An artifact has no owner reference to list by; the
@@ -203,14 +207,14 @@ message ListArtifactsRequest {
   string format = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Restricts results to artifacts first seen within this window.
-  google.type.Interval window = 6;
+  google.type.Interval window = 6 [(google.api.field_behavior) = OPTIONAL];
 
   // Restricts results to artifacts consuming this input, by digest or by
   // source reference. Only one level deep; WalkConsumers goes transitive.
   ArtifactInput consumes = 7 [(google.api.field_behavior) = OPTIONAL];
 
   // Exclude artifacts nothing consumes and nothing published.
-  bool reachable_only = 8;
+  bool reachable_only = 8 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message ListArtifactsResponse {
@@ -219,7 +223,7 @@ message ListArtifactsResponse {
 }
 
 message WatchArtifactsRequest {
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1 [(google.api.field_behavior) = OPTIONAL];
   ref.v1alpha1.ObjectReference converter = 2 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.codegen.converter/Converter"
@@ -261,29 +265,32 @@ enum ArtifactEventType {
 
 message WalkInputsRequest {
   // Where the walk begins.
-  repeated string start_digests = 1;
+  repeated string start_digests = 1 [(google.api.field_behavior) = REQUIRED];
 
   // Boundaries. Nothing reachable from these is emitted, which is how a walk
   // expresses "everything this needs that the base image does not already
   // provide".
-  repeated string exclude_digests = 2;
+  repeated string exclude_digests = 2 [(google.api.field_behavior) = OPTIONAL];
 
   // Stop after this many edges from the nearest start. Zero means unbounded.
-  int32 max_depth = 3;
+  int32 max_depth = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Stop after this many artifacts. Zero means unbounded.
-  int32 limit = 4;
+  int32 limit = 4 [(google.api.field_behavior) = OPTIONAL];
 
   // Emit only artifacts in one of these output formats. Empty emits all.
-  repeated string formats = 5;
+  repeated string formats = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Emit only artifacts produced by one of these Converters.
-  repeated ref.v1alpha1.ObjectReference converters = 6 [(google.api.resource_reference).type = "unmango.codegen.converter/Converter"];
+  repeated ref.v1alpha1.ObjectReference converters = 6 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.codegen.converter/Converter"
+  ];
 
   // Emit the external sources at the edge of the closure as well, as inputs
   // with no artifact_digest. Off by default, since a closure is usually asked
   // for in terms of what was built.
-  bool include_sources = 7;
+  bool include_sources = 7 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message WalkInputsResponse {
@@ -302,20 +309,23 @@ message WalkInputsResponse {
 
 message WalkConsumersRequest {
   // Artifacts to walk forward from.
-  repeated string start_digests = 1;
+  repeated string start_digests = 1 [(google.api.field_behavior) = OPTIONAL];
 
   // Sources to walk forward from, for the case that matters most: an upstream
   // codegen.schema Schema or vcs.commit Commit that just moved, which is not
   // itself an Artifact.
-  repeated ref.v1alpha1.ObjectReference start_sources = 2 [(google.api.resource_reference).type = "*"];
+  repeated ref.v1alpha1.ObjectReference start_sources = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "*"
+  ];
 
-  int32 max_depth = 3;
-  int32 limit = 4;
-  repeated string formats = 5;
+  int32 max_depth = 3 [(google.api.field_behavior) = OPTIONAL];
+  int32 limit = 4 [(google.api.field_behavior) = OPTIONAL];
+  repeated string formats = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Emit only artifacts something published, which narrows an impact walk to
   // what consumers outside the graph can actually see.
-  bool published_only = 6;
+  bool published_only = 6 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message WalkConsumersResponse {
@@ -331,7 +341,7 @@ message WalkConsumersResponse {
 message ResolveInputDigestRequest {
   // The hash a codegen.conversion ConversionRun computed over its resolved
   // inputs, options, and converter version.
-  string input_digest = 1;
+  string input_digest = 1 [(google.api.field_behavior) = REQUIRED];
 
   // Restricts the lookup to one output format, for a converter declaring more
   // than one output Port.

@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.finance.budget.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/calendar_period.proto";
@@ -45,8 +46,11 @@ message Allocation {
     singular: "allocation"
     plural: "allocations"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -156,8 +160,11 @@ message BudgetPeriod {
     singular: "budgetPeriod"
     plural: "budgetPeriods"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -241,8 +248,11 @@ message Budget {
     singular: "budget"
     plural: "budgets"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -330,7 +340,10 @@ message BudgetRevision {
   // Hash over the content band and the budget reference.
   string digest = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];

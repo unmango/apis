@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.pki.certificate.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
@@ -100,8 +101,11 @@ message CertificateRequest {
     singular: "certificateRequest"
     plural: "certificateRequests"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -171,8 +175,11 @@ message CertificateIssuance {
     singular: "certificateIssuance"
     plural: "certificateIssuances"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -246,7 +253,10 @@ message Certificate {
   // Certificate, so there is nothing to name it or own it.
   string fingerprint = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -315,7 +325,7 @@ service CertificateService {
 
 message GetCertificateRequest {
   // Full or abbreviated fingerprint.
-  string fingerprint = 1;
+  string fingerprint = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetCertificateResponse {
@@ -323,9 +333,9 @@ message GetCertificateResponse {
 }
 
 message ListCertificatesRequest {
-  int32 page_size = 1;
-  string page_token = 2;
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 3;
+  int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Field 4 is `issuer` rather than the `owner` this position holds on every
   // mutable kind. A certificate has no owner reference to list by; the
@@ -335,14 +345,14 @@ message ListCertificatesRequest {
     (google.api.resource_reference).type = "unmango.pki.issuer/Issuer"
   ];
 
-  repeated string dns_names = 5;
+  repeated string dns_names = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Restricts results to certificates whose not_before falls within this
   // window.
-  google.type.Interval window = 6;
+  google.type.Interval window = 6 [(google.api.field_behavior) = OPTIONAL];
 
-  bool revoked_only = 7;
-  bool expired_only = 8;
+  bool revoked_only = 7 [(google.api.field_behavior) = OPTIONAL];
+  bool expired_only = 8 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message ListCertificatesResponse {
@@ -351,7 +361,7 @@ message ListCertificatesResponse {
 }
 
 message WatchCertificatesRequest {
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1 [(google.api.field_behavior) = OPTIONAL];
   ref.v1alpha1.ObjectReference issuer = 2 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.pki.issuer/Issuer"
@@ -392,7 +402,7 @@ enum CertificateEventType {
 
 message WalkChainRequest {
   // Fingerprint to walk from.
-  string start_fingerprint = 1;
+  string start_fingerprint = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message WalkChainResponse {

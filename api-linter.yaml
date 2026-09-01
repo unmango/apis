@@ -75,6 +75,7 @@
     - core::0121::resource-must-support-get
     - core::0123::resource-name-field
     - core::0131::request-name-required
+    - core::0131::request-required-fields
     - core::0131::request-unknown-fields
     - core::0131::response-message-name
     - core::0131::method-signature
@@ -88,17 +89,6 @@
 - included_paths:
     - '**'
   disabled_rules:
-    # AIP-148: uid needs (google.api.field_info).format = UUID4, which needs
-    # google/api/field_info.proto vendored first.
-    - core::0148::uid-format
-
-    # AIP-203: name carries IMMUTABLE where IDENTIFIER says strictly more.
-    - core::0203::resource-name-identifier
-
-    # AIP-203: the request messages on the three graph services declare no
-    # field behavior at all.
-    - core::0203::field-behavior-required
-
     # AIP-191: files lead with their enums and put services last.
     - core::0191::file-layout
 

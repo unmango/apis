@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.asset.maintenance.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
@@ -93,8 +94,11 @@ message ServiceRecord {
     singular: "serviceRecord"
     plural: "serviceRecords"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -165,8 +169,11 @@ message WorkOrder {
     singular: "workOrder"
     plural: "workOrders"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -260,8 +267,11 @@ message MaintenancePlan {
     singular: "maintenancePlan"
     plural: "maintenancePlans"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
