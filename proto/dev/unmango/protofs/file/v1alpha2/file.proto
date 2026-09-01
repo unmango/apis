@@ -6,6 +6,11 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 
+// Deprecated: use unmango.protofs.file.v1alpha2.
+// The same API under the namespace that is staying; the dev.unmango namespace
+// is being retired.
+option deprecated = true;
+
 message File {
   string id = 1; // server-issued handle, set by Open/Create responses
   string name = 2;

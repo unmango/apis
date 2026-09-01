@@ -5,6 +5,11 @@ package dev.unmango.protofs.fs.v1alpha1;
 import "dev/unmango/protofs/file/v1alpha1/file.proto";
 import "google/protobuf/timestamp.proto";
 
+// Deprecated: use unmango.protofs.fs.v1alpha2.
+// The dev.unmango namespace is being retired; this package's replacement moved
+// with it.
+option deprecated = true;
+
 // Deprecated: use dev.unmango.protofs.fs.v1alpha2.FsService.
 service FsService {
   option deprecated = true;

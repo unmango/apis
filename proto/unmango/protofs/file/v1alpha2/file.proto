@@ -1,15 +1,10 @@
-edition = "2023";
+edition = "2024";
 
-package dev.unmango.protofs.file.v1alpha1;
+package unmango.protofs.file.v1alpha2;
 
 import "google/api/field_behavior.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
-
-// Deprecated: use unmango.protofs.file.v1alpha2.
-// The dev.unmango namespace is being retired; this package's replacement moved
-// with it.
-option deprecated = true;
 
 message File {
   string id = 1; // server-issued handle, set by Open/Create responses
@@ -27,10 +22,7 @@ message FileInfo {
   google.protobuf.Any sys = 6; // platform-specific underlying data; type URL must be agreed out-of-band
 }
 
-// Deprecated: use dev.unmango.protofs.file.v1alpha2.FileService.
 service FileService {
-  option deprecated = true;
-
   rpc Read(ReadRequest) returns (ReadResponse);
   rpc ReadAt(ReadAtRequest) returns (ReadAtResponse);
   rpc Readdir(ReaddirRequest) returns (stream ReaddirResponse);
