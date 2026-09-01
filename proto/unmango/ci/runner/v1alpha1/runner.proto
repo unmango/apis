@@ -6,6 +6,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "unmango/ref/v1alpha1/ref.proto";
+import "unmango/uom/v1alpha1/uom.proto";
 
 // CI runner fleet management, modelled directly on Deployment -> ReplicaSet
 // -> Pod:
@@ -90,7 +91,7 @@ message Runner {
   bool ephemeral = 14;
 
   int32 max_concurrency = 15;
-  ref.v1alpha1.ResourceQuantity resources = 16;
+  uom.v1alpha1.ResourceQuantity resources = 16;
 
   // Restricts which Hosts this Runner may be bound to.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector host_selector = 17;
@@ -160,7 +161,7 @@ message RunnerTemplate {
   string version = 13;
   bool ephemeral = 14;
   int32 max_concurrency = 15;
-  ref.v1alpha1.ResourceQuantity resources = 16;
+  uom.v1alpha1.ResourceQuantity resources = 16;
 
   // Restricts which Hosts a generated Runner may be bound to.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector host_selector = 17;
