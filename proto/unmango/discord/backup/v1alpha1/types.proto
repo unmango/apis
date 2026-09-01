@@ -1,14 +1,9 @@
 edition = "2023";
 
-package dev.unmango.discord.backup.v1alpha1;
+package unmango.discord.backup.v1alpha1;
 
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
-
-// Deprecated: use unmango.discord.backup.v1alpha2.
-// The dev.unmango namespace is being retired; this package's replacement moved
-// with it.
-option deprecated = true;
 
 // Note: proto enum integer values in this file do NOT match Discord's raw API
 // integers. Discord uses 0 for real values (e.g. GUILD_TEXT=0, NONE=0) which

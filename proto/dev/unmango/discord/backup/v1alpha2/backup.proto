@@ -7,6 +7,11 @@ import "dev/unmango/discord/backup/v1alpha2/message.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 
+// Deprecated: use unmango.discord.backup.v1alpha2.
+// The same schema under the namespace that is staying; the dev.unmango
+// namespace is being retired.
+option deprecated = true;
+
 // BackupMetadata holds information about a backup snapshot itself.
 message BackupMetadata {
   string backup_id = 1;
