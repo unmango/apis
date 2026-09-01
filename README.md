@@ -38,14 +38,34 @@ Each API group is versioned independently and imports no other domain.
 Relationships cross domain boundaries as `ObjectReference` string coordinates, never as proto imports.
 The shared vocabulary is [`unmango/ref`](./proto/unmango/ref) for relationships and [`unmango/uom`](./proto/unmango/uom) for units of measure, plus three types vendored from Kubernetes `apimachinery` (see [`nix/apimachinery.nix`](./nix/apimachinery.nix)).
 
-Every mutable kind uses the same field number bands: `1-9` identity, `10-39` templated desired state, `40-49` assigned desired state, `50+` observed state.
-Immutable nodes use a variant: `1-9` content-addressed identity, `10-39` content fixed at creation, `50+` derived by whoever indexes the graph.
+Every kind uses the same field number bands: `1-10` identity, `11-39` templated desired state, `40-49` assigned desired state, `50+` observed state.
+The identity band is positional, so a number means the same thing on all 91 kinds:
+
+| | | | |
+|---|---|---|---|
+| 1 `name` | 2 `uid` | 3 `display_name` | 4 `labels` |
+| 5 `annotations` | 6 `owner_refs` | 7 `generation` | 8 `create_time` |
+| 9 `update_time` | 10 `delete_time` | | |
+
+Immutable nodes fill 1, 2, 4, 5, and 8 and `reserved` the rest rather than compacting around the gaps, so `4` is still `labels` on a `Commit`.
+Field `1` holds the content address, `revision` or `digest` or `fingerprint`, in place of a name, and `11-39` holds content fixed at creation rather than declared state.
+`vcs.commit` `Commit` reserves `2` as well, since a content hash already is a stable unique identifier, and puts `commit_time` in the `create_time` slot because for a commit they are the same fact.
+Their `50+` band is derived by whoever indexes the graph rather than observed by a controller, and they carry no `update_time`: a content-addressed node is never written twice.
+
+The bands are declared, not just documented.
+`google.api.field_behavior` marks `OUTPUT_ONLY` on observed state, `IMMUTABLE` on identity, and `OPTIONAL` on a field a caller may leave unset.
+That last one replaces `features.field_presence = EXPLICIT`, which said nothing: explicit presence is already the default for singular fields in edition 2024, so the annotation generated no difference and its uneven application implied a distinction that did not exist.
+
+Every kind carries a `google.api.resource` option naming its type, and every reference field a `google.api.resource_reference` naming what it may point at.
+The type string is the `ObjectReference` coordinates it stands in for, `unmango.people.contact/Contact`, so a linter can check what previously lived only in the comment above the field.
+The handful of fields that genuinely accept anything, `record.note` `Link.target`, `productivity.capture` `CaptureItem.resolved_into`, `asset.maintenance` `WorkOrder.subject`, use the `"*"` wildcard rather than a false narrowing.
 The life domains deliberately define no CRUD services; the service layer is a design pass of its own, deferred until the resource graph settles.
 The exceptions are the read-only graph services on the content-addressed nodes, `vcs.commit` `CommitService` and `codegen.artifact` `ArtifactService`, whose Get/List/Watch and traversal RPCs are part of how those graphs are meant to be read, plus `ConverterService.TestConverter`, a bare conformance check.
+Their Watch RPCs take a `resource_version` to resume from and return one on every event, including a `BOOKMARK` event that advances an idle stream's resume point, so a client that drops its stream never replays from nothing.
 
-Two or more fields standing in for one conceptual slot use `oneof` (`ci.job` `Trigger.actor`, `media.playback` `PlaybackSession.played_on`), never independent `EXPLICIT` fields a caller has to know are mutually exclusive by convention alone.
+Two or more fields standing in for one conceptual slot use `oneof` (`ci.job` `Trigger.actor`, `media.playback` `PlaybackSession.played_on`), never independent optional fields a caller has to know are mutually exclusive by convention alone.
 A single field meaningful only for one enum value skips `oneof`: `UNIT_CUSTOM` paired with `custom_unit` is that pattern, since a `oneof` of one member buys nothing.
-`oneof` members carry no `EXPLICIT` annotation of their own, and `repeated` fields can never join one.
+`oneof` members carry no optionality annotation of their own, and `repeated` fields can never join one.
 
 ### ref
 
@@ -53,10 +73,9 @@ A single field meaningful only for one enum value skips `oneof`: `UNIT_CUSTOM` p
 
 Relationship vocabulary shared by every life-domain API.
 
-- `ObjectReference`: addresses any resource by api_version/kind/name
+- `ObjectReference`: addresses any resource by api_version/kind/name, optionally pinned to a `uid` so a reused name cannot silently re-point it
 - `ParentReference`: names an attachment parent
-- `DeletePropagation`: cascade behavior along owner references
-- `ResourceQuantity`: compute capacity shared by `compute.host` and `ci.runner`
+- `DeletePropagation`: cascade behavior along owner references, defined ahead of the Delete RPC that will carry it
 
 Ownership, selection, and status reporting come from vendored `k8s.io.apimachinery.pkg.apis.meta.v1`: `OwnerReference`, `LabelSelector`, `Condition`.
 
@@ -64,11 +83,12 @@ Ownership, selection, and status reporting come from vendored `k8s.io.apimachine
 
 [`proto/unmango/uom`](./proto/unmango/uom)
 
-Unit-of-measure vocabulary shared by every life-domain API.
+Measurement vocabulary shared by every life-domain API.
 Kept separate from `ref`: `ref` addresses relationships between resources, `uom` carries the values attached to them.
 
 - `Unit`: mass, volume, distance, and other measurement units
 - `Quantity`: a value paired with its `Unit`, with a `custom_unit` fallback for a portion size no fixed unit covers
+- `ResourceQuantity`: compute capacity shared by `compute.host` and `ci.runner`, with its units fixed in the field names since nobody asks for memory in pounds
 
 Together, `ref` and `uom` are the only packages a life-domain API imports.
 
