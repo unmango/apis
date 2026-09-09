@@ -35,11 +35,20 @@ A field carrying a value from a standard registry uses the standard name for it:
 List and walk RPCs take `page_size` and `page_token` and return `next_page_token`.
 Numbered pages are not used anywhere.
 
+**AIP-180, backwards compatibility.**
+Every life-domain package is `v1alpha1`, and AIP-180 grants an alpha version no stability guarantee: a field or enum may be renamed, retyped, or removed in place rather than deprecated and replaced.
+That is how this repository treats them.
+Nothing under `unmango.*` has been published to the BSR, so no client holds the old spellings; see [AGENTS.md](../AGENTS.md) for why `buf push` is off.
+
+The guarantee begins at `v1beta1`.
+From that version on, a rename means a new field number beside the old one and a `deprecated` marker on what it replaces, and a removal means a new version.
+`make breaking` is the check that enforces it, and it is red across an alpha rename by design: the finding is a record of what changed, not a defect to fix.
+
 **AIP-191, file structure.**
 One package per file path segment, one API version per directory.
 
 **AIP-203, field behavior.**
-`google.api.field_behavior` is set on every field whose behavior is not the default: `IDENTIFIER` on a resource name, `OUTPUT_ONLY` on observed state, `IMMUTABLE` on identity, `OPTIONAL` and `REQUIRED` on request fields.
+`google.api.field_behavior` is set on every field whose behavior is not the default: `IDENTIFIER` on a resource name, `OUTPUT_ONLY` on observed state, `IMMUTABLE` on a non-name field fixed at creation, `OPTIONAL` and `REQUIRED` on request fields.
 The annotation is what makes the field bands machine-readable rather than a comment convention.
 
 **AIP-213, well-known types.**

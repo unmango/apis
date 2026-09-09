@@ -60,7 +60,8 @@ Field `1` holds the content address, `revision` or `digest` or `fingerprint`, in
 Their `50+` band is derived by whoever indexes the graph rather than observed by a controller, and they carry no `update_time`: a content-addressed node is never written twice.
 
 The bands are declared, not just documented.
-`google.api.field_behavior` marks `OUTPUT_ONLY` on observed state, `IMMUTABLE` on identity, and `OPTIONAL` on a field a caller may leave unset.
+`google.api.field_behavior` marks `IDENTIFIER` on the resource `name`, `OUTPUT_ONLY` on observed state, `IMMUTABLE` on a non-name field fixed at creation, and `OPTIONAL` on a field a caller may leave unset.
+`IDENTIFIER` is what AIP-203 asks for on the field a resource is addressed by; it already implies the field is not settable on update, so `IMMUTABLE` stays for the rest of the identity band and for declared state that cannot change afterward.
 That last one replaces `features.field_presence = EXPLICIT`, which said nothing: explicit presence is already the default for singular fields in edition 2024, so the annotation generated no difference and its uneven application implied a distinction that did not exist.
 
 Every kind carries a `google.api.resource` option naming its type, and every reference field a `google.api.resource_reference` naming what it may point at.

@@ -65,6 +65,11 @@ Its `lint`, `breaking`, and `format` steps are off: `nix flake check` covers lin
 Nothing in these files uses a feature whose default moved between the two editions.
 Watch the `Linted N proto files` line: a drop to zero means the workaround stopped applying, not that the tree got clean.
 
+**Gotcha:** the life domains are all `v1alpha1`, which AIP-180 gives no stability guarantee, so a rename lands in place rather than beside a deprecated original.
+`make breaking` reports every one of those renames and exits non-zero.
+That is the intended reading for an alpha change: the output is the record of what moved, not a list of defects.
+`make breaking` is not run in CI, and the guarantee it enforces starts at `v1beta1`; see the AIP-180 entry in [docs/aip.md](./docs/aip.md).
+
 ### Field bands
 
 The identity band is repeated on every resource rather than lifted into a shared message, so a resource stays flat: `name` sits where `google.api.resource` and AIP-122 expect it, and an update mask addresses `display_name` rather than `metadata.display_name`.

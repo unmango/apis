@@ -230,8 +230,9 @@ Annotating them would claim an identity none of them has.
 `Task -> Task`, `Repository -> Repository`, `Schema -> Schema`,
 `JobRun -> JobRun`.
 
-**The service rules: `0121::resource-must-support-get`, `0131::*`, `0132::*`,
-`0133::*`, `0158::*`, `0127::http-annotation`. 58 findings.**
+**The service rules: `0121::resource-must-support-get`,
+`0123::resource-name-field`, `0131::*`, `0132::*`, `0158::*`,
+`0127::http-annotation`. 63 findings.**
 All of them land on the three read-only graph services and on the resources
 those services read.
 A `Commit` is addressed by revision within a repository, an `Artifact` by digest,
