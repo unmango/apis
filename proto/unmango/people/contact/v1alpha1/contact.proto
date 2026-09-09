@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.people.contact.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
@@ -102,12 +103,15 @@ enum ContactKind {
 message Relationship {
   option (google.api.resource) = {
     type: "unmango.people.contact/Relationship"
-    pattern: "{relationship}"
+    pattern: "relationships/{relationship}"
     singular: "relationship"
     plural: "relationships"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -172,12 +176,15 @@ message Relationship {
 message Contact {
   option (google.api.resource) = {
     type: "unmango.people.contact/Contact"
-    pattern: "{contact}"
+    pattern: "contacts/{contact}"
     singular: "contact"
     plural: "contacts"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Also the surface a Group selector matches against.
@@ -258,12 +265,15 @@ message Contact {
 message Group {
   option (google.api.resource) = {
     type: "unmango.people.contact/Group"
-    pattern: "{group}"
+    pattern: "groups/{group}"
     singular: "group"
     plural: "groups"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

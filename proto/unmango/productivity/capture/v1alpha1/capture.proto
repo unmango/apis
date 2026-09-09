@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.productivity.capture.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "unmango/ref/v1alpha1/ref.proto";
@@ -30,7 +31,7 @@ import "unmango/ref/v1alpha1/ref.proto";
 // written once and later read or triaged by a human choice, not admitted,
 // bound, or brought into agreement with a desired state.
 //
-// Triage is a real fact about the item, so status, resolved_into, and
+// Triage is a real fact about the item, so state, resolved_into, and
 // discard_reason stay; they sit in the declared band because a human writes
 // them, not a controller. They were OUTPUT_ONLY in the 50+ band, which left
 // them unwritable by the only actor that ever sets them. triaged_time is the
@@ -40,17 +41,17 @@ import "unmango/ref/v1alpha1/ref.proto";
 // Shared types
 // ---------------------------------------------------------------------------
 
-enum CaptureStatus {
-  CAPTURE_STATUS_UNSPECIFIED = 0;
+enum CaptureState {
+  CAPTURE_STATE_UNSPECIFIED = 0;
 
   // Not yet looked at since capture.
-  CAPTURE_STATUS_RAW = 1;
+  CAPTURE_STATE_RAW = 1;
 
   // Reviewed and turned into something else, named by resolved_into.
-  CAPTURE_STATUS_TRIAGED = 2;
+  CAPTURE_STATE_TRIAGED = 2;
 
   // Reviewed and deliberately dropped.
-  CAPTURE_STATUS_DISCARDED = 3;
+  CAPTURE_STATE_DISCARDED = 3;
 }
 
 // ---------------------------------------------------------------------------
@@ -61,12 +62,15 @@ enum CaptureStatus {
 message CaptureItem {
   option (google.api.resource) = {
     type: "unmango.productivity.capture/CaptureItem"
-    pattern: "{capture_item}"
+    pattern: "captureItems/{capture_item}"
     singular: "captureItem"
     plural: "captureItems"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -93,21 +97,21 @@ message CaptureItem {
 
   // Triage. Written by whoever triages the item, so it belongs in the
   // declared band with the capture itself rather than the observed one.
-  CaptureStatus status = 14;
+  CaptureState state = 14;
 
-  // What this became once triaged. Set alongside status when it becomes
+  // What this became once triaged. Set alongside state when it becomes
   // TRIAGED, and left unset otherwise.
   ref.v1alpha1.ObjectReference resolved_into = 15 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "*"
   ];
 
-  // Set only when status is DISCARDED.
+  // Set only when state is DISCARDED.
   string discard_reason = 16 [(google.api.field_behavior) = OPTIONAL];
 
   reserved 50, 51; // observed_generation, conditions: nothing reconciles a capture
 
-  // When status last became TRIAGED or DISCARDED. Server-stamped, the one
+  // When state last became TRIAGED or DISCARDED. Server-stamped, the one
   // fact here nobody declares.
   google.protobuf.Timestamp triaged_time = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

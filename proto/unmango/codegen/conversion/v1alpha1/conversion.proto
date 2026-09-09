@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.codegen.conversion.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
@@ -104,12 +105,15 @@ message ConversionInput {
 message Conversion {
   option (google.api.resource) = {
     type: "unmango.codegen.conversion/Conversion"
-    pattern: "{conversion}"
+    pattern: "conversions/{conversion}"
     singular: "conversion"
     plural: "conversions"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -176,12 +180,15 @@ message Conversion {
 message ConversionRun {
   option (google.api.resource) = {
     type: "unmango.codegen.conversion/ConversionRun"
-    pattern: "{conversion_run}"
+    pattern: "conversionRuns/{conversion_run}"
     singular: "conversionRun"
     plural: "conversionRuns"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

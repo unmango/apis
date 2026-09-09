@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.finance.transaction.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/calendar_period.proto";
@@ -29,22 +30,22 @@ import "unmango/ref/v1alpha1/ref.proto";
 // Shared types
 // ---------------------------------------------------------------------------
 
-enum TransactionStatus {
-  TRANSACTION_STATUS_UNSPECIFIED = 0;
+enum TransactionState {
+  TRANSACTION_STATE_UNSPECIFIED = 0;
 
   // Predicted by a RecurringTransaction, not yet seen at the institution.
-  TRANSACTION_STATUS_PROJECTED = 1;
+  TRANSACTION_STATE_PROJECTED = 1;
 
   // Authorized but not settled. Amount may still change.
-  TRANSACTION_STATUS_PENDING = 2;
+  TRANSACTION_STATE_PENDING = 2;
 
-  TRANSACTION_STATUS_POSTED = 3;
+  TRANSACTION_STATE_POSTED = 3;
 
   // Cancelled before settling.
-  TRANSACTION_STATUS_VOID = 4;
+  TRANSACTION_STATE_VOID = 4;
 
   // Settled, then undone by a later entry.
-  TRANSACTION_STATUS_REVERSED = 5;
+  TRANSACTION_STATE_REVERSED = 5;
 }
 
 enum TransactionDirection {
@@ -84,12 +85,15 @@ message Split {
 message Transaction {
   option (google.api.resource) = {
     type: "unmango.finance.transaction/Transaction"
-    pattern: "{transaction}"
+    pattern: "transactions/{transaction}"
     singular: "transaction"
     plural: "transactions"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Also the surface a finance.budget Allocation.selector matches against:
@@ -137,7 +141,7 @@ message Transaction {
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
-  TransactionStatus status = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  TransactionState state = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp booked_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -182,12 +186,15 @@ message TransactionTemplate {
 message RecurringTransaction {
   option (google.api.resource) = {
     type: "unmango.finance.transaction/RecurringTransaction"
-    pattern: "{recurring_transaction}"
+    pattern: "recurringTransactions/{recurring_transaction}"
     singular: "recurringTransaction"
     plural: "recurringTransactions"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

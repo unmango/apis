@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.asset.vehicle.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
@@ -52,18 +53,18 @@ enum FuelType {
   FUEL_TYPE_HUMAN_POWERED = 6;
 }
 
-enum VehicleStatus {
-  VEHICLE_STATUS_UNSPECIFIED = 0;
-  VEHICLE_STATUS_ACTIVE = 1;
+enum VehicleState {
+  VEHICLE_STATE_UNSPECIFIED = 0;
+  VEHICLE_STATE_ACTIVE = 1;
 
   // Off the road for servicing.
-  VEHICLE_STATUS_IN_SERVICE = 2;
+  VEHICLE_STATE_IN_SERVICE = 2;
 
   // Owned but not in use.
-  VEHICLE_STATUS_STORED = 3;
+  VEHICLE_STATE_STORED = 3;
 
-  VEHICLE_STATUS_SOLD = 4;
-  VEHICLE_STATUS_TOTALED = 5;
+  VEHICLE_STATE_SOLD = 4;
+  VEHICLE_STATE_TOTALED = 5;
 }
 
 // ---------------------------------------------------------------------------
@@ -74,12 +75,15 @@ enum VehicleStatus {
 message OdometerReading {
   option (google.api.resource) = {
     type: "unmango.asset.vehicle/OdometerReading"
-    pattern: "{odometer_reading}"
+    pattern: "odometerReadings/{odometer_reading}"
     singular: "odometerReading"
     plural: "odometerReadings"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -128,12 +132,15 @@ enum OdometerSource {
 message Vehicle {
   option (google.api.resource) = {
     type: "unmango.asset.vehicle/Vehicle"
-    pattern: "{vehicle}"
+    pattern: "vehicles/{vehicle}"
     singular: "vehicle"
     plural: "vehicles"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -183,7 +190,7 @@ message Vehicle {
 
   // Observed state.
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
-  VehicleStatus status = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  VehicleState state = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // From the most recent OdometerReading.

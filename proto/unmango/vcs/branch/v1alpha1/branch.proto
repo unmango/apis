@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.vcs.branch.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -82,12 +83,15 @@ enum TagType {
 message Branch {
   option (google.api.resource) = {
     type: "unmango.vcs.branch/Branch"
-    pattern: "{branch}"
+    pattern: "branches/{branch}"
     singular: "branch"
     plural: "branches"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -106,7 +110,7 @@ message Branch {
   string ref_name = 11;
 
   // The repository's default branch. At most one per Repository.
-  bool default = 12;
+  bool is_default = 12;
 
   // Rules enforced against changes targeting this branch. Unset means
   // unprotected.
@@ -179,12 +183,15 @@ enum BranchPhase {
 message Tag {
   option (google.api.resource) = {
     type: "unmango.vcs.branch/Tag"
-    pattern: "{tag}"
+    pattern: "tags/{tag}"
     singular: "tag"
     plural: "tags"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

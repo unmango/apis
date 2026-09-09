@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.record.note.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -72,7 +73,7 @@ message Attachment {
   string uri = 1;
 
   string filename = 2;
-  string content_type = 3;
+  string mime_type = 3;
   int64 size_bytes = 4;
 }
 
@@ -84,12 +85,15 @@ message Attachment {
 message Note {
   option (google.api.resource) = {
     type: "unmango.record.note/Note"
-    pattern: "{note}"
+    pattern: "notes/{note}"
     singular: "note"
     plural: "notes"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Also the surface a Notebook selector matches against.
@@ -164,12 +168,15 @@ message Note {
 message Notebook {
   option (google.api.resource) = {
     type: "unmango.record.note/Notebook"
-    pattern: "{notebook}"
+    pattern: "notebooks/{notebook}"
     singular: "notebook"
     plural: "notebooks"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

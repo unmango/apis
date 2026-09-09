@@ -66,6 +66,10 @@
             touch "$out"
           '';
 
+          # AIP conformance. The rule disables in api-linter.yaml are the
+          # divergences docs/aip.md declines; anything else is a finding.
+          checks.api-linter = unmangoApis.apiLinter;
+
           # The identity band is a convention repeated across every resource
           # rather than a shared message type, so nothing in the compiler stops
           # a new kind from putting labels at 3. This does.
@@ -76,6 +80,7 @@
 
           devShells.default = pkgs.mkShellNoCC {
             packages = with pkgs; [
+              api-linter
               buf
               gnumake
               nixfmt

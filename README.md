@@ -14,6 +14,7 @@ Everything lives under `unmango.*`: the life domains below, and the infrastructu
 The `dev.unmango.*` namespace is deprecated in full; each of its packages has a replacement under `unmango.*` and is marked deprecated in place.
 
 The life-domain APIs take their design from the relationships between resources in the Kubernetes resource graph, not its `ObjectMeta`/`spec`/`status` layout.
+They follow [Google's API Improvement Proposals](https://google.aip.dev) by default; [docs/aip.md](./docs/aip.md) records which AIPs the repository adopts, which it declines, and why.
 The infrastructure APIs are the exception to everything the rest of this document describes: they define services, carry no resource identity, and follow none of the field-band or annotation conventions below.
 
 Every field describes a class of thing, never a specific instance of one.
@@ -59,12 +60,15 @@ Field `1` holds the content address, `revision` or `digest` or `fingerprint`, in
 Their `50+` band is derived by whoever indexes the graph rather than observed by a controller, and they carry no `update_time`: a content-addressed node is never written twice.
 
 The bands are declared, not just documented.
-`google.api.field_behavior` marks `OUTPUT_ONLY` on observed state, `IMMUTABLE` on identity, and `OPTIONAL` on a field a caller may leave unset.
+`google.api.field_behavior` marks `IDENTIFIER` on the resource `name`, `OUTPUT_ONLY` on observed state, `IMMUTABLE` on a non-name field fixed at creation, and `OPTIONAL` on a field a caller may leave unset.
+`IDENTIFIER` is what AIP-203 asks for on the field a resource is addressed by; it already implies the field is not settable on update, so `IMMUTABLE` stays for the rest of the identity band and for declared state that cannot change afterward.
 That last one replaces `features.field_presence = EXPLICIT`, which said nothing: explicit presence is already the default for singular fields in edition 2024, so the annotation generated no difference and its uneven application implied a distinction that did not exist.
 
 Every kind carries a `google.api.resource` option naming its type, and every reference field a `google.api.resource_reference` naming what it may point at.
 The type string is the `ObjectReference` coordinates it stands in for, `unmango.people.contact/Contact`, so a linter can check what previously lived only in the comment above the field.
 The handful of fields that genuinely accept anything, `record.note` `Link.target`, `productivity.capture` `CaptureItem.resolved_into`, `asset.maintenance` `WorkOrder.subject`, use the `"*"` wildcard rather than a false narrowing.
+The `pattern` on that option is the AIP-122 form, the plural collection segment in front of the identifier, so a `name` reads `accounts/my-checking` rather than `my-checking`.
+The collection is not new information, it is the `plural` the option already declared, moved to where a resource name carries it: a name that names its own collection resolves without the `kind` beside it.
 The life domains deliberately define no CRUD services; the service layer is a design pass of its own, deferred until the resource graph settles.
 The exceptions are the read-only graph services on the content-addressed nodes, `vcs.commit` `CommitService` and `codegen.artifact` `ArtifactService`, whose Get/List/Watch and traversal RPCs are part of how those graphs are meant to be read, plus `ConverterService.TestConverter`, a bare conformance check.
 Their Watch RPCs take a `resource_version` to resume from and return one on every event, including a `BOOKMARK` event that advances an idle stream's resume point, so a client that drops its stream never replays from nothing.

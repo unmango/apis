@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.vcs.repository.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -44,12 +45,15 @@ enum Visibility {
 message Remote {
   option (google.api.resource) = {
     type: "unmango.vcs.repository/Remote"
-    pattern: "{remote}"
+    pattern: "remotes/{remote}"
     singular: "remote"
     plural: "remotes"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -66,7 +70,7 @@ message Remote {
   AuthMethod auth = 13;
 
   // The remote a bare `push` or `fetch` uses. At most one per Repository.
-  bool default = 14;
+  bool is_default = 14;
 
   // Ref patterns this remote fetches, in the underlying VCS's own syntax.
   // Empty means the forge default.
@@ -108,12 +112,15 @@ enum AuthMethod {
 message Repository {
   option (google.api.resource) = {
     type: "unmango.vcs.repository/Repository"
-    pattern: "{repository}"
+    pattern: "repositories/{repository}"
     singular: "repository"
     plural: "repositories"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Also the surface a RepositoryGroup selector matches against.
@@ -245,12 +252,15 @@ enum RepositoryPhase {
 message RepositoryGroup {
   option (google.api.resource) = {
     type: "unmango.vcs.repository/RepositoryGroup"
-    pattern: "{repository_group}"
+    pattern: "repositoryGroups/{repository_group}"
     singular: "repositoryGroup"
     plural: "repositoryGroups"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -302,12 +312,15 @@ message RepositoryGroup {
 message Grant {
   option (google.api.resource) = {
     type: "unmango.vcs.repository/Grant"
-    pattern: "{grant}"
+    pattern: "grants/{grant}"
     singular: "grant"
     plural: "grants"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -371,12 +384,15 @@ enum GrantPhase {
 message Composition {
   option (google.api.resource) = {
     type: "unmango.vcs.repository/Composition"
-    pattern: "{composition}"
+    pattern: "compositions/{composition}"
     singular: "composition"
     plural: "compositions"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

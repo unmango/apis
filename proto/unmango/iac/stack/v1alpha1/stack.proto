@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.iac.stack.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
@@ -65,12 +66,15 @@ enum RunPhase {
 message Stack {
   option (google.api.resource) = {
     type: "unmango.iac.stack/Stack"
-    pattern: "{stack}"
+    pattern: "stacks/{stack}"
     singular: "stack"
     plural: "stacks"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -121,12 +125,15 @@ message Stack {
 message Run {
   option (google.api.resource) = {
     type: "unmango.iac.stack/Run"
-    pattern: "{run}"
+    pattern: "runs/{run}"
     singular: "run"
     plural: "runs"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

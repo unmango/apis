@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.ci.runner.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -69,12 +70,15 @@ enum RolloutStrategyType {
 message Runner {
   option (google.api.resource) = {
     type: "unmango.ci.runner/Runner"
-    pattern: "{runner}"
+    pattern: "runners/{runner}"
     singular: "runner"
     plural: "runners"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -177,12 +181,15 @@ message RunnerTemplate {
 message RunnerSet {
   option (google.api.resource) = {
     type: "unmango.ci.runner/RunnerSet"
-    pattern: "{runner_set}"
+    pattern: "runnerSets/{runner_set}"
     singular: "runnerSet"
     plural: "runnerSets"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -231,12 +238,15 @@ message RunnerSet {
 message RunnerPool {
   option (google.api.resource) = {
     type: "unmango.ci.runner/RunnerPool"
-    pattern: "{runner_pool}"
+    pattern: "runnerPools/{runner_pool}"
     singular: "runnerPool"
     plural: "runnerPools"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

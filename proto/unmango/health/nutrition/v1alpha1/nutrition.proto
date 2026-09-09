@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.health.nutrition.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
@@ -88,12 +89,15 @@ message Serving {
 message Food {
   option (google.api.resource) = {
     type: "unmango.health.nutrition/Food"
-    pattern: "{food}"
+    pattern: "foods/{food}"
     singular: "food"
     plural: "foods"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -156,12 +160,15 @@ message Ingredient {
 message FoodEntry {
   option (google.api.resource) = {
     type: "unmango.health.nutrition/FoodEntry"
-    pattern: "{food_entry}"
+    pattern: "foodEntries/{food_entry}"
     singular: "foodEntry"
     plural: "foodEntries"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -219,12 +226,15 @@ message FoodEntryTemplate {
 message Meal {
   option (google.api.resource) = {
     type: "unmango.health.nutrition/Meal"
-    pattern: "{meal}"
+    pattern: "meals/{meal}"
     singular: "meal"
     plural: "meals"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -299,12 +309,15 @@ message MealTemplate {
 message MealPlan {
   option (google.api.resource) = {
     type: "unmango.health.nutrition/MealPlan"
-    pattern: "{meal_plan}"
+    pattern: "mealPlans/{meal_plan}"
     singular: "mealPlan"
     plural: "mealPlans"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

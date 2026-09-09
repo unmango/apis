@@ -11,6 +11,7 @@ It is language-agnostic: the proto definitions are the source of truth, and clie
 
 - Life domains (calendar, finance, asset, media, health, compute, ci, codegen, vcs, people, record, and the rest) modeled on the Kubernetes resource graph.
   See [README.md](./README.md) for the domain architecture, relationship notation, and field-numbering convention; it is the primary reference for those packages, not this file.
+  They are written against [Google's AIPs](https://google.aip.dev); [docs/aip.md](./docs/aip.md) is the conformance policy, and it governs whether a new field or message is correct.
 - Infrastructure: `cli`/`cmd` (command-line parsing and process execution), `protofs` (Go `io/fs` over gRPC), and `discord/backup` (Discord guild backup schema).
   These define services and carry no resource identity, so the domain conventions do not apply to them.
 
@@ -27,7 +28,7 @@ Enter it via:
 nix develop   # or: direnv allow (if using direnv)
 ```
 
-Available tools in the dev shell: `buf`, `gnumake`.
+Available tools in the dev shell: `api-linter`, `buf`, `gnumake`.
 
 ## Commands
 
@@ -38,6 +39,7 @@ Available tools in the dev shell: `buf`, `gnumake`.
 | Update flake inputs | `make update` or `nix flake update` |
 | Vendor third-party protos | `make vendor` (required before bare `buf` in the repo root) |
 | Lint protos | `make lint` (see gotcha below) |
+| Check AIP conformance | `make aip` |
 | Check field bands | `make bands` |
 | Check breaking changes | `make breaking` (override the base ref with `make breaking AGAINST=<ref>`) |
 | Generate code | `buf generate` (only `proto/unmango/*`, see gotcha below) |
@@ -51,6 +53,22 @@ Available tools in the dev shell: `buf`, `gnumake`.
 `.github/workflows/buf.yml` runs `make vendor` before `buf-action`, leaving that job with `buf build` alone.
 Its `lint`, `breaking`, and `format` steps are off: `nix flake check` covers lint and the treefmt `buf` formatter, `make breaking` covers breaking changes, and `buf format` would flag the vendored protos, which are copied in verbatim.
 `push` is off too: `buf push` rejects a module whose dependencies are not themselves named BSR modules, so `buf.build/unmango/apis` cannot be published until `k8s.io/apimachinery` has a BSR module to depend on.
+
+### AIP conformance
+
+[docs/aip.md](./docs/aip.md) is the policy: AIPs are the default for the life domains, and every divergence is named there with its reason.
+[api-linter.yaml](./api-linter.yaml) carries the same list as rule disables, so a rule the linter stays quiet about is a decision rather than an unread finding, and a rule that is neither disabled nor satisfied is a bug.
+`make aip` and the `api-linter` flake check run it over the 44 life-domain files; the infrastructure APIs are excluded rather than configured, since none of them models a resource.
+
+**Gotcha:** `api-linter` compiles editions up to 2023, and handed an edition 2024 descriptor set it reports zero files linted rather than an error.
+`nix/api-linter.nix` works around it by rewriting `edition = "2024"` to `edition = "2023"` in a copy of the workspace before building the descriptor set.
+Nothing in these files uses a feature whose default moved between the two editions.
+Watch the `Linted N proto files` line: a drop to zero means the workaround stopped applying, not that the tree got clean.
+
+**Gotcha:** the life domains are all `v1alpha1`, which AIP-180 gives no stability guarantee, so a rename lands in place rather than beside a deprecated original.
+`make breaking` reports every one of those renames and exits non-zero.
+That is the intended reading for an alpha change: the output is the record of what moved, not a list of defects.
+`make breaking` is not run in CI, and the guarantee it enforces starts at `v1beta1`; see the AIP-180 entry in [docs/aip.md](./docs/aip.md).
 
 ### Field bands
 
@@ -97,7 +115,7 @@ Both versions stay checked in until a separate decision is made to delete the ol
 - Breaking change detection: `FILE` ruleset
 - Module roots: `proto/` and the gitignored `third_party/k8s`, which is ignored by both rulesets
 - Remote dependency: `buf.build/googleapis/googleapis`
-- `buf.gen.yaml` sets `go_package_prefix` to `github.com/unmango/apis/go`, so generated Go lands under `go/` mirroring the proto path
+- `buf.gen.yaml` sets `go_package_prefix` to `github.com/unmango/apis/go`, so generated Go lands under `go/` mirroring the proto path, and sets the Java options AIP-191 asks for from managed mode rather than from 60 protos
 
 Third-party protos are not checked in.
 The Nix build vendors them into its own workspace (see below), and `make vendor` materializes the apimachinery half into `third_party/k8s` for the CLI.

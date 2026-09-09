@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.media.library.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
@@ -101,7 +102,7 @@ message AudioTrack {
   int64 bitrate_bps = 4;
 
   // ISO 639 code.
-  string language = 5;
+  string language_code = 5;
 
   // Commentary, described audio, or another non-primary track.
   bool secondary = 6;
@@ -109,7 +110,9 @@ message AudioTrack {
 
 message SubtitleTrack {
   string codec = 1; // "subrip", "pgs", "ass"
-  string language = 2;
+
+  // ISO 639 code.
+  string language_code = 2;
 
   // Covers only foreign dialogue rather than all speech.
   bool forced = 3;
@@ -125,12 +128,15 @@ message SubtitleTrack {
 message LibraryItem {
   option (google.api.resource) = {
     type: "unmango.media.library/LibraryItem"
-    pattern: "{library_item}"
+    pattern: "libraryItems/{library_item}"
     singular: "libraryItem"
     plural: "libraryItems"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Also the surface Library and Collection selectors match against.
@@ -222,12 +228,15 @@ message LibraryItem {
 message Library {
   option (google.api.resource) = {
     type: "unmango.media.library/Library"
-    pattern: "{library}"
+    pattern: "libraries/{library}"
     singular: "library"
     plural: "libraries"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -279,12 +288,15 @@ message Library {
 message Collection {
   option (google.api.resource) = {
     type: "unmango.media.library/Collection"
-    pattern: "{collection}"
+    pattern: "collections/{collection}"
     singular: "collection"
     plural: "collections"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

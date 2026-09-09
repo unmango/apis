@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.ref.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 
 // Vocabulary for expressing relationships between resources across every
 // unmango API. Deliberately tiny: ownership, selection, and status
@@ -52,7 +53,10 @@ message ObjectReference {
   // reference that reads identically to one at the point of use needs the
   // same guard. Unset resolves by name, which is the right default for a
   // reference authored against a resource that does not exist yet.
-  string uid = 6 [(google.api.field_behavior) = OPTIONAL];
+  string uid = 6 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_info).format = UUID4
+  ];
 }
 
 // Names a parent that the referring resource attaches to, where the two were

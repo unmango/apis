@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.codegen.converter.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
@@ -156,12 +157,15 @@ message RpcInvocation {
 message Converter {
   option (google.api.resource) = {
     type: "unmango.codegen.converter/Converter"
-    pattern: "{converter}"
+    pattern: "converters/{converter}"
     singular: "converter"
     plural: "converters"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Also the surface a ConverterRegistry selector matches against.
@@ -246,7 +250,7 @@ service ConverterService {
 }
 
 message TestConverterRequest {
-  string name = 1;
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message TestConverterResponse {
@@ -306,12 +310,15 @@ message ReleaseArtifactSource {
 message ConverterRegistry {
   option (google.api.resource) = {
     type: "unmango.codegen.converter/ConverterRegistry"
-    pattern: "{converter_registry}"
+    pattern: "converterRegistries/{converter_registry}"
     singular: "converterRegistry"
     plural: "converterRegistries"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

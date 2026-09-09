@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.health.measurement.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/date.proto";
@@ -101,12 +102,15 @@ enum GoalPhase {
 message Measurement {
   option (google.api.resource) = {
     type: "unmango.health.measurement/Measurement"
-    pattern: "{measurement}"
+    pattern: "measurements/{measurement}"
     singular: "measurement"
     plural: "measurements"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Also the surface a Goal selector matches against.
@@ -170,12 +174,15 @@ message Measurement {
 message Goal {
   option (google.api.resource) = {
     type: "unmango.health.measurement/Goal"
-    pattern: "{goal}"
+    pattern: "goals/{goal}"
     singular: "goal"
     plural: "goals"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

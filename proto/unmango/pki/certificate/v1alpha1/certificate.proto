@@ -3,6 +3,7 @@ edition = "2024";
 package unmango.pki.certificate.v1alpha1;
 
 import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
@@ -96,12 +97,15 @@ enum CertificateIssuancePhase {
 message CertificateRequest {
   option (google.api.resource) = {
     type: "unmango.pki.certificate/CertificateRequest"
-    pattern: "{certificate_request}"
+    pattern: "certificateRequests/{certificate_request}"
     singular: "certificateRequest"
     plural: "certificateRequests"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -167,12 +171,15 @@ message CertificateRequest {
 message CertificateIssuance {
   option (google.api.resource) = {
     type: "unmango.pki.certificate/CertificateIssuance"
-    pattern: "{certificate_issuance}"
+    pattern: "certificateIssuances/{certificate_issuance}"
     singular: "certificateIssuance"
     plural: "certificateIssuances"
   };
-  string name = 1 [(google.api.field_behavior) = IMMUTABLE];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -236,7 +243,7 @@ message CertificateIssuance {
 message Certificate {
   option (google.api.resource) = {
     type: "unmango.pki.certificate/Certificate"
-    pattern: "{certificate}"
+    pattern: "certificates/{certificate}"
     singular: "certificate"
     plural: "certificates"
   };
@@ -246,7 +253,10 @@ message Certificate {
   // Certificate, so there is nothing to name it or own it.
   string fingerprint = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -261,8 +271,8 @@ message Certificate {
   KeyAlgorithm key_algorithm = 15;
   repeated CertificateUsage usages = 16;
   bool is_ca = 17;
-  google.protobuf.Timestamp not_before = 18;
-  google.protobuf.Timestamp not_after = 19;
+  google.protobuf.Timestamp not_before_time = 18;
+  google.protobuf.Timestamp not_after_time = 19;
 
   // The pki.issuer Issuer that minted this.
   ref.v1alpha1.ObjectReference issuer = 20 [(google.api.resource_reference).type = "unmango.pki.issuer/Issuer"];
@@ -292,7 +302,7 @@ message Certificate {
   google.protobuf.Timestamp revoke_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   string revocation_reason = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // not_after has passed.
+  // not_after_time has passed.
   bool expired = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
@@ -315,7 +325,7 @@ service CertificateService {
 
 message GetCertificateRequest {
   // Full or abbreviated fingerprint.
-  string fingerprint = 1;
+  string fingerprint = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetCertificateResponse {
@@ -323,9 +333,9 @@ message GetCertificateResponse {
 }
 
 message ListCertificatesRequest {
-  int32 page_size = 1;
-  string page_token = 2;
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 3;
+  int32 page_size = 1 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Field 4 is `issuer` rather than the `owner` this position holds on every
   // mutable kind. A certificate has no owner reference to list by; the
@@ -335,14 +345,14 @@ message ListCertificatesRequest {
     (google.api.resource_reference).type = "unmango.pki.issuer/Issuer"
   ];
 
-  repeated string dns_names = 5;
+  repeated string dns_names = 5 [(google.api.field_behavior) = OPTIONAL];
 
-  // Restricts results to certificates whose not_before falls within this
+  // Restricts results to certificates whose not_before_time falls within this
   // window.
-  google.type.Interval window = 6;
+  google.type.Interval window = 6 [(google.api.field_behavior) = OPTIONAL];
 
-  bool revoked_only = 7;
-  bool expired_only = 8;
+  bool revoked_only = 7 [(google.api.field_behavior) = OPTIONAL];
+  bool expired_only = 8 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message ListCertificatesResponse {
@@ -351,7 +361,7 @@ message ListCertificatesResponse {
 }
 
 message WatchCertificatesRequest {
-  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1;
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1 [(google.api.field_behavior) = OPTIONAL];
   ref.v1alpha1.ObjectReference issuer = 2 [
     (google.api.field_behavior) = OPTIONAL,
     (google.api.resource_reference).type = "unmango.pki.issuer/Issuer"
@@ -392,7 +402,7 @@ enum CertificateEventType {
 
 message WalkChainRequest {
   // Fingerprint to walk from.
-  string start_fingerprint = 1;
+  string start_fingerprint = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message WalkChainResponse {
