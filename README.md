@@ -44,7 +44,7 @@ Relationships cross domain boundaries as `ObjectReference` string coordinates, n
 The shared vocabulary is [`unmango/ref`](./proto/unmango/ref) for relationships and [`unmango/uom`](./proto/unmango/uom) for units of measure, plus three types vendored from Kubernetes `apimachinery` (see [`nix/apimachinery.nix`](./nix/apimachinery.nix)).
 
 Every kind uses the same field number bands: `1-10` identity, `11-39` templated desired state, `40-49` assigned desired state, `50+` observed state.
-The identity band is positional, so a number means the same thing on all 91 kinds:
+The identity band is positional, so a number means the same thing on all 94 kinds:
 
 | | | | |
 |---|---|---|---|
@@ -494,6 +494,32 @@ A `RecurringPrompt -> Entry` archetype, scheduled prompts that stamp out entries
 
 `entry_date` is the day an entry is for, and the field callers order and range-query by; `create_time` is when it was actually typed, which may be later, a backfilled entry writes today with an `entry_date` from last week.
 Nothing enforces one entry per day, the same way `record.note` allows more than one note in a day: this is a data model, not a business-rule engine.
+
+### zettelkasten
+
+[`proto/unmango/zettelkasten`](./proto/unmango/zettelkasten)
+
+```
+Note -> Link ~> Note
+Tag  -> Tag
+```
+
+- `note`: `Note`, `Link`
+- `tag`: `Tag`
+
+The same raw material as `record.note` in a different shape.
+A `record` `Note` is generic written material: it nests into a document through owner references, a `Notebook` claims it by selector, and its links are a value message on the source side saying what the note is about.
+A zettelkasten `Note` is atomic and flat, it carries a `zettel_id` permanent address that outlives its title, and the connection between two notes is the artifact the method is built on rather than a field on one end of it.
+
+So `Link` is a resource here.
+It is owned by its source `Note` and cascades with it, and it names a target it was authored independently of, which the target admits or rejects as a `Condition` on the `Link`, the `->` and `~>` edges on one kind.
+Promoting it buys three things a field could not: a link has its own `create_time`, so the growth of the graph is a queryable history; its own identity, so the connections can be reviewed without opening either note; and an admission state, which is where backlink reciprocity lives.
+`LinkRelation` is argumentative where `record.note`'s is descriptive, `SUPPORTS`, `CONTRADICTS`, `ELABORATES` against `DOCUMENTS`, `REFERENCES`, and `rationale` records why the connection was made, the part a later reader cannot reconstruct from the two notes alone.
+`target` is `"*"`, so a zettel citing a `media.title` `Title` is a link like any other.
+
+`Tag` is a resource rather than the `repeated string tags` that `journal.entry` and `productivity.capture` carry, and rather than a selector-claiming container like `Notebook`.
+A zettelkasten's index is the second half of the method, what makes an entry point findable once the box has outgrown anyone's memory of it, and that needs a `description` saying what belongs under a term, an owner reference saying what the term narrows, and `aliases` recording the spellings merged into it.
+A string carries none of the three, and a selector would make the term a consequence of how notes happen to be labelled rather than a decision about the vocabulary.
 
 ## Infrastructure
 

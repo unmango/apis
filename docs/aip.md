@@ -7,7 +7,7 @@ An AIP that is neither adopted nor listed under [Declined](#declined) below is a
 
 ## Scope
 
-The rules apply to the life domains under `proto/unmango/<domain>/<package>/<version>/`, the 42 files carrying `google.api.resource` annotations.
+The rules apply to the life domains under `proto/unmango/<domain>/<package>/<version>/`, the 44 files carrying `google.api.resource` annotations.
 
 They do not apply to the infrastructure APIs, `unmango.cli`, `unmango.cmd`, `unmango.protofs`, and `unmango.discord.backup`.
 Those define services over a filesystem, a process, a command line, and a Discord export.
@@ -19,7 +19,7 @@ The deprecated `dev.unmango.*` namespace is out of scope in full.
 ## Adopted
 
 **AIP-126, enum values.**
-Every enum opens on `<NAME>_UNSPECIFIED = 0`, across 97 enums in the life domains, no exceptions.
+Every enum opens on `<NAME>_UNSPECIFIED = 0`, across 100 enums in the life domains, no exceptions.
 
 **AIP-142, time fields.**
 Timestamps are `google.protobuf.Timestamp` and their field names end in `_time`.

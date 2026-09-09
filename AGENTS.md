@@ -9,7 +9,7 @@ It is language-agnostic: the proto definitions are the source of truth, and clie
 
 `unmango.*` is the namespace. It holds two kinds of API:
 
-- Life domains (calendar, finance, asset, media, health, compute, ci, codegen, vcs, people, record, and the rest) modeled on the Kubernetes resource graph.
+- Life domains (calendar, finance, asset, media, health, compute, ci, codegen, vcs, people, record, zettelkasten, and the rest) modeled on the Kubernetes resource graph.
   See [README.md](./README.md) for the domain architecture, relationship notation, and field-numbering convention; it is the primary reference for those packages, not this file.
   They are written against [Google's AIPs](https://google.aip.dev); [docs/aip.md](./docs/aip.md) is the conformance policy, and it governs whether a new field or message is correct.
 - Infrastructure: `cli`/`cmd` (command-line parsing and process execution), `protofs` (Go `io/fs` over gRPC), and `discord/backup` (Discord guild backup schema).
@@ -84,7 +84,7 @@ To diff-check several files, repeat `--path`: `buf format -d --path a.proto --pa
 
 ### Proto layout
 
-- `proto/unmango/<domain>/<package>/<version>/`: life-domain APIs (`calendar`, `finance`, `asset`, `media`, `health`, `compute`, `ci`, `codegen`, `vcs`, `people`, `record`, plus the shared `ref` and `uom` vocabularies).
+- `proto/unmango/<domain>/<package>/<version>/`: life-domain APIs (`calendar`, `finance`, `asset`, `media`, `health`, `compute`, `ci`, `codegen`, `vcs`, `people`, `record`, `zettelkasten`, plus the shared `ref` and `uom` vocabularies).
   Domain-by-domain design and the `->`/`~>`/`=>`/`@`/`>>` relationship notation are documented in [README.md](./README.md), not here.
 - `proto/unmango/{cli,cmd}/`: CLI parsing and process execution.
   `unmango.cli.v1alpha1` carries the CST, the parser, and the flag conventions; `unmango.cmd.v1alpha2` builds a `Process` from a spec and runs it.

@@ -14,7 +14,7 @@
   disabled_rules:
     # Documentation is written at the message and section level; a comment on
     # every field would mean a line of prose above each of the ten identity
-    # fields on all 91 resources.
+    # fields on all 94 resources.
     - core::0192::has-comments
     - core::0192::only-leading-comments
 
@@ -61,7 +61,7 @@
     # name, which costs more readability than the ordering buys.
     - core::0191::file-layout
 
-    # Enums live at file scope across all 97 of them, under the same banner
+    # Enums live at file scope across all 100 of them, under the same banner
     # sections, so a value object and a resource can share one. Nesting the
     # five lifecycle enums alone would make the convention apply to some
     # enums and not others.

@@ -1,0 +1,234 @@
+edition = "2024";
+
+package unmango.zettelkasten.note.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// A slip-box of atomic notes and the connections between them:
+//
+//   Note -> Link ~> Note
+//
+// The same raw material as record.note, in a different shape. A record Note is
+// generic written material: it nests into a document through owner references,
+// a Notebook claims it by selector, and its links are a value message on the
+// source side describing what a note is about. A zettelkasten Note is atomic
+// and flat, it carries a permanent address that outlives its title, and the
+// connection between two notes is the artifact the method is built on.
+//
+// So Link is a resource here rather than a value message. A Link is owned by
+// its source Note and cascades with it, which is the -> edge, and it names a
+// target it was authored independently of, which is the ~> edge: the target
+// admits or rejects the connection and the outcome lands as a Condition on the
+// Link. Promoting it buys three things a field could not: a link has its own
+// create_time, so the growth of the graph is a queryable history; it has its
+// own identity, so a reader can review the connections without opening either
+// note; and it has an admission state, which is where backlink reciprocity
+// lives.
+//
+// The source Note is carried by owner_refs alone. There is no second, typed
+// source field, the same way record.note's sub-note parent is only an owner
+// reference.
+//
+// LinkRelation is argumentative where record.note's is descriptive. A record
+// link says what a note is about; a zettelkasten link says how one idea bears
+// on another, which is the part a later reader cannot reconstruct.
+//
+// Note departs from the identity band the way journal.entry and
+// productivity.capture CaptureItem do: no owner_refs, no generation, no
+// observed_generation, no conditions. Zettel are flat, and nothing declares a
+// note and reconciles it toward that declaration. Link keeps the full band,
+// because something does reconcile a Link: the target decides.
+//
+// Tags are unmango.zettelkasten.tag Tag resources named by reference, not
+// strings and not a selector. See that package for why.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum ContentFormat {
+  CONTENT_FORMAT_UNSPECIFIED = 0;
+  CONTENT_FORMAT_MARKDOWN = 1;
+  CONTENT_FORMAT_PLAIN_TEXT = 2;
+  CONTENT_FORMAT_HTML = 3;
+  CONTENT_FORMAT_ORG = 4;
+  CONTENT_FORMAT_ASCIIDOC = 5;
+  CONTENT_FORMAT_TYPST = 6;
+}
+
+// Where a note sits in the Luhmann lifecycle. A fleeting note is a capture
+// that has not earned its place, a literature note restates a source in the
+// reader's words, a permanent note makes one claim in full sentences, and a
+// structure note is an index over other notes rather than a claim of its own.
+enum NoteType {
+  NOTE_TYPE_UNSPECIFIED = 0;
+  NOTE_TYPE_FLEETING = 1;
+  NOTE_TYPE_LITERATURE = 2;
+  NOTE_TYPE_PERMANENT = 3;
+  NOTE_TYPE_STRUCTURE = 4;
+}
+
+// How the source note's idea bears on the target's.
+//
+// FOLLOWS is the Folgezettel continuation, the next note in a sequence.
+// BRANCHES_FROM is the other half of that: a departure from the same parent
+// into a different line of thought.
+enum LinkRelation {
+  LINK_RELATION_UNSPECIFIED = 0;
+  LINK_RELATION_FOLLOWS = 1;
+  LINK_RELATION_BRANCHES_FROM = 2;
+  LINK_RELATION_SUPPORTS = 3;
+  LINK_RELATION_CONTRADICTS = 4;
+  LINK_RELATION_ELABORATES = 5;
+  LINK_RELATION_REFERENCES = 6;
+  LINK_RELATION_SUPERSEDES = 7;
+  LINK_RELATION_OTHER = 8;
+}
+
+// ---------------------------------------------------------------------------
+// Note
+// ---------------------------------------------------------------------------
+
+// One atomic note. Holds a single idea, and reaches the rest of the box only
+// through Links.
+message Note {
+  option (google.api.resource) = {
+    type: "unmango.zettelkasten.note/Note"
+    pattern: "notes/{note}"
+    singular: "note"
+    plural: "notes"
+  };
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  reserved 6, 7; // owner_refs, generation: zettel are flat, and nothing reconciles one
+
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Desired state.
+
+  // The permanent address, in whatever scheme the box uses: a Folgezettel
+  // branch like "21/3a4", a timestamp like "202609081412". Fixed at creation
+  // and never reused, which is what lets a note be retitled, rewritten, or
+  // reclassified without breaking a link authored years earlier.
+  string zettel_id = 11 [(google.api.field_behavior) = IMMUTABLE];
+
+  string title = 12;
+
+  // The note's text, either inline or by reference. Inline is the normal case:
+  // a zettel is short by construction. The reference exists for a note whose
+  // content is a file already addressed elsewhere in the graph, a scanned
+  // slip, a transcript, a media asset.
+  oneof content {
+    string body = 13;
+
+    ref.v1alpha1.ObjectReference content_ref = 14 [(google.api.resource_reference).type = "*"];
+  }
+
+  ContentFormat format = 15;
+  NoteType note_type = 16;
+
+  // Controlled vocabulary this note is filed under.
+  repeated ref.v1alpha1.ObjectReference tags = 17 [(google.api.resource_reference).type = "unmango.zettelkasten.tag/Tag"];
+
+  // Where a literature note's material came from: a URL, a DOI, a citation
+  // key. Free-form on purpose; there is no bibliography kind to point at.
+  string source_uri = 18 [(google.api.field_behavior) = OPTIONAL];
+
+  // Observed state.
+  reserved 50, 51; // observed_generation, conditions: nothing reconciles a note
+
+  // Links this note owns.
+  int32 outbound_link_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Links elsewhere in the box whose target is this note. A note with a high
+  // backlink count and few outbound links is a hub the box grew on its own.
+  int32 backlink_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Owned links whose target no longer resolves.
+  int32 broken_link_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 word_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_edited_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// Link
+// ---------------------------------------------------------------------------
+
+// A connection from one Note to anything else in the graph, carrying the
+// reasoning behind it.
+message Link {
+  option (google.api.resource) = {
+    type: "unmango.zettelkasten.note/Link"
+    pattern: "links/{link}"
+    singular: "link"
+    plural: "links"
+  };
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
+
+  // Human-readable label for the connection, so it still reads as something
+  // after its target is deleted.
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The source Note. A Link is meaningless without one and cascades with it.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Desired state.
+
+  // What the source points at. Usually another Note, but wildcard on purpose:
+  // a zettel that cites a media.title Title or a finance.transaction
+  // Transaction is a link like any other, and none of those packages needs to
+  // know the box exists. Repointing a link makes it a different link.
+  ref.v1alpha1.ObjectReference target = 11 [
+    (google.api.field_behavior) = IMMUTABLE,
+    (google.api.resource_reference).type = "*"
+  ];
+
+  LinkRelation relation = 12;
+
+  // Set only when relation is LINK_RELATION_OTHER.
+  string custom_relation = 13 [(google.api.field_behavior) = OPTIONAL];
+
+  // Why the connection was made, in the author's words. The part a reader
+  // arriving later cannot reconstruct from the two notes alone, and the reason
+  // a link is worth being a resource.
+  string rationale = 14 [(google.api.field_behavior) = OPTIONAL];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Carries the Accepted condition: whether the target admits the connection.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether the target currently resolves to a live resource. False makes this
+  // one of the source note's broken_link_count.
+  bool target_resolved = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
