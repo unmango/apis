@@ -1,0 +1,108 @@
+# Configuration for google/api-linter, run by `make aip` and the `api-linter`
+# flake check over the life domains under proto/unmango.
+#
+# Every disable here is a decision recorded in docs/aip.md, and the measurement
+# behind each one is in docs/reviews/aip-conformance.md. A rule that is neither
+# listed here nor satisfied by the tree is a bug.
+#
+# Paths are matched against the module-relative proto path, so they start at
+# `unmango/`, not `proto/unmango/`.
+
+# Declined for the whole surface.
+- included_paths:
+    - '**'
+  disabled_rules:
+    # Documentation is written at the message and section level; a comment on
+    # every field would mean a line of prose above each of the ten identity
+    # fields on all 94 resources.
+    - core::0192::has-comments
+    - core::0192::only-leading-comments
+
+    # unmango.ref, unmango.uom, and the vendored apimachinery types are shared
+    # vocabularies every domain imports by design.
+    - core::0215::foreign-type-reference
+
+    # References travel as unmango.ref.v1alpha1.ObjectReference rather than as
+    # an annotated string. The resource_reference annotation is still present
+    # and still declares the target type; only the field type differs.
+    - core::0122::resource-reference-type
+    - core::0123::resource-reference-type
+
+    # covered_by, resolved_into, played_on, blocked_by_subtasks: the preposition
+    # is the direction of the edge.
+    - core::0140::prepositions
+
+    # ref_name, common_name, person_name, type_name: a name in a system other
+    # than this one.
+    - core::0122::name-suffix
+
+    # Fires on start_seconds, up_to_date, reminder_lead_time. None of the six is
+    # a timestamp.
+    - core::0142::time-field-type
+
+    # Fires on value objects that happen to carry a name field: ObjectReference,
+    # Step, PartUsed, Signature, Component, Field, Method. Annotating them would
+    # claim an identity none of them has.
+    - core::0123::resource-annotation
+
+    # Task -> Task, Repository -> Repository, Schema -> Schema, JobRun -> JobRun
+    # are self-nesting resources. The cycle is the model.
+    - core::0121::no-mutable-cycles
+
+    # There are no REST consumers of this surface.
+    - core::0127::http-annotation
+
+    # The rule asks for proto3. These files are edition 2024.
+    - core::0191::proto-version
+
+    # Files are sectioned by concept under banner comments, shared vocabulary
+    # first and each resource under its own heading. Hoisting every message
+    # above every enum would separate the banners from the declarations they
+    # name, which costs more readability than the ordering buys.
+    - core::0191::file-layout
+
+    # Enums live at file scope across all 100 of them, under the same banner
+    # sections, so a value object and a resource can share one. Nesting the
+    # five lifecycle enums alone would make the convention apply to some
+    # enums and not others.
+    - core::0216::nesting
+
+    # productivity.capture CaptureItem.state is triage, which a human performs
+    # through a client. Nothing reconciles a capture, so an OUTPUT_ONLY state
+    # would be a field nothing can legally write.
+    - core::0216::state-field-output-only
+
+    # buf.gen.yaml managed mode sets these from outside the protos. The linter
+    # reads the proto rather than the generator config, so it reports them
+    # regardless.
+    - core::0191::java-package
+    - core::0191::java-outer-classname
+    - core::0191::java-multiple-files
+
+# The content-addressed nodes and their read-only graph services. A Commit is
+# addressed by revision, an Artifact by digest, a Certificate by fingerprint, so
+# none of them has a name for a standard method to take, and the traversal RPCs
+# filter by arguments AIP-132 does not allow for.
+- included_paths:
+    - 'unmango/vcs/commit/**'
+    - 'unmango/codegen/artifact/**'
+    - 'unmango/pki/certificate/**'
+    - 'unmango/finance/budget/**'
+  disabled_rules:
+    - core::0121::resource-must-support-get
+    - core::0123::resource-name-field
+    - core::0131::request-name-required
+    - core::0131::request-required-fields
+    - core::0131::request-unknown-fields
+    - core::0131::response-message-name
+    - core::0131::method-signature
+    - core::0132::request-unknown-fields
+    - core::0158::response-repeated-first-field
+    - core::0158::response-plural-first-field
+
+# Adopted in docs/aip.md and not yet satisfied by the tree. Each entry comes out
+# as the tree catches up; an empty list here means the policy and the protos
+# agree.
+- included_paths:
+    - '**'
+  disabled_rules: []

@@ -1,0 +1,87 @@
+edition = "2024";
+
+package unmango.zettelkasten.tag.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+
+// The controlled vocabulary a zettelkasten Note is filed under:
+//
+//   Tag -> Tag
+//
+// A Tag owns its narrower children, so the vocabulary is a tree: "systems"
+// owns "feedback-loops" owns "hysteresis". A Note names Tags by reference
+// rather than being claimed by one, because filing a note is an act the author
+// performs, not a property a query discovers.
+//
+// Everywhere else in the repository a tag is a repeated string, on
+// journal.entry and on productivity.capture, and grouping is done by label
+// selector. Both are declined here for the same reason. A zettelkasten's index
+// is the second half of the method: it is what makes an entry point findable
+// when the box has outgrown anyone's memory of it. That index needs a
+// description saying what belongs under a term, a parent saying what the term
+// narrows, and an alias list recording the spellings that were merged into it.
+// A string carries none of the three, and a selector makes the term a
+// consequence of how notes happen to be labelled rather than a decision about
+// the vocabulary.
+//
+// Tag reserves generation and the reconciliation half of the observed band:
+// the vocabulary is authored, and nothing drives it toward a declared state.
+
+// ---------------------------------------------------------------------------
+// Tag
+// ---------------------------------------------------------------------------
+
+// One term in the index. Nests to form a hierarchy of narrower terms.
+message Tag {
+  option (google.api.resource) = {
+    type: "unmango.zettelkasten.tag/Tag"
+    pattern: "tags/{tag}"
+    singular: "tag"
+    plural: "tags"
+  };
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+
+  // The broader term this one narrows. Absent at the top of the vocabulary.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+
+  reserved 7; // generation: the vocabulary is authored, not reconciled
+
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Desired state.
+
+  // What belongs under this term, and what does not. The scope note a shared
+  // vocabulary needs to stay shared.
+  string description = 11 [(google.api.field_behavior) = OPTIONAL];
+
+  // Spellings that resolve to this term: synonyms, earlier names, tags merged
+  // away into it. Keeps a rename from orphaning notes filed under the old
+  // form.
+  repeated string aliases = 12;
+
+  // Observed state.
+  reserved 50, 51; // observed_generation, conditions: nothing reconciles a tag
+
+  int32 note_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Narrower terms owned by this one.
+  int32 child_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When a note was last filed under this term. A vocabulary entry nothing has
+  // used in years is a candidate for merging away.
+  google.protobuf.Timestamp last_used_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

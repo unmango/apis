@@ -1,0 +1,207 @@
+edition = "2024";
+
+package unmango.media.playback.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/interval.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// What has been watched, read, or listened to, and by whom:
+//
+//   PlayState ~> media.title Title
+//   PlayState -> PlaySession
+//
+// A PlayState attaches to a Title rather than being owned by it. That matters:
+// progress is per person, several people watch the same show at different
+// points, and deleting a title should not silently erase the record of having
+// seen it. The Title admits the attachment and reports it as a Condition.
+//
+// A PlaySession is one sitting, owned by the PlayState it advanced. Keeping
+// sessions separate is what lets a resume point be a single number while the
+// history behind it stays complete.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum PlaybackPhase {
+  PLAYBACK_PHASE_UNSPECIFIED = 0;
+
+  // Attached but never started.
+  PLAYBACK_PHASE_UNPLAYED = 1;
+
+  PLAYBACK_PHASE_IN_PROGRESS = 2;
+  PLAYBACK_PHASE_COMPLETED = 3;
+
+  // Started and deliberately given up on. Distinct from in progress, which
+  // implies intent to return.
+  PLAYBACK_PHASE_ABANDONED = 4;
+}
+
+enum SessionOutcome {
+  SESSION_OUTCOME_UNSPECIFIED = 0;
+
+  // Ran to the end of the title.
+  SESSION_OUTCOME_FINISHED = 1;
+
+  // Stopped partway, intending to resume.
+  SESSION_OUTCOME_PAUSED = 2;
+
+  SESSION_OUTCOME_STOPPED = 3;
+
+  // Ended by an error rather than a choice.
+  SESSION_OUTCOME_INTERRUPTED = 4;
+}
+
+// ---------------------------------------------------------------------------
+// PlaySession
+// ---------------------------------------------------------------------------
+
+// One sitting. Append-only history behind a PlayState.
+message PlaySession {
+  option (google.api.resource) = {
+    type: "unmango.media.playback/PlaySession"
+    pattern: "playSessions/{play_session}"
+    singular: "playSession"
+    plural: "playSessions"
+  };
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Desired state. Recorded facts, since a session is written as it happens.
+  google.type.Interval when = 11;
+
+  // Offset into the title at the start and end of the sitting.
+  google.protobuf.Duration start_position = 12;
+  google.protobuf.Duration end_position = 13;
+
+  // Time actually spent playing, excluding pauses and seeks.
+  google.protobuf.Duration watched_duration = 14;
+
+  SessionOutcome outcome = 15;
+
+  // Where it was played.
+  oneof played_on {
+    // A compute.host Host.
+    ref.v1alpha1.ObjectReference device = 16 [(google.api.resource_reference).type = "unmango.compute.host/Host"];
+
+    // A device outside this API, identified only by name.
+    string external_device_name = 17;
+  }
+
+  // The media.library LibraryItem the bytes came from, when played locally.
+  ref.v1alpha1.ObjectReference library_item = 18 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.media.library/LibraryItem"
+  ];
+
+  // Playback speed. 1.0 is normal; audiobooks and podcasts often are not.
+  double speed = 19;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // end_position minus start_position. Differs from watched_duration when the
+  // sitting involved seeking.
+  google.protobuf.Duration progress_delta = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Fraction of the title's runtime covered by this sitting.
+  double fraction_of_title = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// PlayState
+// ---------------------------------------------------------------------------
+
+// One person's progress through one Title. Attached to the Title, owner of the
+// sessions that produced it.
+message PlayState {
+  option (google.api.resource) = {
+    type: "unmango.media.playback/PlayState"
+    pattern: "playStates/{play_state}"
+    singular: "playState"
+    plural: "playStates"
+  };
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Desired state.
+  // The media.title Title being played. Attachment rather than ownership:
+  // progress is per person and outlives the catalog entry.
+  ref.v1alpha1.ParentReference parent_ref = 11 [(google.api.resource_reference).type = "unmango.media.title/Title"];
+
+  // The people.contact Contact whose progress this is.
+  ref.v1alpha1.ObjectReference viewer = 12 [(google.api.resource_reference).type = "unmango.people.contact/Contact"];
+
+  // Where to resume. The one number a player needs.
+  google.protobuf.Duration position = 13;
+
+  // Personal rating, 0 to 100.
+  int32 rating = 14 [(google.api.field_behavior) = OPTIONAL];
+
+  // Marked to watch next, independently of any Collection.
+  bool queued = 15;
+
+  // Hide from continue-watching without discarding the record.
+  bool hidden = 16;
+
+  // Which PlaySessions this state claims.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 17;
+
+  string notes = 18 [(google.api.field_behavior) = OPTIONAL];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  PlaybackPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Reports whether the Title admitted the attachment.
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Position over the title's runtime, 0.0 to 1.0.
+  double progress = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Times played to completion. Above one means rewatched.
+  int32 play_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  int32 session_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Summed over sessions, so a rewatched title reports more than its runtime.
+  google.protobuf.Duration total_watched_duration = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp first_played_time = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_played_time = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp completed_time = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Position has not advanced in a long time while phase is IN_PROGRESS.
+  bool stalled = 60 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

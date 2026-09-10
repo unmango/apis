@@ -1,0 +1,48 @@
+name: Buf CI
+
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  delete:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  buf:
+    runs-on: ubuntu-latest
+    env:
+      # renovate: dataSource=github-tags depName=bufbuild/buf extractVersion=^v(?<version>.*)$
+      BUF_VERSION: 1.68.4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: DeterminateSystems/magic-nix-cache-action@908b263ff629f4cc17666315b7fd3ec127c6244d # v14
+
+      # k8s.io/apimachinery has no BSR module, so `buf build` and `buf push`
+      # cannot resolve those imports until the vendored tree the repo-root
+      # buf.yaml declares exists on disk.
+      - run: make vendor
+
+      - uses: bufbuild/buf-action@8c6a16e16f12ba20b6470afa9c2ba9b5ba8c97c3 # v1.5.0
+        with:
+          token: ${{ secrets.BUF_TOKEN }}
+          version: ${{ env.BUF_VERSION }}
+          # `nix flake check` in ci.yml lints the workspace and runs the
+          # treefmt `buf` formatter over the protos, and `make breaking`
+          # compares nix-built images, so all three run outside this job.
+          # `buf format` here would also flag the vendored upstream protos,
+          # which are copied in verbatim.
+          lint: false
+          breaking: false
+          format: false
+          # `buf push` requires every dependency of the pushed module to be a
+          # named BSR module, and the vendored apimachinery cannot be one.
+          # Publishing needs a BSR module for k8s.io/apimachinery first.
+          push: false

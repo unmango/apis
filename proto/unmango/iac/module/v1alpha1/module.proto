@@ -1,0 +1,149 @@
+edition = "2024";
+
+package unmango.iac.module.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+
+// Runnable infrastructure-as-code definitions, and how they are grouped:
+//
+//   ModuleRegistry => Module
+//
+// A Module is one runnable unit of config-as-code: a Terraform module, a
+// Pulumi program, an Ansible playbook, a Helm chart, a plain set of
+// Kubernetes manifests. It declares where its source lives and which tool
+// reads it. It does not declare what to run it against, which is
+// iac.stack Stack's job.
+//
+// A ModuleRegistry claims Modules by label selector, the same
+// codegen.converter ConverterRegistry pattern: a module joins a registry by
+// being labelled, not by being moved, and discovery is how a Module gets
+// declared in the first place when it is not hand-authored.
+//
+// Module.tool points at a compute.platform Platform for the tool that reads
+// it: Terraform, Pulumi, Ansible, Helm, kubectl. The same argument
+// compute.platform Platform and codegen.converter Converter.platform already
+// make: a closed enum of tools would bake a fixed vendor list into the
+// schema and need extending every time a new one appeared.
+
+// ---------------------------------------------------------------------------
+// Module
+// ---------------------------------------------------------------------------
+
+// One runnable config-as-code definition.
+message Module {
+  option (google.api.resource) = {
+    type: "unmango.iac.module/Module"
+    pattern: "modules/{module}"
+    singular: "module"
+    plural: "modules"
+  };
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Also the surface a ModuleRegistry selector matches against.
+  map<string, string> labels = 4;
+
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Desired state.
+  // The compute.platform Platform for the tool that reads this module:
+  // Terraform, Pulumi, Ansible, Helm, kubectl.
+  ref.v1alpha1.ObjectReference tool = 11 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
+
+  // The vcs.repository Repository the module's source lives in.
+  ref.v1alpha1.ObjectReference repository = 12 [(google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+
+  // Subdirectory within the repository, when the module is not at its root.
+  string path = 13 [(google.api.field_behavior) = OPTIONAL];
+
+  // Where the module lives for tools that resolve modules by address rather
+  // than by repository checkout: a Terraform registry source, a Helm chart
+  // reference, an OCI reference.
+  string entrypoint = 14 [(google.api.field_behavior) = OPTIONAL];
+
+  // Pinned version of the tool this module is written against. Part of what
+  // an iac.stack Run snapshots, so a stack can report itself stale when it
+  // moves.
+  string tool_version = 15 [(google.api.field_behavior) = OPTIONAL];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Registries whose selectors currently claim this module.
+  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.iac.module/ModuleRegistry"
+  ];
+
+  // iac.stack Stacks naming this module.
+  int32 stack_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// ModuleRegistry
+// ---------------------------------------------------------------------------
+
+// A published collection of Modules, claimed by selector.
+message ModuleRegistry {
+  option (google.api.resource) = {
+    type: "unmango.iac.module/ModuleRegistry"
+    pattern: "moduleRegistries/{module_registry}"
+    singular: "moduleRegistry"
+    plural: "moduleRegistries"
+  };
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Desired state.
+  // Which Modules belong. An empty selector claims nothing, never
+  // everything.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
+
+  string summary = 12 [(google.api.field_behavior) = OPTIONAL];
+
+  // Stamped onto modules created through this registry, which is how a new
+  // module ends up matching the selector.
+  map<string, string> module_labels = 13;
+
+  // The vcs.repository Repository scanned for Modules that have not been
+  // declared yet. Unset discovers nothing, the same as an empty selector
+  // claims nothing.
+  ref.v1alpha1.ObjectReference discovery_repository = 14 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 module_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_discovery_time = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

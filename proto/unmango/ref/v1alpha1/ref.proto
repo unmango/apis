@@ -1,0 +1,97 @@
+edition = "2024";
+
+package unmango.ref.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+
+// Vocabulary for expressing relationships between resources across every
+// unmango API. Deliberately tiny: ownership, selection, and status
+// reporting come from k8s.io.apimachinery.pkg.apis.meta.v1, which supplies
+// OwnerReference, LabelSelector, and Condition. Only the reference types that
+// meta/v1 lacks are defined here; the values those references hang off live
+// in unmango.uom.
+//
+// The equivalent types in Kubernetes live in k8s.io/api/core/v1, a 6000-line
+// file carrying the entire core API. Gateway API faces the same problem and
+// solves it the same way, by declaring its own ParentReference alongside an
+// imported metav1.Condition.
+
+// Addresses a resource anywhere in the graph. Carries the same coordinates as
+// metav1.OwnerReference minus the ownership flags, so both reference styles
+// read identically at the point of use.
+message ObjectReference {
+  // Proto package of the target, with the version as the final element:
+  // "unmango.compute.host/v1alpha1".
+  string api_version = 1;
+
+  // Kind of the target, matching its message name: "Host".
+  string kind = 2;
+
+  // The target's name field.
+  string name = 3;
+
+  // Scopes the target within a multi-tenant deployment. Unset means today's
+  // single-tenant behavior: the name is unique across the whole graph.
+  string namespace = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Pins the target to a specific resourceVersion-like value, for optimistic
+  // concurrency. Unset means the current value.
+  //
+  // No kind publishes such a value yet: the only resource_version fields in
+  // the repository are the watch-resume tokens on the read-only services.
+  // The field stays unfillable until the deferred service layer gives each
+  // resource a write-history version, and is kept reserved for that.
+  string resource_version = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // The target's uid, pinning the reference to one specific instance rather
+  // than to whatever currently holds the name.
+  //
+  // A name is reusable: delete a Host called "shed", create another with the
+  // same name, and a reference by name alone silently re-points at the new
+  // one. metav1.OwnerReference carries uid for exactly this reason, and a
+  // reference that reads identically to one at the point of use needs the
+  // same guard. Unset resolves by name, which is the right default for a
+  // reference authored against a resource that does not exist yet.
+  string uid = 6 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_info).format = UUID4
+  ];
+}
+
+// Names a parent that the referring resource attaches to, where the two were
+// authored independently. The parent decides whether to admit the attachment
+// and reports the outcome as a Condition on the child.
+//
+// This is the Gateway -> HTTPRoute relationship. It differs from ownership:
+// nothing generated the child, and deleting the parent does not cascade.
+message ParentReference {
+  ObjectReference ref = 1;
+
+  // Optional named part of the parent being attached to, when the parent
+  // exposes more than one attachment point.
+  string section = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// How a delete propagates along owner references. Mirrors the Kubernetes
+// deletion propagation policies, and applies to any resource that owns
+// children through metav1.OwnerReference.
+//
+// Nothing references this yet, by design: it belongs on the DeleteFoo request
+// of a service layer the life domains have deliberately deferred. It is
+// defined ahead of that layer so the vocabulary is settled before the first
+// Delete RPC has to invent one.
+enum DeletePropagation {
+  DELETE_PROPAGATION_UNSPECIFIED = 0;
+
+  // Delete children first, then the parent. The parent remains readable until
+  // every child with block_owner_deletion set has gone.
+  DELETE_PROPAGATION_FOREGROUND = 1;
+
+  // Delete the parent immediately and reap children asynchronously.
+  DELETE_PROPAGATION_BACKGROUND = 2;
+
+  // Delete the parent and leave children in place with their owner reference
+  // dangling.
+  DELETE_PROPAGATION_ORPHAN = 3;
+}

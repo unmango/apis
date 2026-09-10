@@ -1,0 +1,258 @@
+edition = "2024";
+
+package unmango.health.measurement.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "unmango/ref/v1alpha1/ref.proto";
+import "unmango/uom/v1alpha1/uom.proto";
+
+// Recorded body and health observations, and the targets set against them:
+//
+//   Goal => Measurement
+//
+// A Goal claims Measurements by label selector rather than owning them. That
+// is the Service -> Pods relationship, and it is the right shape here: a
+// measurement is a fact that exists whether or not anyone is tracking it, and
+// several goals may watch the same series without competing for it.
+//
+// A Measurement carries repeated Components rather than a single value, so
+// blood pressure, which is two numbers, and body weight, which is one, are the
+// same kind. Splitting them into separate kinds per shape would multiply the
+// API for no gain.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+enum MeasurementType {
+  MEASUREMENT_TYPE_UNSPECIFIED = 0;
+  MEASUREMENT_TYPE_WEIGHT = 1;
+  MEASUREMENT_TYPE_BODY_FAT = 2;
+  MEASUREMENT_TYPE_LEAN_MASS = 3;
+  MEASUREMENT_TYPE_BLOOD_PRESSURE = 4;
+  MEASUREMENT_TYPE_RESTING_HEART_RATE = 5;
+  MEASUREMENT_TYPE_HEART_RATE_VARIABILITY = 6;
+  MEASUREMENT_TYPE_SLEEP = 7;
+  MEASUREMENT_TYPE_BLOOD_GLUCOSE = 8;
+  MEASUREMENT_TYPE_TEMPERATURE = 9;
+  MEASUREMENT_TYPE_BLOOD_OXYGEN = 10;
+  MEASUREMENT_TYPE_CIRCUMFERENCE = 11;
+  MEASUREMENT_TYPE_VO2_MAX = 12;
+  MEASUREMENT_TYPE_LAB_PANEL = 13;
+}
+
+// One number within a Measurement. A weight has one; a blood pressure has
+// systolic and diastolic; a lab panel has many.
+message Component {
+  // "systolic", "diastolic", "waist", "hdl".
+  string name = 1;
+
+  double value = 2;
+
+  uom.v1alpha1.Unit unit = 3;
+
+  // Set only when unit is UNIT_CUSTOM.
+  string custom_unit = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // Healthy range for this component, when one is known.
+  double reference_low = 4 [(google.api.field_behavior) = OPTIONAL];
+  double reference_high = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+enum GoalDirection {
+  GOAL_DIRECTION_UNSPECIFIED = 0;
+
+  // Lower is better.
+  GOAL_DIRECTION_DECREASE = 1;
+
+  // Higher is better.
+  GOAL_DIRECTION_INCREASE = 2;
+
+  // Stay within a band.
+  GOAL_DIRECTION_MAINTAIN = 3;
+}
+
+enum GoalPhase {
+  GOAL_PHASE_UNSPECIFIED = 0;
+
+  // Set, but no matching measurement recorded yet.
+  GOAL_PHASE_PENDING = 1;
+
+  GOAL_PHASE_ON_TRACK = 2;
+  GOAL_PHASE_OFF_TRACK = 3;
+  GOAL_PHASE_ACHIEVED = 4;
+
+  // Target date passed without being met.
+  GOAL_PHASE_MISSED = 5;
+
+  GOAL_PHASE_ABANDONED = 6;
+}
+
+// ---------------------------------------------------------------------------
+// Measurement
+// ---------------------------------------------------------------------------
+
+// One observation, at one moment. Append-only in practice: a wrong reading is
+// superseded rather than edited.
+message Measurement {
+  option (google.api.resource) = {
+    type: "unmango.health.measurement/Measurement"
+    pattern: "measurements/{measurement}"
+    singular: "measurement"
+    plural: "measurements"
+  };
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Also the surface a Goal selector matches against.
+  map<string, string> labels = 4;
+
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Desired state. Recorded facts, since a Measurement is authored after the
+  // observation.
+  MeasurementType type = 11;
+  google.protobuf.Timestamp observed_time = 12;
+
+  // The numbers. One entry for a scalar reading, several for a composite.
+  repeated Component components = 13;
+
+  // What took the reading: a scale, a wearable, a lab, or a person.
+  string source = 14;
+
+  ref.v1alpha1.ObjectReference source_device = 15 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "*"
+  ];
+  string notes = 16 [(google.api.field_behavior) = OPTIONAL];
+
+  // Conditions the reading was taken under, which determine whether two
+  // readings are comparable: "fasted", "post-workout", "morning".
+  repeated string context = 17;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Goals whose selectors currently claim this measurement. Makes the selector
+  // edge navigable from the measurement side.
+  repeated ref.v1alpha1.ObjectReference claimed_by = 52 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.health.measurement/Goal"
+  ];
+
+  // Change from the previous comparable reading of the same type.
+  repeated Component delta = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // A component fell outside its reference range.
+  bool out_of_reference_range = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // A later reading of the same type and context replaced this one.
+  bool superseded = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ---------------------------------------------------------------------------
+// Goal
+// ---------------------------------------------------------------------------
+
+// A target set against a series of Measurements, claimed by selector.
+message Goal {
+  option (google.api.resource) = {
+    type: "unmango.health.measurement/Goal"
+    pattern: "goals/{goal}"
+    singular: "goal"
+    plural: "goals"
+  };
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Desired state.
+  // Which Measurements count toward this goal. Selection rather than
+  // ownership: the measurements exist independently and several goals may
+  // watch the same series.
+  k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 11;
+
+  // Narrows the selector to one kind of reading.
+  MeasurementType measurement_type = 12;
+
+  // Which component of the reading the target applies to.
+  string component = 13;
+
+  GoalDirection direction = 14;
+
+  double target_value = 15;
+
+  // Acceptable band around the target, for MAINTAIN.
+  double tolerance = 16;
+
+  uom.v1alpha1.Unit unit = 17;
+
+  // Set only when unit is UNIT_CUSTOM.
+  string custom_unit = 22 [(google.api.field_behavior) = OPTIONAL];
+
+  // Value at the time the goal was set, so progress is measurable rather than
+  // only distance-to-target.
+  double baseline_value = 18 [(google.api.field_behavior) = OPTIONAL];
+
+  google.type.Date start_date = 19;
+
+  // Unset means open-ended.
+  google.type.Date target_date = 20 [(google.api.field_behavior) = OPTIONAL];
+
+  // Readings to average before comparing against the target, which keeps day
+  // to day noise from flipping the phase.
+  int32 smoothing_window = 21;
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  GoalPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 matched_measurement_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Latest claimed reading of the tracked component.
+  double current_value = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Smoothed over the window.
+  double smoothed_value = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp last_measured_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Distance travelled from baseline toward target, 0.0 to 1.0. Above 1.0
+  // means overshot.
+  double progress = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Change per day over the smoothing window. Sign is relative to direction,
+  // so positive always means improving.
+  double rate_per_day = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the current rate would reach the target. Unset if moving away from
+  // it.
+  google.type.Date projected_date = 59 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

@@ -1,0 +1,9 @@
+.direnv/
+.envrc
+bin/
+/result
+.claude/*
+*.binpb
+.vscode/*
+!.vscode/extensions.json
+/third_party/

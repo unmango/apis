@@ -1,0 +1,85 @@
+edition = "2024";
+
+package unmango.compute.platform.v1alpha1;
+
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+
+// External systems and tools other resources integrate with:
+//
+//   Platform
+//
+// Platform is the kind the rest of the repository points at whenever a
+// resource names an external system rather than declaring facts about one
+// inline: a vcs.repository Repository's forge and version control system, a
+// ci.runner Runner's CI system, a compute.host Host's hosting provider, a
+// codegen.converter Converter's underlying tool.
+// Kept alongside compute.host Host rather than in a domain of its own: both
+// are infrastructure other domains bind to or point at without owning, the
+// same role compute.host Host already plays for ci.runner and vcs.repository.
+//
+// One Platform per distinct product, not per vendor: a vendor offering more
+// than one surface, GitHub the forge and GitHub Actions the CI system, gets
+// a Platform for each, since a Repository's forge and a Runner's CI system
+// are different attachment points even when the same company operates both.
+//
+// Kept as a referenced resource rather than a closed enum on every domain
+// that needs one: an enum bakes a fixed vendor list into the schema itself,
+// can't express a self-hosted or niche system, and repeats every entry in
+// each domain that names it. A Platform is data, created once and pointed
+// at by ObjectReference from anywhere in the graph.
+
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+
+// What role a Platform plays for whoever references it.
+enum PlatformKind {
+  PLATFORM_KIND_UNSPECIFIED = 0;
+  PLATFORM_KIND_FORGE = 1;
+  PLATFORM_KIND_CI = 2;
+  PLATFORM_KIND_HOSTING_PROVIDER = 3;
+  PLATFORM_KIND_VERSION_CONTROL_SYSTEM = 4;
+
+  // A tool a codegen.converter Converter wraps: Buf, tree-sitter, Upjet.
+  PLATFORM_KIND_CODEGEN_TOOL = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Platform
+// ---------------------------------------------------------------------------
+
+// An external system or tool that other resources point at by reference.
+message Platform {
+  option (google.api.resource) = {
+    type: "unmango.compute.platform/Platform"
+    pattern: "platforms/{platform}"
+    singular: "platform"
+    plural: "platforms"
+  };
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
+  string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
+  map<string, string> labels = 4;
+  map<string, string> annotations = 5;
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference owner_refs = 6;
+  int64 generation = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Last write, server-stamped.
+  google.protobuf.Timestamp update_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Desired state.
+  PlatformKind kind = 11;
+  string website = 12 [(google.api.field_behavior) = OPTIONAL];
+
+  // Observed state.
+  int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

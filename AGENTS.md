@@ -1,0 +1,146 @@
+# AGENTS.md
+
+This file provides guidance to AI agents when working with code in this repository.
+
+## Overview
+
+This is a Protocol Buffer API definition repository (`buf.build/unmango/apis`).
+It is language-agnostic: the proto definitions are the source of truth, and client/server code is generated from them.
+
+`unmango.*` is the namespace. It holds two kinds of API:
+
+- Life domains (calendar, finance, asset, media, health, compute, ci, codegen, vcs, people, record, zettelkasten, and the rest) modeled on the Kubernetes resource graph.
+  See [README.md](./README.md) for the domain architecture, relationship notation, and field-numbering convention; it is the primary reference for those packages, not this file.
+  They are written against [Google's AIPs](https://google.aip.dev); [docs/aip.md](./docs/aip.md) is the conformance policy, and it governs whether a new field or message is correct.
+- Infrastructure: `cli`/`cmd` (command-line parsing and process execution), `protofs` (Go `io/fs` over gRPC), and `discord/backup` (Discord guild backup schema).
+  These define services and carry no resource identity, so the domain conventions do not apply to them.
+
+`dev.unmango.*` is deprecated in full.
+Every package under it has a replacement in `unmango.*` and is marked deprecated at file scope pointing there.
+Nothing new belongs in that namespace.
+
+## Development Environment
+
+This project uses Nix for the development environment.
+Enter it via:
+
+```sh
+nix develop   # or: direnv allow (if using direnv)
+```
+
+Available tools in the dev shell: `api-linter`, `buf`, `gnumake`.
+
+## Commands
+
+| Task | Command |
+|------|---------|
+| Format | `make fmt` or `nix fmt` |
+| Check (Nix flake) | `make check` or `nix flake check` |
+| Update flake inputs | `make update` or `nix flake update` |
+| Vendor third-party protos | `make vendor` (required before bare `buf` in the repo root) |
+| Lint protos | `make lint` (see gotcha below) |
+| Check AIP conformance | `make aip` |
+| Check field bands | `make bands` |
+| Check breaking changes | `make breaking` (override the base ref with `make breaking AGAINST=<ref>`) |
+| Generate code | `buf generate` (only `proto/unmango/*`, see gotcha below) |
+
+**Gotcha:** `buf generate` needs `protoc-gen-go` on `$PATH`, which `nix develop` does not currently provide in this environment.
+`make lint` is the practical check for schema changes instead.
+
+**Gotcha:** there is no BSR module for apimachinery, so the `k8s.io/apimachinery/...` imports resolve only against a vendored copy.
+`buf.yaml` declares that copy as the gitignored `third_party/k8s` module; `make vendor` materializes it out of the Nix build, and every bare `buf` command in the repo root fails until it does.
+`make lint` and `make breaking` sidestep it by pointing `buf` at the Nix-built workspace instead, which vendors the same tree.
+`.github/workflows/buf.yml` runs `make vendor` before `buf-action`, leaving that job with `buf build` alone.
+Its `lint`, `breaking`, and `format` steps are off: `nix flake check` covers lint and the treefmt `buf` formatter, `make breaking` covers breaking changes, and `buf format` would flag the vendored protos, which are copied in verbatim.
+`push` is off too: `buf push` rejects a module whose dependencies are not themselves named BSR modules, so `buf.build/unmango/apis` cannot be published until `k8s.io/apimachinery` has a BSR module to depend on.
+
+### AIP conformance
+
+[docs/aip.md](./docs/aip.md) is the policy: AIPs are the default for the life domains, and every divergence is named there with its reason.
+[api-linter.yaml](./api-linter.yaml) carries the same list as rule disables, so a rule the linter stays quiet about is a decision rather than an unread finding, and a rule that is neither disabled nor satisfied is a bug.
+`make aip` and the `api-linter` flake check run it over the 44 life-domain files; the infrastructure APIs are excluded rather than configured, since none of them models a resource.
+
+**Gotcha:** `api-linter` compiles editions up to 2023, and handed an edition 2024 descriptor set it reports zero files linted rather than an error.
+`nix/api-linter.nix` works around it by rewriting `edition = "2024"` to `edition = "2023"` in a copy of the workspace before building the descriptor set.
+Nothing in these files uses a feature whose default moved between the two editions.
+Watch the `Linted N proto files` line: a drop to zero means the workaround stopped applying, not that the tree got clean.
+
+**Gotcha:** the life domains are all `v1alpha1`, which AIP-180 gives no stability guarantee, so a rename lands in place rather than beside a deprecated original.
+`make breaking` reports every one of those renames and exits non-zero.
+That is the intended reading for an alpha change: the output is the record of what moved, not a list of defects.
+`make breaking` is not run in CI, and the guarantee it enforces starts at `v1beta1`; see the AIP-180 entry in [docs/aip.md](./docs/aip.md).
+
+### Field bands
+
+The identity band is repeated on every resource rather than lifted into a shared message, so a resource stays flat: `name` sits where `google.api.resource` and AIP-122 expect it, and an update mask addresses `display_name` rather than `metadata.display_name`.
+Nothing in the compiler stops a new kind from putting `labels` at 3, so `hack/check-field-bands.py` does.
+It runs as the `field-bands` flake check and via `make bands`, and asserts that every resource fills identity slots 1-10 by name or reserves them, that the declared, assigned, and observed bands have no gaps, that mutable kinds carry `update_time` and content-addressed ones do not, and that every `ObjectReference` field declares a `resource_reference`.
+Adding a resource means satisfying it; see [README.md](./README.md) for what each band means.
+
+**Gotcha:** `buf format -d` takes exactly one positional path.
+To diff-check several files, repeat `--path`: `buf format -d --path a.proto --path b.proto`.
+
+## Architecture
+
+### Proto layout
+
+- `proto/unmango/<domain>/<package>/<version>/`: life-domain APIs (`calendar`, `finance`, `asset`, `media`, `health`, `compute`, `ci`, `codegen`, `vcs`, `people`, `record`, `zettelkasten`, plus the shared `ref` and `uom` vocabularies).
+  Domain-by-domain design and the `->`/`~>`/`=>`/`@`/`>>` relationship notation are documented in [README.md](./README.md), not here.
+- `proto/unmango/{cli,cmd}/`: CLI parsing and process execution.
+  `unmango.cli.v1alpha1` carries the CST, the parser, and the flag conventions; `unmango.cmd.v1alpha2` builds a `Process` from a spec and runs it.
+  `unmango.cmd.v1alpha1` is deprecated: its `Run` took a `cli` `Utility` rather than a `Process`.
+- `proto/unmango/protofs/{file,fs}/{v1alpha1,v1alpha2}/`: `FileService` (Go `io/fs.File` over gRPC: Read, Write, Stat, Truncate, Readdir) and `FsService` (filesystem-level RPCs: Chmod, Create, Open, Remove, Rename).
+  Mode/perm fields are `uint32` bitmasks; `FileModeConst` documents the named bit constants.
+- `proto/unmango/discord/backup/{v1alpha1,v1alpha2}/`: Discord guild backup/restore schema (`ServerBackup`, `Guild`, `Channel`, `Message`, etc.).
+- `proto/dev/unmango/**`: the deprecated copies of the four packages above, kept in place per the version-coexistence policy.
+
+**Gotcha:** `buf.gen.yaml` only lists `proto/unmango` under `inputs.paths`, so `buf generate` silently produces no Go code for anything under `proto/dev/unmango/*`.
+That is deliberate now that every package there is deprecated and has a replacement under `proto/unmango`.
+
+**Gotcha:** no domain package may be named `ref` or `uom`.
+A package `unmango.<domain>.ref` (or `.uom`) would capture the relative name before it reached `unmango.ref.v1alpha1` (or `unmango.uom.v1alpha1`), silently breaking every reference in that domain.
+See the comment in `proto/unmango/vcs/branch/v1alpha1/branch.proto` for the full explanation.
+
+### Version coexistence
+
+Several `dev.unmango.*` packages (`protofs/file`, `protofs/fs`, `cmd`, `discord/backup`) currently ship two `vN.alphaM` directories side by side.
+When a new version supersedes a prior one, mark the superseded package `option deprecated = true` (at file scope when the whole package is superseded wholesale, at service scope when only part of it is) plus a `// Deprecated: use vN.alphaM+1.` comment naming the replacement, rather than leaving the choice to git-history archaeology.
+Both versions stay checked in until a separate decision is made to delete the old one.
+
+### Buf configuration
+
+`buf.yaml` defines the module at `buf.build/unmango/apis` with:
+
+- Linting: `STANDARD` ruleset
+- Breaking change detection: `FILE` ruleset
+- Module roots: `proto/` and the gitignored `third_party/k8s`, which is ignored by both rulesets
+- Remote dependency: `buf.build/googleapis/googleapis`
+- `buf.gen.yaml` sets `go_package_prefix` to `github.com/unmango/apis/go`, so generated Go lands under `go/` mirroring the proto path, and sets the Java options AIP-191 asks for from managed mode rather than from 60 protos
+
+Third-party protos are not checked in.
+The Nix build vendors them into its own workspace (see below), and `make vendor` materializes the apimachinery half into `third_party/k8s` for the CLI.
+
+`buf.yaml`, `buf.lock`, and `buf.gen.yaml` drive the CLI workflow: `buf generate`, BSR pushes, and the format check in the `buf-action` CI job.
+The Nix build does not read them.
+
+### Nix build
+
+`nix build` assembles its own v2 buf workspace instead of resolving the BSR dependency, so the build never touches the network.
+The builders come from [a2b](https://github.com/UnstoppableMango/a2b), reached through `inputs'.a2b.legacyPackages.lib.buf`:
+
+- `nix/googleapis.nix`: `buf.vendor` copies `google/type`, `google/api/field_behavior.proto`, and `google/api/resource.proto` out of the pinned `googleapis` flake input into a tree matching its import paths
+- `nix/apimachinery.nix`: the same for the three `k8s.io/apimachinery` protos, out of the tag-pinned `apimachinery` flake input.
+  `prefix` restores the `k8s.io/apimachinery` segments the repo root omits
+- `nix/workspace.nix`: `buf.mkWorkspace` stitches those two trees and `proto/` into one workspace whose modules resolve each other's imports.
+  `vendor = true` keeps the third-party modules out of lint and breaking checks
+- `nix/generate.nix`: `buf.generate` over the workspace root, with plugins and managed mode declared through `buf.mkTemplate`.
+  Mirrors `buf.gen.yaml`, which a template cannot reuse directly because its `inputs:` key conflicts with a command-line input
+- `nix/proto.nix`: `buf.build` over the workspace, producing `apis.binpb`
+
+Generating from the workspace root covers the vendored modules too, so the `github.com/unmango/apis/go/google/type` and `.../k8s.io/...` imports that managed mode writes into the generated code resolve to generated packages.
+
+Bump the vendored googleapis with `make update` (`nix flake update`).
+The `apimachinery` input is pinned to a tag in its URL, so `make update` leaves it alone; bumping it means editing the URL in `flake.nix` and running `nix flake lock --update-input apimachinery`.
+
+When adding new proto files, place them under `proto/unmango/<domain>/<package>/<version>/` for a life domain or `proto/unmango/<package>/<version>/` for an infrastructure API, following the existing pattern.
+Never add to `proto/dev/unmango/`.

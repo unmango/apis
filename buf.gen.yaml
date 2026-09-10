@@ -1,0 +1,26 @@
+version: v2
+
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/unmango/apis/go
+    # AIP-191 asks every file for the Java options. Managed mode sets them
+    # from here so 60 protos do not each carry generator configuration.
+    # java_outer_classname is left to protoc, which derives it from the file
+    # name, which is what AIP-191 asks for anyway.
+    - file_option: java_package_prefix
+      value: com
+    - file_option: java_multiple_files
+      value: true
+
+plugins:
+  - local: protoc-gen-go
+    out: go
+    opt:
+      - paths=source_relative
+
+inputs:
+  - directory: proto
+    paths:
+      - proto/unmango

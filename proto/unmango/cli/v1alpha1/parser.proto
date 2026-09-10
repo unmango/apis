@@ -1,0 +1,19 @@
+edition = "2024";
+
+package unmango.cli.v1alpha1;
+
+import "unmango/cli/v1alpha1/cli.proto";
+import "unmango/cli/v1alpha1/cst.proto";
+
+service ParserService {
+  rpc ParseCommand(ParseCommandRequest) returns (ParseCommandResponse);
+}
+
+message ParseCommandRequest {
+  string input = 1;
+  Convention convention = 2;
+}
+
+message ParseCommandResponse {
+  CommandLine command_line = 1;
+}
