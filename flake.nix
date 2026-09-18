@@ -11,6 +11,19 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.systems.follows = "systems";
       inputs.flake-parts.follows = "flake-parts";
+      inputs.mangopkgs.follows = "mangopkgs";
+      inputs.treefmt-nix.follows = "treefmt-nix";
+    };
+
+    # a2b's input rather than one this flake evaluates, declared here so a
+    # consumer points it at their own mangopkgs with one `follows` on this
+    # flake. Reaching it through a2b instead means a nested override in every
+    # consumer, and a second mangopkgs in their lock until someone writes one.
+    mangopkgs = {
+      url = "github:unmango/pkgs";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
+      inputs.flake-parts.follows = "flake-parts";
       inputs.treefmt-nix.follows = "treefmt-nix";
     };
 
