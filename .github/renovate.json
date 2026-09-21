@@ -3,8 +3,5 @@
   "extends": [
     "github>UnstoppableMango/renovate-config",
     "schedule:daily"
-  ],
-  "nix": {
-    "enabled": true
-  }
+  ]
 }
