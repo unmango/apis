@@ -1,0 +1,309 @@
+package unmango.iac.stack.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/protobuf.tdl" as wkt
+import "../../../../shim/scalar.tdl" as scalar
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Standing instructions to provision infrastructure, and their executions:
+//
+//   Stack -> Run @ ci.job JobRun
+//
+// A Stack is the durable definition: this module, with these inputs,
+// targeting this environment. A Run is one execution of it, owned by the
+// Stack that produced it.
+//
+// A Run binds to a ci.job JobRun rather than to a ci.runner Runner directly,
+// the same delegation codegen.conversion ConversionRun makes: ci already
+// models a unit of work, its execution, and its placement on capacity, and
+// duplicating that here would fork it. The binding chain runs
+// Run -> JobRun -> Runner -> Host, and this domain only owns the first hop.
+//
+// There is no run template. A Stack carries the real specification, so a
+// Run snapshots it at creation instead, which is what keeps a finished run
+// reproducible after its Stack is edited.
+//
+// A Stack owns the iac.resource Resources its Runs provision, not the Run
+// itself: a resource outlives any single plan or apply, while a run is one
+// execution among many against the same resources.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// What a Run does against its Stack's resources.
+enum RunKind { Plan Apply Destroy }
+
+/// Lifecycle of a Run.
+enum RunPhase {
+  /// Created, no ci.job JobRun bound yet.
+  Pending
+  Running
+  Succeeded
+  Failed
+  Cancelled
+}
+
+// ---------------------------------------------------------------------------
+// Stack
+// ---------------------------------------------------------------------------
+/// A standing instruction to run one Module against one target.
+type Stack: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The iac.module Module to run.
+  module: ref.ObjectReference
+  /// Variables passed to the module.
+  inputs: wkt.Struct
+  /// Open string: "prod", "staging", a caller-defined name. Not an enum,
+  /// since the set of environments is defined by the caller, not this schema.
+  target_environment: string
+  /// Where state for this stack's runs is stored: a Terraform backend
+  /// address, a Pulumi stack URI, or empty for a tool with no external state.
+  state_uri: string
+  timeout: duration
+  max_retries: scalar.int32
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  resource_count: scalar.int32
+  run_count: scalar.int32
+  last_run: ref.ObjectReference
+  last_run_phase: RunPhase
+  last_apply_time: instant
+}
+
+// ---------------------------------------------------------------------------
+// Run
+// ---------------------------------------------------------------------------
+/// One execution of a Stack: a plan, an apply, or a destroy.
+type Run: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The Stack that materialized this run.
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state, snapshotted from the Stack at creation so the run stays
+  // reproducible after the Stack is edited.
+  run_kind: RunKind
+  module: ref.ObjectReference
+  inputs: wkt.Struct
+  target_environment: string
+  state_uri: string
+  timeout: duration
+  // Assigned desired state.
+  /// The ci.job JobRun executing this run. Unset while pending, exactly as an
+  /// unscheduled Pod has no node.
+  job_run: ref.ObjectReference
+  // Observed state.
+  observed_generation: int
+  phase: RunPhase
+  conditions: [metav1.Condition]
+  start_time: instant
+  completion_time: instant
+  /// Summary counts, meaningful once the run completes.
+  resources_added: scalar.int32
+  resources_changed: scalar.int32
+  resources_destroyed: scalar.int32
+  error_message: string
+  attempt: scalar.int32
+  logs_uri: string
+}
+
+target protobuf for unmango.iac.stack.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  Stack {
+    resource("unmango.iac.stack/Stack", "stacks/{stack}", "stack", "stacks")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    module {
+      number(11)
+      resource_reference("unmango.iac.module/Module")
+    }
+    inputs => number(12)
+    target_environment {
+      number(13)
+      field_behavior(OPTIONAL)
+    }
+    state_uri {
+      number(14)
+      field_behavior(OPTIONAL)
+    }
+    timeout => number(15)
+    max_retries => number(16)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    resource_count {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    run_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_run {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.iac.stack/Run")
+    }
+    last_run_phase {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_apply_time {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  Run {
+    resource("unmango.iac.stack/Run", "runs/{run}", "run", "runs")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    run_kind => number(11)
+    module {
+      number(12)
+      resource_reference("unmango.iac.module/Module")
+    }
+    inputs => number(13)
+    target_environment {
+      number(14)
+      field_behavior(OPTIONAL)
+    }
+    state_uri {
+      number(15)
+      field_behavior(OPTIONAL)
+    }
+    timeout => number(16)
+    job_run {
+      number(40)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.ci.job/JobRun")
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    phase {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    start_time {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    completion_time {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    resources_added {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    resources_changed {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+    resources_destroyed {
+      number(57)
+      field_behavior(OUTPUT_ONLY)
+    }
+    error_message {
+      number(58)
+      field_behavior(OUTPUT_ONLY)
+    }
+    attempt {
+      number(59)
+      field_behavior(OUTPUT_ONLY)
+    }
+    logs_uri {
+      number(60)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}

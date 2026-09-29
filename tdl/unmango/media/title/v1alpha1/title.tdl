@@ -1,0 +1,387 @@
+package unmango.media.title.v1alpha1
+
+import "../../../../shim/google/type.tdl" as gtype
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/scalar.tdl" as scalar
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// The catalog: works, and the concrete releases of them.
+//
+//   Title -> Title (Series -> Season -> Episode) -> Edition
+//
+// Title nests through owner references rather than dedicated series and season
+// fields, which keeps a nine-season television show, a two-disc album, and a
+// standalone film the same shape. The MediaKind says which level a title sits
+// at; the ownership edge says what it belongs to.
+//
+// An Edition is a specific release of a Title: a theatrical cut, a remaster, a
+// particular pressing. Bytes on disk belong to media.library, not here, so the
+// catalog stays meaningful for things not owned.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum MediaKind {
+  Movie
+  Series
+  Season
+  Episode
+  Album
+  Track
+  Book
+  Audiobook
+  Game
+  Podcast
+  PodcastEpisode
+  Short
+}
+
+/// Identifier in an external catalog, so records can be reconciled against
+/// imdb, tmdb, musicbrainz, isbn, igdb, and the rest.
+type ExternalId {
+  source: string
+  value: string
+}
+
+/// Someone who worked on a title.
+type Credit {
+  /// A people.contact Contact when the person is known personally,
+  /// otherwise unset and identified by name alone.
+  contact: ref.ObjectReference
+  person_name: string
+  /// "director", "author", "artist", "developer", "narrator".
+  role: string
+  /// Ordering within the role. Lower is billed first.
+  billing_order: scalar.int32
+  /// Part played, for a performing credit.
+  character: string
+}
+
+enum ReleaseFormat {
+  Theatrical
+  BluRay
+  Dvd
+  Digital
+  Vinyl
+  Cd
+  Cassette
+  Hardcover
+  Paperback
+  Ebook
+  Cartridge
+  Streaming
+}
+
+// ---------------------------------------------------------------------------
+// Edition
+// ---------------------------------------------------------------------------
+/// A specific release of a Title. What a media.library LibraryItem binds to.
+type Edition: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  format: ReleaseFormat
+  /// What distinguishes this release: "Director's Cut", "2011 Remaster",
+  /// "Deluxe Edition".
+  edition_name: string
+  release_date: gtype.Date
+  /// Runtime or length specific to this cut, which may differ from the Title's.
+  runtime: duration
+  /// ISO 639 codes.
+  languages: [string]
+  subtitle_languages: [string]
+  publisher: string
+  /// ISO 3166 code of the release territory.
+  region: string
+  external_ids: [ExternalId]
+  /// The release the catalog treats as canonical for its Title.
+  preferred: bool
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  /// media.library LibraryItems holding a copy of this edition.
+  owned_copy_count: scalar.int32
+}
+
+// ---------------------------------------------------------------------------
+// Title
+// ---------------------------------------------------------------------------
+/// A work. Nests to form series and seasons, and owns its Editions.
+type Title: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The parent Title for a season or episode. Absent at the top of a work.
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Immutable once set; create a new Title rather than changing what level
+  /// of the hierarchy an existing one occupies. An update must reject a
+  /// change to this field.
+  kind: MediaKind
+  /// Title as presented.
+  title: string
+  /// Title normalized for ordering, with leading articles dropped.
+  sort_title: string
+  /// Title in the language of origin, when it differs.
+  original_title: string
+  summary: string
+  release_date: gtype.Date
+  genres: [string]
+  runtime: duration
+  credits: [Credit]
+  external_ids: [ExternalId]
+  /// Position within the parent. Season number on a season, track or episode
+  /// number on a leaf.
+  sequence_number: scalar.int32
+  /// Content rating in its issuing system: "PG-13", "TV-MA", "E10+".
+  content_rating: string
+  /// ISO 639 code of the original language.
+  original_language: string
+  /// Which child Titles and Editions this Title claims.
+  selector: metav1.LabelSelector
+  /// Artwork. Plain strings so they can address dev.unmango.protofs paths
+  /// without coupling the packages.
+  poster_uri: string
+  backdrop_uri: string
+  /// Personal rating, 0 to 100. Distinct from any external score.
+  rating: scalar.int32
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  /// Direct children: seasons under a series, episodes under a season.
+  child_count: scalar.int32
+  /// Leaf titles anywhere beneath this one.
+  descendant_leaf_count: scalar.int32
+  edition_count: scalar.int32
+  /// At least one Edition has a media.library LibraryItem.
+  owned: bool
+  /// Summed over descendants, for a series or album.
+  total_runtime: duration
+  /// Rolled up from media.playback. Present here so a series can report
+  /// progress without the catalog depending on playback.
+  watched_fraction: scalar.double
+}
+
+target protobuf for unmango.media.title.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  ExternalId {
+    source => number(1)
+    value => number(2)
+  }
+  Credit {
+    contact {
+      number(1)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.people.contact/Contact")
+    }
+    person_name => number(2)
+    role => number(3)
+    billing_order => number(4)
+    character {
+      number(5)
+      field_behavior(OPTIONAL)
+    }
+  }
+  Edition {
+    resource("unmango.media.title/Edition", "editions/{edition}", "edition", "editions")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    format => number(11)
+    edition_name {
+      number(12)
+      field_behavior(OPTIONAL)
+    }
+    release_date {
+      number(13)
+      field_behavior(OPTIONAL)
+    }
+    runtime => number(14)
+    languages => number(15)
+    subtitle_languages => number(16)
+    publisher {
+      number(17)
+      field_behavior(OPTIONAL)
+    }
+    region {
+      number(18)
+      field_behavior(OPTIONAL)
+    }
+    external_ids => number(19)
+    preferred => number(20)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    owned_copy_count {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  Title {
+    resource("unmango.media.title/Title", "titles/{title}", "title", "titles")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    kind {
+      number(11)
+      field_behavior(IMMUTABLE)
+    }
+    title => number(12)
+    sort_title {
+      number(13)
+      field_behavior(OPTIONAL)
+    }
+    original_title {
+      number(14)
+      field_behavior(OPTIONAL)
+    }
+    summary {
+      number(15)
+      field_behavior(OPTIONAL)
+    }
+    release_date {
+      number(16)
+      field_behavior(OPTIONAL)
+    }
+    genres => number(17)
+    runtime => number(18)
+    credits => number(19)
+    external_ids => number(20)
+    sequence_number {
+      number(21)
+      field_behavior(OPTIONAL)
+    }
+    content_rating {
+      number(22)
+      field_behavior(OPTIONAL)
+    }
+    original_language {
+      number(23)
+      field_behavior(OPTIONAL)
+    }
+    selector => number(24)
+    poster_uri {
+      number(25)
+      field_behavior(OPTIONAL)
+    }
+    backdrop_uri {
+      number(26)
+      field_behavior(OPTIONAL)
+    }
+    rating {
+      number(27)
+      field_behavior(OPTIONAL)
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    child_count {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    descendant_leaf_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    edition_count {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    owned {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    total_runtime {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+    watched_fraction {
+      number(57)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}

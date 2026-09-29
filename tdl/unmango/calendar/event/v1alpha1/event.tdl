@@ -1,0 +1,497 @@
+package unmango.calendar.event.v1alpha1
+
+import "../../../../shim/google/type.tdl" as gtype
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/scalar.tdl" as scalar
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Scheduled time, and who is coming:
+//
+//   RecurringEvent -> Event @ asset.property Space
+//                       ^~ Attendance ~> people.contact Contact
+//
+// A RecurringEvent materializes concrete Events up to a bounded horizon, so a
+// weekly standing meeting is a template plus a horizon rather than an infinite
+// series. Editing the series affects future occurrences; an occurrence that
+// has been individually modified detaches and is left alone.
+//
+// Attendance is its own kind attached to the Event rather than a field on it.
+// That is the Gateway -> HTTPRoute shape, and it is what lets an invitee
+// respond without holding write access to the event, and lets the event admit
+// or reject them independently.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum EventState { Confirmed Tentative Cancelled }
+
+enum Transparency {
+  /// Consumes the attendee's availability.
+  Busy
+  /// Visible but does not block other bookings.
+  Free
+}
+
+enum RecurrenceFrequency { Daily Weekly Monthly Yearly }
+
+/// How a series repeats. Follows RFC 5545 recurrence semantics without
+/// inheriting its string encoding.
+type RecurrenceRule {
+  frequency: RecurrenceFrequency
+  /// Periods between occurrences. Two with WEEKLY means fortnightly.
+  interval: scalar.int32
+  /// Days the rule fires. WEEKLY only.
+  by_day: [gtype.DayOfWeek]
+  /// Days of the month, 1 to 31, or negative to count back from the end.
+  /// MONTHLY and YEARLY only.
+  by_month_day: [scalar.int32]
+  /// Stop after this many occurrences. Zero means unbounded.
+  count: scalar.int32
+  /// Stop on this date. Unset means unbounded.
+  until: gtype.Date
+  /// Dates to skip, for a series with holes in it.
+  exclude_dates: [gtype.Date]
+  /// Schedule the next occurrence relative to when the last one was completed
+  /// rather than when it was due. Mirrors productivity.task's copy of this
+  /// field; keep the two in sync when either changes.
+  from_completion: bool
+}
+
+enum AttendeeResponse { NeedsAction Accepted Declined Tentative }
+
+// ---------------------------------------------------------------------------
+// Attendance
+// ---------------------------------------------------------------------------
+/// One person's relationship to one Event. Authored independently of the Event
+/// and admitted by it.
+type Attendance: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The Event being attended. The Event decides whether to admit this.
+  parent_ref: ref.ParentReference
+  /// The people.contact Contact attending.
+  attendee: ref.ObjectReference
+  response: AttendeeResponse
+  /// Attendance is expected rather than optional.
+  required: bool
+  /// Chairs the event. At most one attendance per event should set this.
+  organizer: bool
+  comment: string
+  // Observed state.
+  observed_generation: int
+  /// Reports whether the Event admitted this attendance, and why not when it
+  /// did not.
+  conditions: [metav1.Condition]
+  responded_time: instant
+  /// Whether the attendee is double-booked over this event's interval.
+  conflicting: bool
+}
+
+// ---------------------------------------------------------------------------
+// Event
+// ---------------------------------------------------------------------------
+/// A single occurrence of scheduled time.
+type Event: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Templated desired state. EventTemplate mirrors 10-39.
+  summary: string
+  description: string
+  /// Free-text location, for somewhere with no modelled Space.
+  location: string
+  transparency: Transparency
+  /// Occupies whole days, so the interval's times carry no meaning.
+  all_day: bool
+  /// How far ahead to notify. Multiple entries give multiple reminders.
+  reminders: [duration]
+  /// IANA identifier, retained so a recurring series survives daylight saving
+  /// shifts: "America/Chicago".
+  time_zone: string
+  conference_uri: string
+  // Assigned desired state.
+  /// When it happens. Computed per occurrence for a materialized event.
+  when: gtype.Interval
+  /// The asset.property Space booked for it. Unset means no room is held.
+  space: ref.ObjectReference
+  /// Date within the series this occurrence stands for. Set on materialized
+  /// events, so an occurrence stays identifiable after it is moved.
+  occurrence_date: gtype.Date
+  /// This occurrence was edited individually and no longer tracks its series.
+  detached: bool
+  // Observed state.
+  observed_generation: int
+  state: EventState
+  conditions: [metav1.Condition]
+  attendance_count: scalar.int32
+  accepted_count: scalar.int32
+  declined_count: scalar.int32
+  pending_count: scalar.int32
+  /// Another Event overlaps this one for a shared attendee or the booked Space.
+  conflicting: bool
+}
+
+/// Desired state stamped onto Events generated by a RecurringEvent. Field
+/// numbers mirror Event 10-39; the assigned band is absent because the interval
+/// and room booking are computed per occurrence.
+type EventTemplate {
+  labels: {string -> string}
+  annotations: {string -> string}
+  summary: string
+  description: string
+  location: string
+  transparency: Transparency
+  all_day: bool
+  reminders: [duration]
+  time_zone: string
+  conference_uri: string
+}
+
+// ---------------------------------------------------------------------------
+// RecurringEvent
+// ---------------------------------------------------------------------------
+/// A repeating series, and the owner of every Event it materializes.
+type RecurringEvent: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Stamped onto each materialized Event.
+  template: EventTemplate
+  rule: RecurrenceRule
+  /// Local time each occurrence starts, interpreted in template.time_zone.
+  start_date: gtype.Date
+  /// Seconds after midnight local time. Ignored when the template is all_day.
+  start_seconds: scalar.int32
+  duration: duration
+  /// Materialize occurrences up to this date, bounding how far ahead the chain
+  /// runs rather than generating an unbounded series.
+  materialize_through: gtype.Date
+  /// Which Events this series claims. Detached occurrences drop out of it.
+  selector: metav1.LabelSelector
+  /// The Space every occurrence books, when the series holds a standing room.
+  space: ref.ObjectReference
+  /// Stop materializing without deleting the series.
+  suspended: bool
+  /// Past occurrences to retain. Zero retains all.
+  occurrence_history_limit: scalar.int32
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  occurrence_count: scalar.int32
+  /// Occurrences that were edited individually and no longer track the series.
+  detached_count: scalar.int32
+  next_occurrence_date: gtype.Date
+  materialized_through: gtype.Date
+  /// Latest revision of the template. Occurrences record the revision they were
+  /// created with.
+  revision: string
+}
+
+target protobuf for unmango.calendar.event.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  RecurrenceRule {
+    frequency => number(1)
+    interval => number(2)
+    by_day => number(3)
+    by_month_day => number(4)
+    count => number(5)
+    until {
+      number(6)
+      field_behavior(OPTIONAL)
+    }
+    exclude_dates => number(7)
+    from_completion => number(8)
+  }
+  Attendance {
+    resource("unmango.calendar.event/Attendance", "attendances/{attendance}", "attendance", "attendances")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    parent_ref {
+      number(11)
+      resource_reference("unmango.calendar.event/Event")
+    }
+    attendee {
+      number(12)
+      resource_reference("unmango.people.contact/Contact")
+    }
+    response => number(13)
+    required => number(14)
+    organizer => number(15)
+    comment {
+      number(16)
+      field_behavior(OPTIONAL)
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    responded_time {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conflicting {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  Event {
+    resource("unmango.calendar.event/Event", "events/{event}", "event", "events")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    summary => number(11)
+    description {
+      number(12)
+      field_behavior(OPTIONAL)
+    }
+    location {
+      number(13)
+      field_behavior(OPTIONAL)
+    }
+    transparency => number(14)
+    all_day => number(15)
+    reminders => number(16)
+    time_zone => number(17)
+    conference_uri {
+      number(18)
+      field_behavior(OPTIONAL)
+    }
+    when {
+      number(40)
+      field_behavior(OUTPUT_ONLY)
+    }
+    space {
+      number(41)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.asset.property/Space")
+    }
+    occurrence_date {
+      number(42)
+      field_behavior(OUTPUT_ONLY)
+    }
+    detached {
+      number(43)
+      field_behavior(OUTPUT_ONLY)
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    state {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    attendance_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    accepted_count {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    declined_count {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    pending_count {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conflicting {
+      number(57)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  EventTemplate {
+    labels => number(1)
+    annotations => number(2)
+    summary => number(10)
+    description {
+      number(11)
+      field_behavior(OPTIONAL)
+    }
+    location {
+      number(12)
+      field_behavior(OPTIONAL)
+    }
+    transparency => number(13)
+    all_day => number(14)
+    reminders => number(15)
+    time_zone => number(16)
+    conference_uri {
+      number(17)
+      field_behavior(OPTIONAL)
+    }
+  }
+  RecurringEvent {
+    resource("unmango.calendar.event/RecurringEvent", "recurringEvents/{recurring_event}", "recurringEvent", "recurringEvents")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    template => number(11)
+    rule => number(12)
+    start_date => number(13)
+    start_seconds => number(14)
+    duration => number(15)
+    materialize_through => number(16)
+    selector => number(17)
+    space {
+      number(18)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.asset.property/Space")
+    }
+    suspended => number(19)
+    occurrence_history_limit => number(20)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    occurrence_count {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    detached_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    next_occurrence_date {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    materialized_through {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    revision {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}

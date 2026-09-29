@@ -1,0 +1,317 @@
+package unmango.asset.vehicle.v1alpha1
+
+import "../../../../shim/google/type.tdl" as gtype
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/scalar.tdl" as scalar
+import "../../../ref/v1alpha1/ref.tdl" as ref
+import "../../../uom/v1alpha1/uom.tdl" as uom
+
+// Things that move, and their usage history:
+//
+//   Vehicle @ asset.property Space
+//   Vehicle -> OdometerReading
+//
+// A Vehicle binds to the Space it is kept in, the same way a ci.runner
+// Runner binds to a Host: the assignment is made rather than declared, and an
+// unset binding is meaningful.
+//
+// Odometer readings are their own kind rather than a field, because they are
+// an append-only series and because asset.maintenance intervals are
+// expressed in distance as well as time.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum VehicleType { Car Truck Suv Van Motorcycle Bicycle Trailer Boat Rv LawnEquipment }
+
+enum FuelType { Gasoline Diesel Electric Hybrid PlugInHybrid HumanPowered }
+
+enum VehicleState {
+  Active
+  /// Off the road for servicing.
+  InService
+  /// Owned but not in use.
+  Stored
+  Sold
+  Totaled
+}
+
+// ---------------------------------------------------------------------------
+// OdometerReading
+// ---------------------------------------------------------------------------
+/// One observation of a Vehicle's accumulated distance. Append-only.
+type OdometerReading: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  reading: uom.Quantity
+  observed_date: gtype.Date
+  source: OdometerSource
+  note: string
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  /// Difference from the previous reading. Negative flags a rollback or a
+  /// mistyped entry.
+  delta: uom.Quantity
+  /// Days since the previous reading.
+  days_since_previous: scalar.int32
+}
+
+enum OdometerSource {
+  Manual
+  Telematics
+  /// Recorded as part of a maintenance service record.
+  ServiceRecord
+  Inspection
+}
+
+// ---------------------------------------------------------------------------
+// Vehicle
+// ---------------------------------------------------------------------------
+/// Something that moves under its own power or is towed. Owns its odometer
+/// history and binds to the Space it is kept in.
+type Vehicle: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  type: VehicleType
+  make: string
+  model: string
+  trim: string
+  model_year: scalar.int32
+  fuel_type: FuelType
+  vin: string
+  license_plate: string
+  color: string
+  acquired_date: gtype.Date
+  purchase_price: gtype.Money
+  /// Distance unit this vehicle's readings and service intervals use.
+  distance_unit: uom.Unit
+  /// Which OdometerReadings this Vehicle claims.
+  selector: metav1.LabelSelector
+  /// Registration and insurance renewal dates, surfaced so a
+  /// asset.maintenance plan can act on them.
+  registration_expiry: gtype.Date
+  insurance_expiry: gtype.Date
+  /// The finance.account Account carrying its loan or lease.
+  finance_account: ref.ObjectReference
+  // Assigned desired state.
+  /// The asset.property Space it is kept in. Unset means unassigned.
+  parked_at: ref.ObjectReference
+  // Observed state.
+  observed_generation: int
+  state: VehicleState
+  conditions: [metav1.Condition]
+  /// From the most recent OdometerReading.
+  current_odometer: uom.Quantity
+  last_reading_date: gtype.Date
+  reading_count: scalar.int32
+  /// Mean distance per day across the reading history, used to forecast when a
+  /// distance-based service interval will come due.
+  average_daily_distance: scalar.double
+  /// Open asset.maintenance WorkOrders whose subject is this Vehicle.
+  open_work_order_count: scalar.int32
+  /// Summed over completed ServiceRecords.
+  lifetime_maintenance_cost: gtype.Money
+}
+
+target protobuf for unmango.asset.vehicle.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  OdometerReading {
+    resource("unmango.asset.vehicle/OdometerReading", "odometerReadings/{odometer_reading}", "odometerReading", "odometerReadings")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    reading => number(11)
+    observed_date => number(12)
+    source => number(13)
+    note {
+      number(14)
+      field_behavior(OPTIONAL)
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delta {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    days_since_previous {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  Vehicle {
+    resource("unmango.asset.vehicle/Vehicle", "vehicles/{vehicle}", "vehicle", "vehicles")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    type => number(11)
+    make => number(12)
+    model => number(13)
+    trim {
+      number(14)
+      field_behavior(OPTIONAL)
+    }
+    model_year {
+      number(15)
+      field_behavior(OPTIONAL)
+    }
+    fuel_type => number(16)
+    vin {
+      number(17)
+      field_behavior(OPTIONAL)
+    }
+    license_plate {
+      number(18)
+      field_behavior(OPTIONAL)
+    }
+    color {
+      number(19)
+      field_behavior(OPTIONAL)
+    }
+    acquired_date {
+      number(20)
+      field_behavior(OPTIONAL)
+    }
+    purchase_price => number(21)
+    distance_unit => number(22)
+    selector => number(23)
+    registration_expiry {
+      number(24)
+      field_behavior(OPTIONAL)
+    }
+    insurance_expiry {
+      number(25)
+      field_behavior(OPTIONAL)
+    }
+    finance_account {
+      number(26)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.finance.account/Account")
+    }
+    parked_at {
+      number(40)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.asset.property/Space")
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    state {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    current_odometer {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_reading_date {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    reading_count {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    average_daily_distance {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+    open_work_order_count {
+      number(57)
+      field_behavior(OUTPUT_ONLY)
+    }
+    lifetime_maintenance_cost {
+      number(58)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}

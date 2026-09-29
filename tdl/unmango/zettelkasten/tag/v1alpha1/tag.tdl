@@ -1,0 +1,116 @@
+package unmango.zettelkasten.tag.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/scalar.tdl" as scalar
+
+// The controlled vocabulary a zettelkasten Note is filed under:
+//
+//   Tag -> Tag
+//
+// A Tag owns its narrower children, so the vocabulary is a tree: "systems"
+// owns "feedback-loops" owns "hysteresis". A Note names Tags by reference
+// rather than being claimed by one, because filing a note is an act the author
+// performs, not a property a query discovers.
+//
+// Everywhere else in the repository a tag is a repeated string, on
+// journal.entry and on productivity.capture, and grouping is done by label
+// selector. Both are declined here for the same reason. A zettelkasten's index
+// is the second half of the method: it is what makes an entry point findable
+// when the box has outgrown anyone's memory of it. That index needs a
+// description saying what belongs under a term, a parent saying what the term
+// narrows, and an alias list recording the spellings that were merged into it.
+// A string carries none of the three, and a selector makes the term a
+// consequence of how notes happen to be labelled rather than a decision about
+// the vocabulary.
+//
+// Tag reserves generation and the reconciliation half of the observed band:
+// the vocabulary is authored, and nothing drives it toward a declared state.
+// ---------------------------------------------------------------------------
+// Tag
+// ---------------------------------------------------------------------------
+/// One term in the index. Nests to form a hierarchy of narrower terms.
+type Tag: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The broader term this one narrows. Absent at the top of the vocabulary.
+  owner_refs: [metav1.OwnerReference]
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// What belongs under this term, and what does not. The scope note a shared
+  /// vocabulary needs to stay shared.
+  description: string
+  /// Spellings that resolve to this term: synonyms, earlier names, tags merged
+  /// away into it. Keeps a rename from orphaning notes filed under the old
+  /// form.
+  aliases: [string]
+  // Observed state.
+  note_count: scalar.int32
+  /// Narrower terms owned by this one.
+  child_count: scalar.int32
+  /// When a note was last filed under this term. A vocabulary entry nothing has
+  /// used in years is a candidate for merging away.
+  last_used_time: instant
+}
+
+target protobuf for unmango.zettelkasten.tag.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  Tag {
+    resource("unmango.zettelkasten.tag/Tag", "tags/{tag}", "tag", "tags")
+    // tdl-gap: one reserved directive per declaration; proto has two statements
+    // reserved 7: generation: the vocabulary is authored, not reconciled
+    // reserved 50, 51: observed_generation, conditions: nothing reconciles a tag
+    reserved(7, 50, 51)
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    description {
+      number(11)
+      field_behavior(OPTIONAL)
+    }
+    aliases => number(12)
+    note_count {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    child_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_used_time {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}

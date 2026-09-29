@@ -1,0 +1,216 @@
+package unmango.protofs.fs.v1alpha1
+
+import "../../file/v1alpha1/file.tdl" as file
+import "../../../../shim/rpc.tdl" as rpc
+import "../../../../shim/scalar.tdl" as scalar
+
+/// Deprecated: use unmango.protofs.fs.v1alpha2.FsService.
+deprecated("use unmango.protofs.fs.v1alpha2.FsService.")
+type FsService {
+  Chmod: rpc.Fn<ChmodRequest, ChmodResponse>
+  Chown: rpc.Fn<ChownRequest, ChownResponse>
+  Chtimes: rpc.Fn<ChtimesRequest, ChtimesResponse>
+  Create: rpc.Fn<CreateRequest, CreateResponse>
+  Mkdir: rpc.Fn<MkdirRequest, MkdirResponse>
+  MkdirAll: rpc.Fn<MkdirAllRequest, MkdirAllResponse>
+  Open: rpc.Fn<OpenRequest, OpenResponse>
+  OpenFile: rpc.Fn<OpenFileRequest, OpenFileResponse>
+  Read: rpc.Fn<ReadRequest, rpc.Stream<ReadResponse>>
+  Remove: rpc.Fn<RemoveRequest, RemoveResponse>
+  RemoveAll: rpc.Fn<RemoveAllRequest, RemoveAllResponse>
+  Rename: rpc.Fn<RenameRequest, RenameResponse>
+  Stat: rpc.Fn<StatRequest, StatResponse>
+  Write: rpc.Fn<rpc.Stream<WriteRequest>, WriteResponse>
+}
+
+type ChmodRequest {
+  name: string
+  mode: scalar.uint32  // bitmask; see file.v1alpha1.FileModeConst
+}
+
+type ChmodResponse { }
+
+type ChownRequest {
+  name: string
+  uid: scalar.uint32
+  gid: scalar.uint32
+}
+
+type ChownResponse { }
+
+type ChtimesRequest {
+  name: string
+  atime: instant
+  mtime: instant
+}
+
+type ChtimesResponse { }
+
+type CreateRequest {
+  name: string
+}
+
+type CreateResponse {
+  file: file.File
+}
+
+type MkdirAllRequest {
+  name: string
+  perm: scalar.uint32  // bitmask; see file.v1alpha1.FileModeConst
+}
+
+type MkdirAllResponse { }
+
+type MkdirRequest {
+  name: string
+  perm: scalar.uint32  // bitmask; see file.v1alpha1.FileModeConst
+}
+
+type MkdirResponse { }
+
+type OpenRequest {
+  name: string
+}
+
+type OpenResponse {
+  file: file.File
+}
+
+type OpenFileRequest {
+  name: string
+  flag: int  // os.O_RDONLY, os.O_WRONLY, os.O_RDWR etc. (platform-specific)
+  perm: scalar.uint32  // bitmask; see file.v1alpha1.FileModeConst
+}
+
+type OpenFileResponse {
+  file: file.File
+}
+
+type ReadRequest {
+  name: string
+}
+
+type ReadResponse {
+  data: bytes
+}
+
+type RemoveRequest {
+  name: string
+}
+
+type RemoveResponse { }
+
+type RemoveAllRequest {
+  name: string
+}
+
+type RemoveAllResponse { }
+
+type RenameRequest {
+  oldname: string
+  newname: string
+}
+
+type RenameResponse { }
+
+type StatRequest {
+  name: string
+}
+
+type StatResponse {
+  file_info: file.FileInfo
+}
+
+type WriteRequest {
+  payload: WriteRequestPayload
+}
+
+// tdl-gap: oneof becomes a separate message
+enum WriteRequestPayload {
+  Name { name: string }  // first message only
+  Data { data: bytes }  // subsequent messages
+}
+
+type WriteResponse {
+  bytes_written: int
+}
+
+target protobuf for unmango.protofs.fs.v1alpha1 {
+  out("gen/tdl")
+  edition("2023")
+  FsService => service
+  ChmodRequest {
+    name => number(1)
+    mode => number(2)
+  }
+  ChownRequest {
+    name => number(1)
+    uid => number(2)
+    gid => number(3)
+  }
+  ChtimesRequest {
+    name => number(1)
+    atime => number(2)
+    mtime => number(3)
+  }
+  CreateRequest {
+    name => number(1)
+  }
+  CreateResponse {
+    file => number(1)
+  }
+  MkdirAllRequest {
+    name => number(1)
+    perm => number(2)
+  }
+  MkdirRequest {
+    name => number(1)
+    perm => number(2)
+  }
+  OpenRequest {
+    name => number(1)
+  }
+  OpenResponse {
+    file => number(1)
+  }
+  OpenFileRequest {
+    name => number(1)
+    flag => number(2)
+    perm => number(3)
+  }
+  OpenFileResponse {
+    file => number(1)
+  }
+  ReadRequest {
+    name => number(1)
+  }
+  ReadResponse {
+    data => number(1)
+  }
+  RemoveRequest {
+    name => number(1)
+  }
+  RemoveAllRequest {
+    name => number(1)
+  }
+  RenameRequest {
+    oldname => number(1)
+    newname => number(2)
+  }
+  StatRequest {
+    name => number(1)
+  }
+  StatResponse {
+    file_info => number(1)
+  }
+  WriteRequest {
+    payload => number(1)
+  }
+  WriteRequestPayload {
+    Name => number(1)
+    Data => number(2)
+  }
+  WriteResponse {
+    bytes_written => number(1)
+  }
+}

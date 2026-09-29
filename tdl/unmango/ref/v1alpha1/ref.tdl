@@ -1,0 +1,81 @@
+package unmango.ref.v1alpha1
+
+// Vocabulary for expressing relationships between resources across every
+// unmango API. Deliberately tiny: ownership, selection, and status
+// reporting come from k8s.io.apimachinery.pkg.apis.meta.v1, which supplies
+// OwnerReference, LabelSelector, and Condition. Only the reference types that
+// meta/v1 lacks are defined here; the values those references hang off live
+// in unmango.uom.
+/// Addresses a resource anywhere in the graph. Carries the same coordinates as
+/// metav1.OwnerReference minus the ownership flags, so both reference styles
+/// read identically at the point of use.
+type ObjectReference {
+  /// Proto package of the target, with the version as the final element:
+  /// "unmango.compute.host/v1alpha1".
+  api_version: string
+  /// Kind of the target, matching its message name: "Host".
+  kind: string
+  /// The target's name field.
+  name: string
+  /// Scopes the target within a multi-tenant deployment.
+  namespace: string
+  /// Pins the target to a specific resourceVersion-like value, for optimistic
+  /// concurrency. Unset means the current value.
+  resource_version: string
+  /// The target's uid, pinning the reference to one specific instance rather
+  /// than to whatever currently holds the name.
+  uid: uuid
+}
+
+/// Names a parent that the referring resource attaches to, where the two were
+/// authored independently.
+type ParentReference {
+  ref: ObjectReference
+  /// Optional named part of the parent being attached to.
+  section: string
+}
+
+/// How a delete propagates along owner references.
+enum DeletePropagation {
+  /// Delete children first, then the parent.
+  Foreground
+  /// Delete the parent immediately and reap children asynchronously.
+  Background
+  /// Delete the parent and leave children in place.
+  Orphan
+}
+
+target protobuf for unmango.ref.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  ObjectReference {
+    api_version => number(1)
+    kind => number(2)
+    name => number(3)
+    namespace {
+      number(4)
+      field_behavior(OPTIONAL)
+    }
+    resource_version {
+      number(5)
+      field_behavior(OPTIONAL)
+    }
+    uid {
+      number(6)
+      field_behavior(OPTIONAL)
+      field_info(UUID4)
+    }
+  }
+  ParentReference {
+    ref => number(1)
+    section {
+      number(2)
+      field_behavior(OPTIONAL)
+    }
+  }
+  DeletePropagation {
+    Foreground => number(1)
+    Background => number(2)
+    Orphan => number(3)
+  }
+}

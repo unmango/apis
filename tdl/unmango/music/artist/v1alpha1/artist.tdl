@@ -1,0 +1,444 @@
+package unmango.music.artist.v1alpha1
+
+import "../../../../shim/google/type.tdl" as gtype
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/scalar.tdl" as scalar
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Who made the music, and what they are credited on:
+//
+//   Artist -> Artist                    (aliases and pseudonyms)
+//   Artist ^~ Membership ~> Artist      (a person's tenure in a group)
+//   ArtistCredit ~> media.title Title
+//
+// media.title models a performer as a Credit carrying a bare person_name
+// string, which is enough for a film's director and not enough for music.
+// Artist is the node that holds a band: a people.contact Contact is someone
+// known personally, and a Title is a work.
+//
+// Artist nests through owner references the same way Title does, with
+// ArtistKind saying which level a node sits at. A pseudonym has no existence
+// apart from the person behind it, so it cascades. A side project that
+// outlives the group that spawned it is a top-level Artist instead.
+//
+// A Membership attaches to the group rather than being owned by it, the same
+// shape calendar.event Attendance uses. People join several groups and leave
+// them, and deleting a band should leave the record of having played in it
+// standing.
+//
+// An ArtistCredit attaches to a media.title Title rather than being carried
+// inside it. media.playback PlayState already attaches to a Title this way,
+// and it means crediting an artist needs no change to the catalog.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// Which level of the Artist hierarchy a node occupies. A category rather than
+/// a named performer, so the set is closed.
+enum ArtistKind {
+  /// One human, performing under their own name.
+  Person
+  /// A band or other named group with members.
+  Group
+  Orchestra
+  Choir
+  /// A name another Artist records under. Owned by that Artist and cascades
+  /// with it.
+  Alias
+  /// Credited work with no identified performer.
+  Anonymous
+}
+
+/// Identifier in an external catalog, so records can be reconciled against
+/// musicbrainz, discogs, and the rest. Declared here rather than imported,
+/// since a life-domain API imports no other domain.
+type ExternalId {
+  source: string
+  value: string
+}
+
+// ---------------------------------------------------------------------------
+// Membership
+// ---------------------------------------------------------------------------
+/// One person's tenure in a group. Authored independently of both, and admitted
+/// by the group.
+type Membership: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The group being joined. The group decides whether to admit this.
+  parent_ref: ref.ParentReference
+  /// The Artist who is a member, normally one of kind PERSON.
+  member: ref.ObjectReference
+  /// What they played: "bass", "backing vocals", "drum programming".
+  roles: [string]
+  joined: gtype.Date
+  /// Unset while the membership is current.
+  left: gtype.Date
+  /// Present at the group's formation.
+  founding: bool
+  /// Plays live but does not appear on the recordings.
+  touring_only: bool
+  // Observed state.
+  observed_generation: int
+  /// Reports whether the group admitted this membership, and why not when it
+  /// did not.
+  conditions: [metav1.Condition]
+  admitted_time: instant
+}
+
+// ---------------------------------------------------------------------------
+// ArtistCredit
+// ---------------------------------------------------------------------------
+/// An Artist's credit on a media.title Title. Attaches to the Title; the Title
+/// admits it and reports the outcome as a Condition.
+type ArtistCredit: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The media.title Title being credited on.
+  parent_ref: ref.ParentReference
+  artist: ref.ObjectReference
+  /// "performer", "composer", "remixer", "producer", "engineer". An open string
+  /// for the same reason media.title Credit.role is: the set of things a person
+  /// can be credited for has no closed list worth freezing into the schema.
+  role: string
+  /// Ordering within the role. Lower is billed first.
+  billing_order: scalar.int32
+  /// The album artist rather than a feature or a session player. At most one
+  /// credit per Title per role should set this.
+  primary: bool
+  /// The name printed on this release, when it differs from the Artist's.
+  credited_as: string
+  // Observed state.
+  observed_generation: int
+  /// Reports whether the Title admitted this credit.
+  conditions: [metav1.Condition]
+  admitted_time: instant
+}
+
+// ---------------------------------------------------------------------------
+// Artist
+// ---------------------------------------------------------------------------
+/// A performing entity. Nests to form aliases, and is what ArtistCredits and
+/// Memberships point at.
+type Artist: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The Artist behind an alias. Absent at the top of a hierarchy.
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Immutable once set, for the reason media.title Title.kind is: create a new
+  /// Artist rather than changing what level of the hierarchy an existing one
+  /// occupies. An update must reject a change to this field.
+  kind: ArtistKind
+  /// Name as presented.
+  artist_name: string
+  /// Name normalized for ordering, with leading articles dropped and a person
+  /// written surname first.
+  sort_name: string
+  /// Distinguishes artists sharing a name: "the Ohio one", "1970s UK punk".
+  disambiguation: string
+  summary: string
+  /// Formed, or born, or first active under this name.
+  active_from: gtype.Date
+  /// Disbanded, or died. Unset while active.
+  active_until: gtype.Date
+  /// ISO 3166 code of where the artist is from.
+  origin_country: string
+  genres: [string]
+  external_ids: [ExternalId]
+  /// A people.contact Contact when the artist is someone known personally,
+  /// otherwise unset. The same escape hatch media.title Credit.contact offers.
+  contact: ref.ObjectReference
+  /// Artwork. A plain string so it can address a dev.unmango.protofs path
+  /// without coupling the packages.
+  image_uri: string
+  /// Personal rating, 0 to 100. Distinct from any external score.
+  rating: scalar.int32
+  /// Which child Artists this one claims.
+  selector: metav1.LabelSelector
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  /// Child Artists of kind ALIAS.
+  alias_count: scalar.int32
+  /// Admitted Memberships naming this Artist as the group.
+  member_count: scalar.int32
+  /// Admitted Memberships naming this Artist as the member.
+  group_count: scalar.int32
+  /// Admitted ArtistCredits naming this Artist.
+  credit_count: scalar.int32
+  /// Distinct media.title Titles this Artist is credited on.
+  title_count: scalar.int32
+}
+
+target protobuf for unmango.music.artist.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  ExternalId {
+    source => number(1)
+    value => number(2)
+  }
+  Membership {
+    resource("unmango.music.artist/Membership", "memberships/{membership}", "membership", "memberships")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    parent_ref {
+      number(11)
+      resource_reference("unmango.music.artist/Artist")
+    }
+    member {
+      number(12)
+      resource_reference("unmango.music.artist/Artist")
+    }
+    roles => number(13)
+    joined {
+      number(14)
+      field_behavior(OPTIONAL)
+    }
+    left {
+      number(15)
+      field_behavior(OPTIONAL)
+    }
+    founding => number(16)
+    touring_only => number(17)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    admitted_time {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  ArtistCredit {
+    resource("unmango.music.artist/ArtistCredit", "artistCredits/{artist_credit}", "artistCredit", "artistCredits")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    parent_ref {
+      number(11)
+      resource_reference("unmango.media.title/Title")
+    }
+    artist {
+      number(12)
+      resource_reference("unmango.music.artist/Artist")
+    }
+    role => number(13)
+    billing_order => number(14)
+    primary => number(15)
+    credited_as {
+      number(16)
+      field_behavior(OPTIONAL)
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    admitted_time {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  Artist {
+    resource("unmango.music.artist/Artist", "artists/{artist}", "artist", "artists")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    kind {
+      number(11)
+      field_behavior(IMMUTABLE)
+    }
+    artist_name => number(12)
+    sort_name {
+      number(13)
+      field_behavior(OPTIONAL)
+    }
+    disambiguation {
+      number(14)
+      field_behavior(OPTIONAL)
+    }
+    summary {
+      number(15)
+      field_behavior(OPTIONAL)
+    }
+    active_from {
+      number(16)
+      field_behavior(OPTIONAL)
+    }
+    active_until {
+      number(17)
+      field_behavior(OPTIONAL)
+    }
+    origin_country {
+      number(18)
+      field_behavior(OPTIONAL)
+    }
+    genres => number(19)
+    external_ids => number(20)
+    contact {
+      number(21)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.people.contact/Contact")
+    }
+    image_uri {
+      number(22)
+      field_behavior(OPTIONAL)
+    }
+    rating {
+      number(23)
+      field_behavior(OPTIONAL)
+    }
+    selector => number(24)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    alias_count {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    member_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    group_count {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    credit_count {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    title_count {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}
