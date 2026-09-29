@@ -1,0 +1,25 @@
+package google.protobuf
+
+// Local stand-ins for the google.protobuf well-known types the prelude does
+// not map. instant and duration already map to Timestamp and Duration.
+// tdl-gap: the protobuf backend cannot reference an external proto message.
+/// A serialized message with a URL describing its type.
+type Any {
+  type_url: string
+  value: bytes
+}
+
+/// A structured value, a map of dynamically typed values.
+type Struct {
+  fields: {string -> Value}
+}
+
+/// A dynamically typed value.
+enum Value {
+  Null
+  Number { value: decimal }
+  String { value: string }
+  Bool { value: bool }
+  Struct { value: Struct }
+  List { values: [Value] }
+}

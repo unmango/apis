@@ -1,0 +1,46 @@
+package unmango.cmd.v1alpha1
+
+import "../../cli/v1alpha1/cli.tdl" as cli
+import "../../../shim/rpc.tdl" as rpc
+import "../../../shim/scalar.tdl" as scalar
+
+// Deprecated: use unmango.cmd.v1alpha2.
+// Run there takes a Process, which names an executable and its arguments
+// directly, rather than a cli Utility that still has to be rendered into one.
+type ExecutionService {
+  Run: rpc.Fn<RunRequest, RunResponse>
+}
+
+type RunRequest {
+  utility: cli.Utility
+  stdin: bytes
+}
+
+type RunResponse {
+  stdout: bytes
+  stderr: bytes
+  exit: ExitResult
+}
+
+type ExitResult {
+  code: scalar.int32
+}
+
+target protobuf for unmango.cmd.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  deprecated
+  ExecutionService => service
+  RunRequest {
+    utility => number(1)
+    stdin => number(2)
+  }
+  RunResponse {
+    stdout => number(1)
+    stderr => number(2)
+    exit => number(3)
+  }
+  ExitResult {
+    code => number(1)
+  }
+}

@@ -1,0 +1,276 @@
+package unmango.vcs.queue.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/scalar.tdl" as scalar
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Serialized, speculatively-tested merges into one branch:
+//
+//   vcs.branch Branch -> MergeQueue -> QueueEntry ~> vcs.change Change
+//
+// A MergeQueue owns the Branch it serializes: deleting the branch cascades
+// to its queue. A QueueEntry is authored independently of the queue (a
+// Change asks to join) and the queue admits or rejects it, batches it with
+// neighbors, and reports the outcome as a Condition -- the same
+// Gateway -> HTTPRoute shape vcs.change Change already uses against its
+// target Branch.
+//
+// Distinct from vcs.change ChangeSet, which sequences one Change per
+// repository across many repositories. A MergeQueue sequences many Changes
+// within one repository against one branch.
+// ---------------------------------------------------------------------------
+// MergeQueue
+// ---------------------------------------------------------------------------
+/// Serializes and speculatively batches Changes proposed against one Branch.
+type MergeQueue: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The vcs.branch Branch this queue serializes merges into.
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Entries tested together speculatively. One disables batching.
+  batch_size: scalar.int32
+  /// Stop admitting new entries without draining the ones already queued.
+  suspended: bool
+  /// Which QueueEntries this queue claims.
+  selector: metav1.LabelSelector
+  /// Rebase an entry onto the branch's current head before testing it.
+  require_up_to_date: bool
+  // Observed state.
+  observed_generation: int
+  phase: MergeQueuePhase
+  conditions: [metav1.Condition]
+  entry_count: scalar.int32
+  pending_count: scalar.int32
+  batched_count: scalar.int32
+  /// Entry at the front of the queue, mirroring vcs.change ChangeSet.next_change.
+  head_entry: ref.ObjectReference
+  last_merge_time: instant
+}
+
+enum MergeQueuePhase {
+  /// No entries waiting.
+  Idle
+  /// Testing the current batch.
+  Processing
+  /// Suspended and finishing entries already admitted.
+  Draining
+  /// Stalled on a failed batch pending eviction of the offending entry.
+  Blocked
+}
+
+// ---------------------------------------------------------------------------
+// QueueEntry
+// ---------------------------------------------------------------------------
+/// One Change's position in a MergeQueue. Attaches to the queue it asks to
+/// join; the queue admits or rejects it.
+type QueueEntry: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The MergeQueue this entry asks to join. The queue decides whether to
+  /// admit it.
+  parent_ref: ref.ParentReference
+  /// The vcs.change Change being queued.
+  change: ref.ObjectReference
+  /// Higher merges sooner within its batch eligibility. Zero is default FIFO
+  /// order.
+  priority: scalar.int32
+  // Assigned desired state.
+  /// Which speculative batch this entry currently belongs to. Unset means not
+  /// yet batched.
+  batch_id: string
+  // Observed state.
+  observed_generation: int
+  phase: QueueEntryPhase
+  conditions: [metav1.Condition]
+  /// Current position in the queue. Lower merges sooner.
+  position: scalar.int32
+  /// Why the queue removed this entry: stale, checks failed, conflicts,
+  /// target Protection unmet.
+  eject_reason: string
+  queued_time: instant
+  merged_time: instant
+}
+
+enum QueueEntryPhase {
+  /// Admitted, not yet assigned to a batch.
+  Pending
+  Batched
+  Testing
+  /// Batch passed. Waiting for entries ahead of it to merge.
+  ReadyToMerge
+  Merged
+  /// Removed from the queue without merging. See eject_reason.
+  Ejected
+}
+
+target protobuf for unmango.vcs.queue.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  MergeQueue {
+    resource("unmango.vcs.queue/MergeQueue", "mergeQueues/{merge_queue}", "mergeQueue", "mergeQueues")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    batch_size => number(11)
+    suspended => number(12)
+    selector => number(13)
+    require_up_to_date => number(14)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    phase {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    entry_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    pending_count {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    batched_count {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    head_entry {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.vcs.queue/QueueEntry")
+    }
+    last_merge_time {
+      number(57)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  QueueEntry {
+    resource("unmango.vcs.queue/QueueEntry", "queueEntries/{queue_entry}", "queueEntry", "queueEntries")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    parent_ref {
+      number(11)
+      resource_reference("unmango.vcs.queue/MergeQueue")
+    }
+    change {
+      number(12)
+      resource_reference("unmango.vcs.change/Change")
+    }
+    priority => number(13)
+    batch_id {
+      number(40)
+      field_behavior(OUTPUT_ONLY)
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    phase {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    position {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    eject_reason {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    queued_time {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    merged_time {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}

@@ -1,0 +1,617 @@
+package unmango.vcs.commit.v1alpha1
+
+import "../../../../shim/google/type.tdl" as gtype
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/rpc.tdl" as rpc
+import "../../../../shim/scalar.tdl" as scalar
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// History as a graph:
+//
+//   Commit >> Commit          (parents, ordered)
+//   vcs.branch Branch -> Commit
+//   vcs.branch Tag -> Commit
+//
+// `>>` is a fifth relationship archetype, distinct from the four the rest of
+// this repository uses. An immutable DAG edge stands apart from all four:
+// the target predates the source, deleting a child never cascades to a
+// parent, and the edge is fixed at creation because it is part of what the
+// identity hashes over. Git's parent pointer is the canonical example.
+//
+// Trees and blobs are deliberately absent. A git tree is a filesystem, and
+// this repository already models one: dev.unmango.protofs. A Commit exposes
+// its tree as a protofs root rather than restating an object model that
+// already exists, so browsing a commit is an ordinary filesystem walk.
+//
+// Field bands differ from the mutable kinds, because nothing here is
+// declared:
+//   1-9    immutable-node identity (see below)
+//   10-39  content, fixed at creation and covered by the hash
+//   50+    derived, computed by whoever indexes the graph
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// Who did something, and when. Author and committer differ whenever a change
+/// is rebased, cherry-picked, or applied on someone's behalf.
+type Signature {
+  name: string
+  email: string
+  sign_time: instant
+  /// The people.contact Contact this resolves to, when the address is known.
+  contact: ref.ObjectReference
+}
+
+/// A key-value line in the commit message footer: Co-Authored-By, Signed-off-by,
+/// Reviewed-by.
+type Trailer {
+  key: string
+  value: string
+}
+
+type DiffStat {
+  files_changed: scalar.int32
+  additions: scalar.int32
+  deletions: scalar.int32
+}
+
+/// Shape of a commit, derived from how many parents it has.
+enum CommitKind {
+  /// No parents. The beginning of history.
+  Root
+  /// Exactly one parent.
+  Normal
+  /// Two or more parents.
+  Merge
+  /// Three or more parents.
+  MultiParentMerge
+}
+
+// ---------------------------------------------------------------------------
+// Commit
+// ---------------------------------------------------------------------------
+/// One node in a repository's history graph.
+///
+/// The identity band departs from the repository-wide preamble, and the
+/// omissions are the point:
+///
+///   no uid           the content hash already is a stable unique identifier
+///   no display_name  a commit has a message, not a name someone chose
+///   no owner_refs    parents are DAG edges, not ownership; nothing cascades
+///   no generation    nothing about a commit is ever declared or reconciled
+///   no update_time   a commit is never written twice
+///   no delete_time   unreachable objects are garbage collected, not deleted
+///
+/// Each omission is a reserved number rather than a compacted band, so a field
+/// number means the same thing here as it does on every other kind: 4 is
+/// labels, 5 is annotations, 8 is when the node came into being. commit_time
+/// takes the create_time slot because for a commit they are the same fact.
+///
+/// Labels and annotations survive because they are local metadata about the
+/// node rather than part of it, which is exactly how a selector should treat a
+/// commit.
+type Commit: Entity {
+  /// Content address or revision identifier, as the underlying VCS names it.
+  /// The identity.
+  revision: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// Committer timestamp, promoted into the identity band because it is the
+  /// axis the graph is most often walked along.
+  commit_time: instant
+  /// The vcs.repository Repository this commit is observed in. Scope rather
+  /// than ownership: the same sha in a fork is the same commit.
+  repository: ref.ObjectReference
+  // Content. Fixed at creation and covered by the hash.
+  /// Parents, in order. The first is the mainline; the rest are merged
+  /// branches. Empty means a root commit. This is the DAG edge.
+  parent_revisions: [string]
+  /// Root tree object of this commit.
+  tree_revision: string
+  /// Full message, subject and body.
+  message: string
+  author: Signature
+  committer: Signature
+  /// Parsed message footer.
+  trailers: [Trailer]
+  /// A dev.unmango.protofs root for browsing this commit's tree. A plain
+  /// string so the packages stay uncoupled: open it with FsService and walk it
+  /// like any other filesystem.
+  tree_uri: string
+  /// Detached signature, when the commit carries one.
+  signature: string
+  // Derived. Computed by whoever indexes the graph, not part of the hash.
+  /// First line of message.
+  summary: string
+  kind: CommitKind
+  parent_count: scalar.int32
+  signature_verified: bool
+  /// vcs.branch Branches and Tags pointing directly at this commit.
+  refs: [ref.ObjectReference]
+  /// vcs.change Changes containing this commit.
+  changes: [ref.ObjectReference]
+  stats: DiffStat
+  /// Commit-graph generation number: one greater than the maximum generation
+  /// of any parent, roots being one. Lets reachability be decided without
+  /// walking, since a commit can never reach one with a higher number.
+  generation_number: int
+  /// Commits between here and the nearest root along first parents.
+  depth: scalar.int32
+  /// Reachable from at least one ref. False means the object survives only
+  /// until the next garbage collection.
+  reachable: bool
+  conditions: [metav1.Condition]
+}
+
+// ---------------------------------------------------------------------------
+// CommitService
+// ---------------------------------------------------------------------------
+/// Read-only. A commit cannot be created, edited, or deleted through this API,
+/// because none of those operations exist for a content-addressed object:
+/// writing history produces different commits rather than changing these.
+///
+/// Beyond the usual reads, this service is where the graph is actually
+/// traversed.
+type CommitService {
+  GetCommit: rpc.Fn<GetCommitRequest, GetCommitResponse>
+  ListCommits: rpc.Fn<ListCommitsRequest, ListCommitsResponse>
+  WatchCommits: rpc.Fn<WatchCommitsRequest, rpc.Stream<WatchCommitsResponse>>
+  /// Walk the graph from a set of tips.
+  WalkCommits: rpc.Fn<WalkCommitsRequest, rpc.Stream<WalkCommitsResponse>>
+  /// Lowest common ancestors of two or more commits.
+  GetMergeBase: rpc.Fn<GetMergeBaseRequest, GetMergeBaseResponse>
+  /// Divergence between two points: ahead, behind, and what lies between.
+  CompareCommits: rpc.Fn<CompareCommitsRequest, CompareCommitsResponse>
+}
+
+type GetCommitRequest {
+  repository: ref.ObjectReference
+  /// Full or abbreviated revision identifier, or a revision expression the
+  /// server resolves. Syntax is VCS-specific: git accepts "HEAD", "main~3",
+  /// "v1.2.0^{commit}"; other systems resolve their own dialect.
+  revision: string
+}
+
+type GetCommitResponse {
+  commit: Commit
+}
+
+type ListCommitsRequest {
+  page_size: scalar.int32
+  page_token: string
+  selector: metav1.LabelSelector
+  /// Field 4 is `repository` rather than the `owner` this position holds on
+  /// every mutable kind. A commit has no owner reference to list by; the
+  /// repository is scope, not ownership.
+  repository: ref.ObjectReference
+  /// Restricts results to commits within this window, by commit_time.
+  window: gtype.Interval
+  /// Restricts results to commits authored by this people.contact Contact.
+  author: ref.ObjectReference
+  kinds: [CommitKind]
+  /// Exclude commits no ref can reach.
+  reachable_only: bool
+}
+
+type ListCommitsResponse {
+  commits: [Commit]
+  next_page_token: string
+}
+
+type WatchCommitsRequest {
+  selector: metav1.LabelSelector
+  repository: ref.ObjectReference
+  /// Restricts the stream to commits reachable from these refs.
+  watch_refs: [ref.ObjectReference]
+  /// Resume from this point instead of the current state, so a client that
+  /// drops the stream does not have to replay from nothing. Unset starts
+  /// from now.
+  resource_version: string
+}
+
+type WatchCommitsResponse {
+  type: CommitEventType
+  /// Unset on a BOOKMARK event, which carries only the resume point.
+  commit: Commit
+  /// Resume point as of this event. A client stores it and sends it back as
+  /// WatchCommitsRequest.resource_version after a dropped stream, so the
+  /// request's resume token has somewhere to come from.
+  resource_version: string
+}
+
+/// A commit is never modified, so the event set is narrower than the mutable
+/// kinds. ADDED is a commit becoming visible; UNREACHABLE is one nothing
+/// points at any more; DELETED is one collected from the store.
+enum CommitEventType {
+  Added
+  Unreachable
+  Deleted
+  /// No change to any commit. Carries a resource_version so an idle
+  /// stream still advances the client's resume point, rather than leaving it
+  /// pinned at the last real event. This is the Kubernetes BOOKMARK event.
+  Bookmark
+}
+
+type WalkCommitsRequest {
+  repository: ref.ObjectReference
+  /// Where the walk begins. Revision expressions, resolved as in GetCommit.
+  start_revisions: [string]
+  /// Boundaries. Nothing reachable from these is emitted, which is how a walk
+  /// expresses "on this branch but not that one".
+  exclude_revisions: [string]
+  direction: WalkDirection
+  order: WalkOrder
+  /// Follow only the first parent, collapsing merged branches into the
+  /// mainline.
+  first_parent_only: bool
+  /// Stop after this many edges from the nearest tip. Zero means unbounded.
+  max_depth: scalar.int32
+  /// Stop after this many commits. Zero means unbounded.
+  limit: scalar.int32
+  /// Emit only commits touching one of these paths.
+  paths: [string]
+  window: gtype.Interval
+  author: ref.ObjectReference
+  /// Substring match against message.
+  query: string
+}
+
+type WalkCommitsResponse {
+  commit: Commit
+  /// Edges traversed from the nearest start revision to reach this commit.
+  depth: scalar.int32
+  /// True when this commit sits on a side branch rather than the first-parent
+  /// mainline.
+  off_mainline: bool
+}
+
+enum WalkDirection {
+  /// Follow parent edges backward into history. The common case.
+  Ancestors
+  /// Follow parent edges forward. Requires a reverse index, so a server may
+  /// refuse it on large graphs.
+  Descendants
+}
+
+enum WalkOrder {
+  /// No commit is emitted before one of its descendants.
+  Topological
+  /// Newest commit_time first. May interleave unrelated branches.
+  Date
+  /// Topological, reversed. Oldest first.
+  Reverse
+}
+
+type GetMergeBaseRequest {
+  repository: ref.ObjectReference
+  /// Two or more revisions to find the common ancestor of.
+  revisions: [string]
+  /// Return every merge base rather than the best one. More than one means
+  /// history diverged and re-merged, which a rebase would need to know.
+  all: bool
+}
+
+type GetMergeBaseResponse {
+  merge_bases: [Commit]
+  /// No common ancestor exists, so the revisions belong to unrelated histories.
+  unrelated: bool
+}
+
+type CompareCommitsRequest {
+  repository: ref.ObjectReference
+  base_revision: string
+  head_revision: string
+  /// Include the commits themselves rather than only the counts.
+  include_commits: bool
+  page_size: scalar.int32
+  page_token: string
+}
+
+type CompareCommitsResponse {
+  /// Commits head has that base does not, and the reverse.
+  ahead_count: scalar.int32
+  behind_count: scalar.int32
+  merge_base: Commit
+  /// Populated only when include_commits was set. The ahead set.
+  commits: [Commit]
+  stats: DiffStat
+  /// Head can be reached from base by fast-forward alone.
+  fast_forward: bool
+  unrelated: bool
+  next_page_token: string
+}
+
+target protobuf for unmango.vcs.commit.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  Signature {
+    name => number(1)
+    email => number(2)
+    sign_time => number(3)
+    contact {
+      number(4)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.people.contact/Contact")
+    }
+  }
+  Trailer {
+    key => number(1)
+    value => number(2)
+  }
+  DiffStat {
+    files_changed => number(1)
+    additions => number(2)
+    deletions => number(3)
+  }
+  Commit {
+    resource("unmango.vcs.commit/Commit", "commits/{commit}", "commit", "commits")
+    reserved(2, 3, 6, 7, 9, 10)  // uid, display_name, owner_refs, generation, update_time, delete_time: the revision is the whole identity, and nothing declares, owns, or rewrites a commit
+    revision {
+      number(1)
+      field_behavior(OUTPUT_ONLY)
+    }
+    labels => number(4)
+    annotations => number(5)
+    commit_time => number(8)
+    repository {
+      number(11)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.vcs.repository/Repository")
+    }
+    parent_revisions => number(12)
+    tree_revision => number(13)
+    message => number(14)
+    author => number(15)
+    committer => number(16)
+    trailers => number(17)
+    tree_uri {
+      number(18)
+      field_behavior(OPTIONAL)
+    }
+    signature {
+      number(19)
+      field_behavior(OPTIONAL)
+    }
+    summary {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    kind {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    parent_count {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    signature_verified {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    refs {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("*")
+    }
+    changes {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.vcs.change/Change")
+    }
+    stats {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+    generation_number {
+      number(57)
+      field_behavior(OUTPUT_ONLY)
+    }
+    depth {
+      number(58)
+      field_behavior(OUTPUT_ONLY)
+    }
+    reachable {
+      number(59)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(60)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  CommitService => service
+  GetCommitRequest {
+    repository {
+      number(1)
+      field_behavior(REQUIRED)
+      resource_reference("unmango.vcs.repository/Repository")
+    }
+    revision {
+      number(2)
+      field_behavior(REQUIRED)
+    }
+  }
+  GetCommitResponse {
+    commit => number(1)
+  }
+  ListCommitsRequest {
+    page_size {
+      number(1)
+      field_behavior(OPTIONAL)
+    }
+    page_token {
+      number(2)
+      field_behavior(OPTIONAL)
+    }
+    selector {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    repository {
+      number(4)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.vcs.repository/Repository")
+    }
+    window {
+      number(5)
+      field_behavior(OPTIONAL)
+    }
+    author {
+      number(6)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.people.contact/Contact")
+    }
+    kinds {
+      number(7)
+      field_behavior(OPTIONAL)
+    }
+    reachable_only {
+      number(8)
+      field_behavior(OPTIONAL)
+    }
+  }
+  ListCommitsResponse {
+    commits => number(1)
+    next_page_token => number(2)
+  }
+  WatchCommitsRequest {
+    selector {
+      number(1)
+      field_behavior(OPTIONAL)
+    }
+    repository {
+      number(2)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.vcs.repository/Repository")
+    }
+    watch_refs {
+      number(3)
+      field_behavior(OPTIONAL)
+      resource_reference("*")
+    }
+    resource_version {
+      number(4)
+      field_behavior(OPTIONAL)
+    }
+  }
+  WatchCommitsResponse {
+    type => number(1)
+    commit {
+      number(2)
+      field_behavior(OPTIONAL)
+    }
+    resource_version => number(3)
+  }
+  WalkCommitsRequest {
+    repository {
+      number(1)
+      field_behavior(REQUIRED)
+      resource_reference("unmango.vcs.repository/Repository")
+    }
+    start_revisions {
+      number(2)
+      field_behavior(REQUIRED)
+    }
+    exclude_revisions {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    direction {
+      number(4)
+      field_behavior(OPTIONAL)
+    }
+    order {
+      number(5)
+      field_behavior(OPTIONAL)
+    }
+    first_parent_only {
+      number(6)
+      field_behavior(OPTIONAL)
+    }
+    max_depth {
+      number(7)
+      field_behavior(OPTIONAL)
+    }
+    limit {
+      number(8)
+      field_behavior(OPTIONAL)
+    }
+    paths {
+      number(9)
+      field_behavior(OPTIONAL)
+    }
+    window {
+      number(10)
+      field_behavior(OPTIONAL)
+    }
+    author {
+      number(11)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.people.contact/Contact")
+    }
+    query {
+      number(12)
+      field_behavior(OPTIONAL)
+    }
+  }
+  WalkCommitsResponse {
+    commit => number(1)
+    depth => number(2)
+    off_mainline => number(3)
+  }
+  GetMergeBaseRequest {
+    repository {
+      number(1)
+      field_behavior(REQUIRED)
+      resource_reference("unmango.vcs.repository/Repository")
+    }
+    revisions {
+      number(2)
+      field_behavior(REQUIRED)
+    }
+    all {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+  }
+  GetMergeBaseResponse {
+    merge_bases => number(1)
+    unrelated => number(2)
+  }
+  CompareCommitsRequest {
+    repository {
+      number(1)
+      field_behavior(REQUIRED)
+      resource_reference("unmango.vcs.repository/Repository")
+    }
+    base_revision {
+      number(2)
+      field_behavior(REQUIRED)
+    }
+    head_revision {
+      number(3)
+      field_behavior(REQUIRED)
+    }
+    include_commits {
+      number(4)
+      field_behavior(OPTIONAL)
+    }
+    page_size {
+      number(5)
+      field_behavior(OPTIONAL)
+    }
+    page_token {
+      number(6)
+      field_behavior(OPTIONAL)
+    }
+  }
+  CompareCommitsResponse {
+    ahead_count => number(1)
+    behind_count => number(2)
+    merge_base => number(3)
+    commits => number(4)
+    stats => number(5)
+    fast_forward => number(6)
+    unrelated => number(7)
+    next_page_token => number(8)
+  }
+}

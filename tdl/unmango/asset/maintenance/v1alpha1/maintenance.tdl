@@ -1,0 +1,556 @@
+package unmango.asset.maintenance.v1alpha1
+
+import "../../../../shim/google/type.tdl" as gtype
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/scalar.tdl" as scalar
+import "../../../ref/v1alpha1/ref.tdl" as ref
+import "../../../uom/v1alpha1/uom.tdl" as uom
+
+// Upkeep of anything that needs servicing, wherever it lives:
+//
+//   MaintenancePlan ~> {Vehicle | Property | Space | Host}
+//   MaintenancePlan -> WorkOrder -> ServiceRecord
+//
+// The plan attaches to its subject by ParentReference rather than owning it.
+// This is the Gateway -> HTTPRoute relationship, and it is what makes the
+// domain reusable: the same chain services a car, a furnace, and a rack
+// server, and the subject decides whether to admit the plan without knowing
+// anything about maintenance.
+//
+// Below the attachment the relationship is ordinary ownership. A plan
+// materializes WorkOrders when they come due, and a completed WorkOrder owns
+// the ServiceRecord describing what was actually done, which is the durable
+// artifact that outlives both.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// When a plan is next due. Whichever bound arrives first wins, which is how
+/// real service schedules read: every 6 months or 5000 miles.
+type MaintenanceInterval {
+  /// Zero disables the time bound.
+  every_days: scalar.int32
+  /// Zero value disables the distance bound.
+  every_distance: uom.Quantity
+  /// Recompute from the completion date rather than the scheduled due date, so
+  /// a late service pushes the next one out instead of stacking up.
+  from_completion: bool
+}
+
+enum WorkOrderPhase {
+  /// Materialized ahead of time, not yet due.
+  Scheduled
+  Due
+  Overdue
+  InProgress
+  Completed
+  Cancelled
+  /// Deliberately passed over. Distinct from cancelled: the interval still
+  /// advances.
+  Skipped
+}
+
+enum WorkOrderPriority {
+  Low
+  Normal
+  High
+  /// Subject is unusable until this is done.
+  Urgent
+}
+
+/// One checklist item within a work order.
+type Task {
+  description: string
+  required: bool
+  done: bool
+}
+
+// ---------------------------------------------------------------------------
+// ServiceRecord
+// ---------------------------------------------------------------------------
+/// What was actually done, by whom, and what it cost. The durable artifact of
+/// the chain: WorkOrders come and go on a schedule, service records accumulate.
+type ServiceRecord: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  performed_date: gtype.Date
+  /// Who did the work. A shop name, or "self".
+  provider: string
+  cost: gtype.Money
+  summary: string
+  notes: string
+  /// Reading at the time of service, when the subject tracks distance.
+  odometer: uom.Quantity
+  parts: [PartUsed]
+  /// Where the invoice lives. A plain string so it can address a
+  /// dev.unmango.protofs path without coupling the packages.
+  invoice_uri: string
+  /// Work is guaranteed until this date.
+  warranty_until: gtype.Date
+  /// The finance.transaction Transaction that paid for it.
+  transaction: ref.ObjectReference
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  /// Cost plus the cost of every part.
+  total_cost: gtype.Money
+  /// True while warranty_until is in the future.
+  under_warranty: bool
+}
+
+/// A component consumed during service.
+type PartUsed {
+  name: string
+  part_number: string
+  quantity: scalar.double
+  unit_cost: gtype.Money
+}
+
+// ---------------------------------------------------------------------------
+// WorkOrder
+// ---------------------------------------------------------------------------
+/// One occurrence of scheduled work. Materialized by a MaintenancePlan, or
+/// created directly for a one-off repair.
+type WorkOrder: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Templated desired state. WorkOrderTemplate mirrors 10-39.
+  summary: string
+  instructions: string
+  tasks: [Task]
+  priority: WorkOrderPriority
+  estimated_cost: gtype.Money
+  estimated_duration: duration
+  /// Subject cannot be used until this is completed.
+  blocks_use: bool
+  // Assigned desired state. Computed when the occurrence is materialized.
+  /// What is being serviced. Copied from the owning plan's parent_ref, or set
+  /// directly for a one-off.
+  subject: ref.ObjectReference
+  due_date: gtype.Date
+  /// Distance bound, when the subject tracks one.
+  due_distance: uom.Quantity
+  /// The people.contact Contact responsible.
+  assigned_to: ref.ObjectReference
+  /// The calendar.event Event booked to do the work.
+  scheduled_event: ref.ObjectReference
+  // Observed state.
+  observed_generation: int
+  phase: WorkOrderPhase
+  conditions: [metav1.Condition]
+  started_date: gtype.Date
+  completed_date: gtype.Date
+  /// The ServiceRecord this work order produced, once completed.
+  service_record: ref.ObjectReference
+  actual_cost: gtype.Money
+  /// Days past due_date. Negative means not yet due.
+  days_overdue: scalar.int32
+  completed_task_count: scalar.int32
+}
+
+/// Desired state stamped onto WorkOrders generated by a MaintenancePlan. Field
+/// numbers mirror WorkOrder 10-39; the assigned band is absent because the
+/// subject and due bounds are computed per occurrence.
+type WorkOrderTemplate {
+  labels: {string -> string}
+  annotations: {string -> string}
+  summary: string
+  instructions: string
+  tasks: [Task]
+  priority: WorkOrderPriority
+  estimated_cost: gtype.Money
+  estimated_duration: duration
+  blocks_use: bool
+}
+
+// ---------------------------------------------------------------------------
+// MaintenancePlan
+// ---------------------------------------------------------------------------
+/// A standing schedule attached to something that needs upkeep. The kind a
+/// human edits, and the owner of every WorkOrder it materializes.
+type MaintenancePlan: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// What this plan services. Attachment, not ownership: the plan is authored
+  /// independently of its subject, deleting it does not touch the subject, and
+  /// the subject admits or rejects it. Points at an asset.vehicle Vehicle, an
+  /// asset.property Property or Space, or a compute.host Host.
+  parent_ref: ref.ParentReference
+  /// When work comes due.
+  interval: MaintenanceInterval
+  /// Stamped onto each materialized WorkOrder.
+  template: WorkOrderTemplate
+  /// Materialize occurrences this many days before they come due, so upcoming
+  /// work is visible rather than appearing the day it is needed.
+  lead_time_days: scalar.int32
+  /// Materialize occurrences up to this date, bounding how far ahead the chain
+  /// runs.
+  materialize_through: gtype.Date
+  /// Which WorkOrders this plan claims.
+  selector: metav1.LabelSelector
+  /// Stop materializing without deleting the plan. What a seasonal schedule
+  /// looks like out of season.
+  suspended: bool
+  /// Completed WorkOrders to retain. Zero retains all. Their ServiceRecords are
+  /// never reaped, since those are the durable history.
+  work_order_history_limit: scalar.int32
+  /// Baseline for the first occurrence, when the subject has service history
+  /// predating this plan.
+  last_serviced_date: gtype.Date
+  last_serviced_distance: uom.Quantity
+  // Observed state.
+  observed_generation: int
+  /// Reports readiness, and whether the subject admitted the attachment.
+  conditions: [metav1.Condition]
+  next_due_date: gtype.Date
+  next_due_distance: uom.Quantity
+  /// Forecast from the subject's observed usage rate, when the interval has a
+  /// distance bound. Earlier than next_due_date for something driven hard.
+  forecast_due_date: gtype.Date
+  open_work_order_count: scalar.int32
+  overdue_work_order_count: scalar.int32
+  completed_work_order_count: int
+  last_completed_date: gtype.Date
+  /// Summed over every ServiceRecord under this plan.
+  lifetime_cost: gtype.Money
+  materialized_through: gtype.Date
+}
+
+target protobuf for unmango.asset.maintenance.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  MaintenanceInterval {
+    every_days => number(1)
+    every_distance => number(2)
+    from_completion => number(3)
+  }
+  Task {
+    description => number(1)
+    required => number(2)
+    done => number(3)
+  }
+  ServiceRecord {
+    resource("unmango.asset.maintenance/ServiceRecord", "serviceRecords/{service_record}", "serviceRecord", "serviceRecords")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    performed_date => number(11)
+    provider => number(12)
+    cost => number(13)
+    summary => number(14)
+    notes {
+      number(15)
+      field_behavior(OPTIONAL)
+    }
+    odometer => number(16)
+    parts => number(17)
+    invoice_uri {
+      number(18)
+      field_behavior(OPTIONAL)
+    }
+    warranty_until {
+      number(19)
+      field_behavior(OPTIONAL)
+    }
+    transaction {
+      number(20)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.finance.transaction/Transaction")
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    total_cost {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    under_warranty {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  PartUsed {
+    name => number(1)
+    part_number {
+      number(2)
+      field_behavior(OPTIONAL)
+    }
+    quantity => number(3)
+    unit_cost => number(4)
+  }
+  WorkOrder {
+    resource("unmango.asset.maintenance/WorkOrder", "workOrders/{work_order}", "workOrder", "workOrders")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    summary => number(11)
+    instructions {
+      number(12)
+      field_behavior(OPTIONAL)
+    }
+    tasks => number(13)
+    priority => number(14)
+    estimated_cost => number(15)
+    estimated_duration => number(16)
+    blocks_use => number(17)
+    subject {
+      number(40)
+      resource_reference("*")
+    }
+    due_date {
+      number(41)
+      field_behavior(OUTPUT_ONLY)
+    }
+    due_distance {
+      number(42)
+      field_behavior(OUTPUT_ONLY)
+    }
+    assigned_to {
+      number(43)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.people.contact/Contact")
+    }
+    scheduled_event {
+      number(44)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.calendar.event/Event")
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    phase {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    started_date {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    completed_date {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    service_record {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.asset.maintenance/ServiceRecord")
+    }
+    actual_cost {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+    days_overdue {
+      number(57)
+      field_behavior(OUTPUT_ONLY)
+    }
+    completed_task_count {
+      number(58)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  WorkOrderTemplate {
+    labels => number(1)
+    annotations => number(2)
+    summary => number(10)
+    instructions {
+      number(11)
+      field_behavior(OPTIONAL)
+    }
+    tasks => number(12)
+    priority => number(13)
+    estimated_cost => number(14)
+    estimated_duration => number(15)
+    blocks_use => number(16)
+  }
+  MaintenancePlan {
+    resource("unmango.asset.maintenance/MaintenancePlan", "maintenancePlans/{maintenance_plan}", "maintenancePlan", "maintenancePlans")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    parent_ref {
+      number(11)
+      resource_reference("*")
+    }
+    interval => number(12)
+    template => number(13)
+    lead_time_days => number(14)
+    materialize_through => number(15)
+    selector => number(16)
+    suspended => number(17)
+    work_order_history_limit => number(18)
+    last_serviced_date {
+      number(19)
+      field_behavior(OPTIONAL)
+    }
+    last_serviced_distance => number(20)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    next_due_date {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    next_due_distance {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    forecast_due_date {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    open_work_order_count {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    overdue_work_order_count {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+    completed_work_order_count {
+      number(57)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_completed_date {
+      number(58)
+      field_behavior(OUTPUT_ONLY)
+    }
+    lifetime_cost {
+      number(59)
+      field_behavior(OUTPUT_ONLY)
+    }
+    materialized_through {
+      number(60)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}

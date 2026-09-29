@@ -1,0 +1,489 @@
+package unmango.codegen.converter.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/rpc.tdl" as rpc
+import "../../../../shim/scalar.tdl" as scalar
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Tools that turn one representation into another, and how they are grouped:
+//
+//   ConverterRegistry => Converter
+//
+// A Converter is one X-to-Y transformation: an OpenAPI document into Go, a
+// Terraform provider spec into CRDs, a GoReleaser project into a Nix
+// derivation. It declares what it accepts and produces, how it is invoked,
+// and which tool it wraps. It does not declare what to run it on, which is
+// codegen.conversion Conversion's job.
+//
+// A ConverterRegistry claims Converters by label selector, so a converter
+// joins a registry by being labelled rather than by being moved, and one
+// converter can appear in more than one registry.
+//
+// Claiming presumes the Converter is already declared. discovery is how one
+// gets declared in the first place: a registry names where to look, a
+// directory of binaries or a repository's published releases, matching
+// dev.unmango.ux's own Registry/Source split between finding candidates and
+// resolving one into a usable plugin. Anything discovery finds is created
+// and labelled per converter_labels, so from there it joins like any other.
+//
+// Converter.platform points at a compute.platform Platform for the tool
+// being wrapped: Buf, tree-sitter, Upjet, GoReleaser. That is the same
+// argument platform.proto already makes. A closed enum of tools would bake a
+// fixed vendor list into the schema, could not express a one-off local
+// script, and would need extending every time a new converter appeared.
+//
+// Port.format is a distinct vocabulary from codegen.schema Schema.format,
+// even though both are open strings for the same reason. A converter's
+// output is usually not a schema at all: it emits Go source, a Nix
+// expression, a set of Kubernetes manifests. Schema.format names an
+// interface description language; Port.format names any shape bytes can
+// take on either side of a conversion, a strictly larger set.
+//
+// entrypoint says where a Converter lives, not how it is called, so
+// invocation_kind names the calling convention as a category rather than
+// restating each tool's own contract: a plain CLI binary such as
+// openapi2go, a subprocess driven over stdin rather than argv (the
+// convention dev.unmango.ux's own plugin protocol uses to talk to the
+// plugins it spawns), or an RPC method such as tdl's GenService. Unlike
+// Platform or an open-string format, invocation_kind stays a closed enum:
+// it names a calling mechanism, not a product, and a Converter's executor
+// needs an actual branch of code per value, the same reason ConverterKind
+// and TypeKind are closed while Platform and *.format are not. A tool that
+// both discovers and executes converters this way, such as ux, is the thing
+// that resolves a codegen.conversion Conversion to one of these entries and
+// runs it, the same relationship a controller has to the resources it
+// reconciles, so it sits outside the set of Converters it resolves against.
+//
+// TestConverter answers a narrower question than a Conversion does: "does
+// this converter still behave the way its declaration claims," rather than
+// "did converting these real inputs succeed." That distinction is why it
+// is a plain RPC rather than another Conversion kind: a conformance run has
+// no inputs worth keeping, produces no codegen.artifact Artifact, and
+// leaves no history beyond Converter.last_conformance_time, unlike a real
+// ConversionRun, which exists to be traced back to later. tdl's own
+// ConformanceService and dev.unmango.ux's plugin conformance suite are
+// both this same idea, one check deep so far, which is why
+// TestConverterResponse carries a flat list of failures rather than a
+// structured taxonomy: there is nothing yet to structure.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// The broad direction of a Converter, for grouping and discovery.
+enum ConverterKind {
+  /// A schema in, source code out.
+  SchemaToCode
+  /// A schema in, a schema in another format out.
+  SchemaToSchema
+  /// Source code in, a schema describing it out.
+  CodeToSchema
+  /// A project tree in, build or packaging definitions out.
+  ProjectToBuild
+  /// Source code in, source code in another language out.
+  CodeToCode
+  Other
+}
+
+/// One end of a conversion: a shape a Converter accepts or produces.
+type Port {
+  /// Stable identifier for the shape: "openapi/3.1", "protobuf", "nix", "go",
+  /// "terraform-provider-spec", "pulumi-package-spec".
+  format: string
+  /// Narrows the format: a Go module path, a Nix attribute path, a proto
+  /// package. Absent when the format alone is enough.
+  qualifier: string
+  /// An input the converter runs without, or an output it does not always
+  /// produce.
+  optional: bool
+}
+
+/// The calling convention at a Converter's entrypoint. Unspecified behaves as
+/// CLI, since every converter that predates this field is a spawned binary
+/// invoked with flags and files.
+enum InvocationKind {
+  /// Spawned as a subprocess; inputs and outputs travel through CLI flags
+  /// and files.
+  Cli
+  /// Spawned as a subprocess; a command and its arguments travel over stdin
+  /// instead of argv.
+  Stdin
+  /// Called as a network RPC rather than spawned.
+  Rpc
+}
+
+/// Where to call when invocation_kind is RPC. entrypoint supplies the
+/// address to dial; this supplies what protocol is spoken there and what to
+/// call once connected.
+type RpcInvocation {
+  /// Wire protocol spoken at entrypoint: "grpc", "connect", "jsonrpc". Open
+  /// for the same reason Port.format is: a new RPC protocol appearing is not
+  /// a proto-shaped event.
+  protocol: string
+  /// What to call, addressed however protocol addresses calls: a gRPC or
+  /// Connect target is "package.Service/Method"
+  /// ("unmango.dev.tdl.v1alpha1.GenService/Gen"), a JSON-RPC target is a bare
+  /// method name ("gen"). One string rather than separate service and
+  /// method fields, the same call entrypoint itself makes: splitting it into
+  /// named parts would presume gRPC's own addressing shape, which is exactly
+  /// the coupling protocol exists to let a caller avoid.
+  target: string
+}
+
+// ---------------------------------------------------------------------------
+// Converter
+// ---------------------------------------------------------------------------
+/// One transformation from a set of inputs to a set of outputs.
+type Converter: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  /// Also the surface a ConverterRegistry selector matches against.
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  kind: ConverterKind
+  inputs: [Port]
+  outputs: [Port]
+  /// The compute.platform Platform for the tool this wraps. Absent for a
+  /// converter that is its own tool.
+  platform: ref.ObjectReference
+  /// How the converter is invoked. A plain string so it can address a
+  /// dev.unmango.protofs path, an OCI reference, or a flake output without
+  /// coupling the packages: "github:UnstoppableMango/a2b#lib.buf.generate".
+  entrypoint: string
+  /// Pinned version of the wrapped tool. Part of what a codegen.artifact
+  /// Artifact hashes over, so bumping it invalidates every cached output.
+  tool_version: string
+  /// Options the converter accepts, with the values used when a Conversion
+  /// does not override them.
+  default_options: {string -> string}
+  /// Whether identical inputs always produce byte-identical outputs. False for
+  /// a converter whose output embeds a timestamp, a hostname, or a map
+  /// iteration order, which is what makes its artifacts uncacheable.
+  deterministic: bool
+  /// The vcs.repository Repository the converter's own source lives in.
+  repository: ref.ObjectReference
+  /// The calling convention at entrypoint.
+  invocation_kind: InvocationKind
+  /// Set only when invocation_kind is RPC.
+  rpc_invocation: RpcInvocation
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  /// Registries whose selectors currently claim this converter. Makes the
+  /// selector edge navigable from the converter side.
+  claimed_by: [ref.ObjectReference]
+  /// codegen.conversion Conversions naming this converter.
+  conversion_count: scalar.int32
+  last_run_time: instant
+  /// Set by whoever last ran TestConverter.
+  last_conformance_time: instant
+}
+
+type ConverterService {
+  /// Runs the converter's own conformance suite: does it accept what it
+  /// claims on inputs, produce what it claims on outputs, honor
+  /// deterministic. Declares nothing and reconciles toward nothing, which is
+  /// why it is a bare RPC rather than another Conversion kind.
+  TestConverter: rpc.Fn<TestConverterRequest, TestConverterResponse>
+}
+
+type TestConverterRequest {
+  name: string
+}
+
+type TestConverterResponse {
+  passed: bool
+  /// Human-readable description of each failed check. Empty when passed.
+  /// Flat rather than a structured failure type because no converter's
+  /// conformance suite yet has more than one undifferentiated check to
+  /// distinguish between.
+  failures: [string]
+}
+
+// ---------------------------------------------------------------------------
+// ConverterRegistry
+// ---------------------------------------------------------------------------
+/// One place to look for Converters that are not yet declared: a directory
+/// of binaries, or a repository's published releases.
+type DiscoverySource {
+  kind: DiscoverySourceKind
+}
+
+// tdl-gap: oneof becomes a separate message
+enum DiscoverySourceKind {
+  Directory { directory: DirectorySource }
+  ReleaseArtifact { release_artifact: ReleaseArtifactSource }
+}
+
+/// Scans filesystem directories for binaries matching a naming convention.
+type DirectorySource {
+  root: DirectorySourceRoot
+  /// Regex a filename must match to be treated as a candidate: e.g.
+  /// "^[\w-]+2[\w-]+$" for the x2y naming convention a registry might
+  /// discover converters by.
+  name_pattern: string
+}
+
+// tdl-gap: oneof becomes a separate message
+enum DirectorySourceRoot {
+  /// Directories listed in this environment variable's value, split on the
+  /// host's list separator: "PATH".
+  Variable { variable: string }
+  /// A single directory: "./bin".
+  Path { path: string }
+}
+
+/// Scans a repository's published releases for binaries matching a naming
+/// convention. repository is forge-agnostic for the same reason
+/// Converter.repository is: which system hosts it is provenance, and naming
+/// it here would be the same fixed-vendor-list mistake Platform exists to
+/// avoid.
+type ReleaseArtifactSource {
+  /// The vcs.repository Repository whose releases are scanned.
+  repository: ref.ObjectReference
+  /// Regex a release asset name must match to be treated as a candidate.
+  asset_pattern: string
+}
+
+/// A published collection of Converters, claimed by selector.
+type ConverterRegistry: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Which Converters belong. An empty selector claims nothing, never
+  /// everything.
+  selector: metav1.LabelSelector
+  summary: string
+  /// Stamped onto converters created through this registry, which is how a new
+  /// converter ends up matching the selector.
+  converter_labels: {string -> string}
+  /// Where the registry publishes its index for consumers who resolve
+  /// converters without talking to this API.
+  index_uri: string
+  /// Where to look for Converters that have not been declared yet. Empty
+  /// discovers nothing, the same as an empty selector claims nothing.
+  discovery: [DiscoverySource]
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  converter_count: scalar.int32
+  last_discovery_time: instant
+}
+
+target protobuf for unmango.codegen.converter.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  Port {
+    format => number(1)
+    qualifier {
+      number(2)
+      field_behavior(OPTIONAL)
+    }
+    optional => number(3)
+  }
+  RpcInvocation {
+    protocol => number(1)
+    target => number(2)
+  }
+  Converter {
+    resource("unmango.codegen.converter/Converter", "converters/{converter}", "converter", "converters")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    kind => number(11)
+    inputs => number(12)
+    outputs => number(13)
+    platform {
+      number(14)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.compute.platform/Platform")
+    }
+    entrypoint => number(15)
+    tool_version {
+      number(16)
+      field_behavior(OPTIONAL)
+    }
+    default_options => number(17)
+    deterministic => number(18)
+    repository {
+      number(19)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.vcs.repository/Repository")
+    }
+    invocation_kind => number(20)
+    rpc_invocation {
+      number(21)
+      field_behavior(OPTIONAL)
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    claimed_by {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.codegen.converter/ConverterRegistry")
+    }
+    conversion_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_run_time {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_conformance_time {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  ConverterService => service
+  TestConverterRequest {
+    name {
+      number(1)
+      field_behavior(REQUIRED)
+    }
+  }
+  TestConverterResponse {
+    passed => number(1)
+    failures => number(2)
+  }
+  DiscoverySource {
+    kind => number(1)
+  }
+  DiscoverySourceKind {
+    Directory => number(1)
+    ReleaseArtifact => number(2)
+  }
+  DirectorySource {
+    root => number(1)
+    name_pattern {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+  }
+  DirectorySourceRoot {
+    Variable => number(1)
+    Path => number(2)
+  }
+  ReleaseArtifactSource {
+    repository {
+      number(1)
+      resource_reference("unmango.vcs.repository/Repository")
+    }
+    asset_pattern {
+      number(2)
+      field_behavior(OPTIONAL)
+    }
+  }
+  ConverterRegistry {
+    resource("unmango.codegen.converter/ConverterRegistry", "converterRegistries/{converter_registry}", "converterRegistry", "converterRegistries")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    selector => number(11)
+    summary {
+      number(12)
+      field_behavior(OPTIONAL)
+    }
+    converter_labels => number(13)
+    index_uri {
+      number(14)
+      field_behavior(OPTIONAL)
+    }
+    discovery => number(15)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    converter_count {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_discovery_time {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}
