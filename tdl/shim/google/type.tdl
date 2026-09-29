@@ -1,0 +1,74 @@
+package google.gtype
+
+// tdl-gap: `type` is a keyword and cannot be a package segment, so this is
+// google.gtype rather than google.type.
+// Local stand-ins for the google.type messages the API uses.
+// tdl-gap: the protobuf backend cannot reference an external proto message,
+// so every importing package inlines its own copy of these.
+/// An amount of money with its currency type.
+type Money {
+  currency_code: string
+  units: int
+  nanos: int  // tdl-gap: int32
+}
+
+/// A whole or partial calendar date.
+type Date {
+  year: int  // tdl-gap: int32
+  month: int  // tdl-gap: int32
+  day: int  // tdl-gap: int32
+}
+
+/// A time interval, encoded as a start (inclusive) and end (exclusive).
+type Interval {
+  start_time: instant
+  end_time: instant
+}
+
+/// A time of day.
+type TimeOfDay {
+  hours: int  // tdl-gap: int32
+  minutes: int  // tdl-gap: int32
+  seconds: int  // tdl-gap: int32
+  nanos: int  // tdl-gap: int32
+}
+
+/// A latitude/longitude pair in degrees.
+type LatLng {
+  latitude: decimal  // tdl-gap: double
+  longitude: decimal  // tdl-gap: double
+}
+
+/// A postal address.
+type PostalAddress {
+  revision: int  // tdl-gap: int32
+  region_code: string
+  language_code: string
+  postal_code: string
+  sorting_code: string
+  administrative_area: string
+  locality: string
+  sublocality: string
+  address_lines: [string]
+  recipients: [string]
+  organization: string
+}
+
+/// A phone number.
+type PhoneNumber {
+  kind: PhoneNumberKind
+  extension: string
+}
+
+/// How a PhoneNumber is written. tdl-gap: google.type.PhoneNumber holds these
+/// in an inline oneof, not a separate message.
+enum PhoneNumberKind {
+  E164 { number: string }
+  ShortCode { region_code: string number: string }
+}
+
+/// A day of the week. tdl-gap: google.type values are unprefixed (MONDAY).
+enum DayOfWeek { Monday Tuesday Wednesday Thursday Friday Saturday Sunday }
+
+/// A calendar period. tdl-gap: google.type values are unprefixed (DAY).
+enum CalendarPeriod { Day Week Fortnight Month Quarter Half Year }

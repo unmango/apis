@@ -103,6 +103,9 @@
             ];
           };
 
+          # tdl writes gen/tdl, and reformatting it would only drift from tdl gen.
+          treefmt.settings.global.excludes = [ "gen/tdl/**" ];
+
           treefmt.programs = {
             actionlint.enable = true;
             buf.enable = true;

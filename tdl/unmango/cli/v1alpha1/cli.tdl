@@ -1,0 +1,177 @@
+package unmango.cli.v1alpha1
+
+import "../../../shim/protobuf.tdl" as wkt
+import "../../../shim/rpc.tdl" as rpc
+
+// ---- from cli.proto ----
+// https://stackoverflow.com/questions/8957222/are-there-standards-for-linux-command-line-switches-and-arguments
+// - http://www.gnu.org/prep/standards/html_node/Command_002dLine-Interfaces.html
+// - http://catb.org/~esr/writings/taoup/html/ch10s05.html
+// - http://pubs.opengroup.org/onlinepubs/7908799/xbd/utilconv.html
+// - http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html
+// - http://www.gnu.org/software/libc/manual/html_node/Getopt-Long-Options.html
+type AnalysisService {
+  Parse: rpc.Fn<ParseRequest, ParseResponse>
+}
+
+type ParseRequest {
+  input: ParseRequestInput
+  convention: Convention
+}
+
+// tdl-gap: oneof becomes a separate message
+enum ParseRequestInput {
+  Proto { proto: wkt.Any }
+}
+
+type ParseResponse {
+  utility: Utility
+}
+
+enum Convention { Ieee Gnu Unix Xt }
+
+type Option {
+  name: string
+  argument: string
+}
+
+type Utility {
+  name: string
+  options: [Option]
+  operands: [string]
+}
+
+// ---- from cst.proto ----
+/// Root CST node for a single command-line invocation.
+type CommandLine {
+  raw: string
+  tokens: [Token]
+}
+
+/// One syntactic unit in the token stream, in source order.
+type Token {
+  kind: TokenKind
+}
+
+// tdl-gap: oneof becomes a separate message
+enum TokenKind {
+  Word { word: Word }
+  ShortFlag { short_flag: ShortFlag }
+  LongFlag { long_flag: LongFlag }
+  EndOfOptions { end_of_options: EndOfOptions }
+}
+
+/// Bare word: program name, positional argument, or any token not starting with '-'.
+/// Consumers assign semantic meaning (e.g. subcommand, path).
+type Word {
+  value: string
+  quote_style: QuoteStyle
+}
+
+/// Single-dash flag. Supports clusters (-abc) and value assignment.
+type ShortFlag {
+  /// One element for a single flag (-f), multiple for a cluster (-abc).
+  names: [string]
+  assignment: FlagAssignment
+}
+
+/// Double-dash flag: --flag, --flag=value, or --flag value.
+type LongFlag {
+  name: string
+  assignment: FlagAssignment
+}
+
+/// The '--' end-of-options sentinel. All tokens after this are Words.
+type EndOfOptions { }
+
+/// Syntactic binding of a flag to its value.
+type FlagAssignment {
+  value: string
+  quote_style: QuoteStyle
+  style: AssignmentStyle
+}
+
+enum QuoteStyle { None Single Double }
+
+enum AssignmentStyle {
+  Inline  // --flag=value or -f=value
+  Space  // --flag value or -f value
+  Adjacent  // -fvalue (POSIX short-flag adjacent)
+}
+
+// ---- from parser.proto ----
+type ParserService {
+  ParseCommand: rpc.Fn<ParseCommandRequest, ParseCommandResponse>
+}
+
+type ParseCommandRequest {
+  input: string
+  convention: Convention
+}
+
+type ParseCommandResponse {
+  command_line: CommandLine
+}
+
+target protobuf for unmango.cli.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  AnalysisService => service
+  ParseRequest {
+    input => number(1)
+    convention => number(100)
+  }
+  ParseRequestInput {
+    Proto => number(1)
+  }
+  ParseResponse {
+    utility => number(1)
+  }
+  Option {
+    name => number(1)
+    argument => number(2)
+  }
+  Utility {
+    name => number(1)
+    options => number(2)
+    operands => number(3)
+  }
+  CommandLine {
+    raw => number(1)
+    tokens => number(2)
+  }
+  Token {
+    kind => number(1)
+  }
+  TokenKind {
+    Word => number(1)
+    ShortFlag => number(2)
+    LongFlag => number(3)
+    EndOfOptions => number(4)
+  }
+  Word {
+    value => number(1)
+    quote_style => number(2)
+  }
+  ShortFlag {
+    names => number(1)
+    assignment => number(2)
+  }
+  LongFlag {
+    name => number(1)
+    assignment => number(2)
+  }
+  FlagAssignment {
+    value => number(1)
+    quote_style => number(2)
+    style => number(3)
+  }
+  ParserService => service
+  ParseCommandRequest {
+    input => number(1)
+    convention => number(2)
+  }
+  ParseCommandResponse {
+    command_line => number(1)
+  }
+}

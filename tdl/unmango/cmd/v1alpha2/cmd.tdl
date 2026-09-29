@@ -1,0 +1,123 @@
+package unmango.cmd.v1alpha2
+
+import "../../../shim/protobuf.tdl" as wkt
+import "../../../shim/rpc.tdl" as rpc
+import "../../../shim/scalar.tdl" as scalar
+
+type BuilderService {
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  FromJson: rpc.Fn<FromJsonRequest, FromJsonResponse>
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  FromYaml: rpc.Fn<FromYamlRequest, FromYamlResponse>
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  FromProto: rpc.Fn<FromProtoRequest, FromProtoResponse>
+}
+
+/// Deprecated: use BuilderService. This was a naming error.
+deprecated("use BuilderService. This was a naming error.")
+type ConversionService {
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  FromJson: rpc.Fn<FromJsonRequest, FromJsonResponse>
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  FromYaml: rpc.Fn<FromYamlRequest, FromYamlResponse>
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  FromProto: rpc.Fn<FromProtoRequest, FromProtoResponse>
+}
+
+type ExecutionService {
+  Run: rpc.Fn<RunRequest, RunResponse>
+}
+
+type FromJsonRequest {
+  type_url: string
+  payload: bytes
+}
+
+type FromYamlRequest {
+  type_url: string
+  payload: bytes
+}
+
+type FromProtoRequest {
+  spec: wkt.Any
+}
+
+type FromJsonResponse {
+  process: Process
+}
+
+type FromYamlResponse {
+  process: Process
+}
+
+type FromProtoResponse {
+  process: Process
+}
+
+type RunRequest {
+  process: Process
+  stdin: bytes
+}
+
+type RunResponse {
+  stdout: bytes
+  stderr: bytes
+  exit: ExitResult
+}
+
+type ExitResult {
+  code: scalar.int32
+}
+
+type Process {
+  path: string  // executable path or name; resolved via $PATH if not absolute
+  args: [string]  // does not include argv[0]
+  env: [string]  // KEY=VALUE pairs
+  cwd: string  // working directory; empty = inherit from parent
+}
+
+target protobuf for unmango.cmd.v1alpha2 {
+  out("gen/tdl")
+  edition("2024")
+  BuilderService => service
+  ConversionService => service
+  ExecutionService => service
+  FromJsonRequest {
+    type_url => number(1)
+    payload => number(2)
+  }
+  FromYamlRequest {
+    type_url => number(1)
+    payload => number(2)
+  }
+  FromProtoRequest {
+    spec => number(1)
+  }
+  FromJsonResponse {
+    process => number(1)
+  }
+  FromYamlResponse {
+    process => number(1)
+  }
+  FromProtoResponse {
+    process => number(1)
+  }
+  RunRequest {
+    process => number(1)
+    stdin => number(2)
+  }
+  RunResponse {
+    stdout => number(1)
+    stderr => number(2)
+    exit => number(3)
+  }
+  ExitResult {
+    code => number(1)
+  }
+  Process {
+    path => number(1)
+    args => number(2)
+    env => number(3)
+    cwd => number(4)
+  }
+}

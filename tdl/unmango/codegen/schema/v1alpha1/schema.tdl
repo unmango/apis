@@ -1,0 +1,394 @@
+package unmango.codegen.schema.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/scalar.tdl" as scalar
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Machine-readable descriptions of an API, and the types inside them:
+//
+//   Schema -> TypeDef
+//
+// A Schema is one description of an interface in one format: an OpenAPI
+// document, a protobuf module, a Terraform provider spec, a tree-sitter
+// grammar. It is the input side of the codegen domain, the thing a
+// codegen.converter Converter reads.
+//
+// A Schema owns its TypeDefs, so deleting the schema reaps the types it
+// described. TypeDefs are a kind rather than an embedded list because they
+// are addressed across schemas: a proto message imported by another module,
+// an OpenAPI component referenced by a second document. Both directions of
+// that edge are navigable, TypeDef.referenced_by from the target and
+// TypeRef.schema from the source.
+//
+// Fields and methods are embedded instead, since they have no lifetime apart
+// from the TypeDef that declares them and are never addressed alone. That is
+// the same call ci.job Step makes.
+//
+// A TypeDef is populated by whoever parses the owning Schema, the same
+// reason codegen.artifact Artifact carries no desired state: there is
+// nothing for a user to declare and nothing to reconcile toward. A Schema's
+// format, source_uri, and repository are genuinely desired state, since a
+// caller chooses them; a Schema's TypeDefs are a fact about the bytes at
+// source_uri, discovered, not authored.
+//
+// Schema.digest is the hash the rest of the domain pins against. A
+// codegen.conversion ConversionInput records the digest it consumed, and a
+// codegen.artifact Artifact hashes over it, which is what lets a generated
+// artifact be traced back to the exact schema revision that produced it.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// What shape a TypeDef declares. Deliberately format-neutral: a protobuf
+/// message, an OpenAPI object, and a SQL table are all TYPE_KIND_STRUCT.
+enum TypeKind { Struct Enum Union Alias Service Scalar List Map }
+
+/// Points at a type, either inside this Schema or in another one.
+type TypeRef {
+  /// What this names.
+  name: TypeRefName
+  /// The Schema the type lives in. Unset means the referring Schema. Only
+  /// meaningful alongside type_name; a primitive has no owning Schema.
+  schema: ref.ObjectReference
+  /// Fills the type parameters of a generic, the element of a list, or the
+  /// key and value of a map, in that order.
+  type_arguments: [TypeRef]
+}
+
+// tdl-gap: oneof becomes a separate message
+enum TypeRefName {
+  /// Name of the TypeDef within its schema, fully qualified in whatever way
+  /// the format qualifies names: "unmango.ref.v1alpha1.ObjectReference".
+  TypeName { type_name: string }
+  /// A built-in with no TypeDef of its own: "string", "int64", "bytes".
+  Primitive { primitive: string }
+}
+
+/// A named member of a TypeDef. Embedded rather than a kind: no lifetime apart
+/// from the TypeDef declaring it, never addressed alone.
+type Field {
+  name: string
+  type: TypeRef
+  required: bool
+  /// Named is_repeated because `repeated` is a proto keyword.
+  is_repeated: bool
+  docs: string
+  /// Field number, tag, or ordinal, for formats that assign one. Zero when the
+  /// format orders by declaration instead.
+  number: scalar.int32
+  deprecated: bool
+}
+
+/// One operation on a TYPE_KIND_SERVICE TypeDef: a proto rpc, an OpenAPI
+/// path operation. Embedded for the same reason Field is.
+type Method {
+  name: string
+  input: TypeRef
+  output: TypeRef
+  client_streaming: bool
+  server_streaming: bool
+  docs: string
+}
+
+// ---------------------------------------------------------------------------
+// Schema
+// ---------------------------------------------------------------------------
+/// One machine-readable description of an API, in one format.
+type Schema: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The interface description language this Schema is written in: "protobuf",
+  /// "openapi/3.1", "json-schema", "graphql", "sql-ddl",
+  /// "terraform-provider-spec", "pulumi-package-spec", "kubernetes-crd",
+  /// "tree-sitter-grammar", "tdl". Open rather than a closed enum for the same
+  /// reason codegen.converter Port.format is: this repository would need a
+  /// proto change every time it learned to parse one more, and learning to
+  /// parse a new format belongs in data rather than in the schema.
+  format: string
+  /// Where the bytes live. A plain string so it can address a
+  /// dev.unmango.protofs path or a URL without coupling the packages. The
+  /// address a fetcher reads, whether or not repository is also set.
+  source_uri: string
+  /// Version of the API being described, not of this resource.
+  version: string
+  /// The compute.platform Platform whose API this describes: Proxmox, GitHub,
+  /// Discord. Absent for a schema that describes no external system.
+  platform: ref.ObjectReference
+  /// Other Schemas this one depends on to resolve its types.
+  imports: [ref.ObjectReference]
+  /// The vcs.repository Repository the source is checked into, when it is
+  /// tracked by one. Provenance only: never used to derive source_uri, and
+  /// never required to agree with it beyond both describing the same bytes.
+  repository: ref.ObjectReference
+  /// Subdirectory of repository holding the schema: "proto/". Meaningless,
+  /// and left unset, when repository is unset.
+  root_path: string
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  /// Content hash of the source as last fetched. What a
+  /// codegen.conversion ConversionInput pins and a codegen.artifact Artifact
+  /// hashes over.
+  digest: string
+  type_count: scalar.int32
+  service_count: scalar.int32
+  last_fetch_time: instant
+  /// Schemas whose imports name this one. Makes the import graph navigable
+  /// from either end.
+  imported_by: [ref.ObjectReference]
+}
+
+// ---------------------------------------------------------------------------
+// TypeDef
+// ---------------------------------------------------------------------------
+/// One named type declared by a Schema.
+type TypeDef: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The Schema that declares this type.
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Content, populated when the owning Schema is parsed. Not user-declared,
+  // and there is no reconciliation loop pushing observed state toward it.
+  /// Fully qualified within the declaring Schema, and what a TypeRef names.
+  type_name: string
+  kind: TypeKind
+  fields: [Field]
+  /// Set only when kind is TYPE_KIND_ENUM.
+  enum_values: [string]
+  /// Set only when kind is TYPE_KIND_ALIAS.
+  alias_of: TypeRef
+  docs: string
+  deprecated: bool
+  /// Set only when kind is TYPE_KIND_SERVICE.
+  methods: [Method]
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  /// Other TypeDefs whose fields, methods, or aliases name this one.
+  referenced_by: [ref.ObjectReference]
+  field_count: scalar.int32
+}
+
+target protobuf for unmango.codegen.schema.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  TypeRef {
+    name => number(1)
+    schema {
+      number(2)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.codegen.schema/Schema")
+    }
+    type_arguments => number(4)
+  }
+  TypeRefName {
+    TypeName => number(1)
+    Primitive => number(3)
+  }
+  Field {
+    name => number(1)
+    type => number(2)
+    required => number(3)
+    is_repeated => number(4)
+    docs => number(5)
+    number => number(6)
+    deprecated => number(7)
+  }
+  Method {
+    name => number(1)
+    input => number(2)
+    output => number(3)
+    client_streaming => number(4)
+    server_streaming => number(5)
+    docs => number(6)
+  }
+  Schema {
+    resource("unmango.codegen.schema/Schema", "schemas/{schema}", "schema", "schemas")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    format => number(11)
+    source_uri => number(12)
+    version {
+      number(13)
+      field_behavior(OPTIONAL)
+    }
+    platform {
+      number(14)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.compute.platform/Platform")
+    }
+    imports {
+      number(15)
+      resource_reference("unmango.codegen.schema/Schema")
+    }
+    repository {
+      number(16)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.vcs.repository/Repository")
+    }
+    root_path {
+      number(17)
+      field_behavior(OPTIONAL)
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    digest {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    type_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    service_count {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_fetch_time {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    imported_by {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.codegen.schema/Schema")
+    }
+  }
+  TypeDef {
+    resource("unmango.codegen.schema/TypeDef", "typeDefs/{type_def}", "typeDef", "typeDefs")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    type_name {
+      number(11)
+      field_behavior(OUTPUT_ONLY)
+    }
+    kind {
+      number(12)
+      field_behavior(OUTPUT_ONLY)
+    }
+    fields {
+      number(13)
+      field_behavior(OUTPUT_ONLY)
+    }
+    enum_values {
+      number(14)
+      field_behavior(OUTPUT_ONLY)
+    }
+    alias_of {
+      number(15)
+      field_behavior(OUTPUT_ONLY)
+    }
+    docs {
+      number(16)
+      field_behavior(OUTPUT_ONLY)
+    }
+    deprecated {
+      number(17)
+      field_behavior(OUTPUT_ONLY)
+    }
+    methods {
+      number(18)
+      field_behavior(OUTPUT_ONLY)
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    referenced_by {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.codegen.schema/TypeDef")
+    }
+    field_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}

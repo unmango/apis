@@ -1,0 +1,138 @@
+package unmango.productivity.capture.v1alpha1
+
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// A zero-friction inbox:
+//
+//   CaptureItem
+//
+// The value is getting a thought out of your head with one field and no
+// decisions, so it does not have to fight its way into a fully-formed
+// productivity.task Task, priority, due date, subtasks, before it is safe to
+// stop holding onto it. Triage into a Task, calendar.event Event, or
+// record.note Note happens later, by choice, not at the moment of capture.
+//
+// A CaptureItem is unowned by design, and survives triage as its own record
+// rather than becoming the thing it is triaged into. resolved_into is a plain pointer set
+// once triage happens, the same pattern journal.entry uses for
+// mood_measurement: a fact recorded about the item, not a live relationship
+// anything reconciles.
+//
+// The identity band departs from the repository-wide preamble a third way,
+// distinct from both the mutable-kind and content-addressed-node variants:
+// no owner_refs, no generation, no observed_generation, no conditions.
+// Nothing here is ever declared and reconciled by a controller; a capture is
+// written once and later read or triaged by a human choice, not admitted,
+// bound, or brought into agreement with a desired state.
+//
+// Triage is a real fact about the item, so state, resolved_into, and
+// discard_reason stay; they sit in the declared band because a human writes
+// them, not a controller. They were OUTPUT_ONLY in the 50+ band, which left
+// them unwritable by the only actor that ever sets them. triaged_time is the
+// one fact here nobody declares, and stays server-stamped.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum CaptureState {
+  /// Not yet looked at since capture.
+  Raw
+  /// Reviewed and turned into something else, named by resolved_into.
+  Triaged
+  /// Reviewed and deliberately dropped.
+  Discarded
+}
+
+// ---------------------------------------------------------------------------
+// CaptureItem
+// ---------------------------------------------------------------------------
+/// One unstructured thought, captured before it is lost.
+type CaptureItem: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The raw capture. The only field required to let go of the thought.
+  body: string
+  /// An open, non-authoritative hint at what this might become: "task",
+  /// "event", "note". Set by whoever captured it, not enforced at triage,
+  /// the same open-string treatment codegen.schema Schema.format uses for a
+  /// category nobody wants to execute logic against.
+  suggested_kind: string
+  tags: [string]
+  // Triage. Written by whoever triages the item, so it belongs in the
+  // declared band with the capture itself rather than the observed one.
+  state: CaptureState
+  /// What this became once triaged. Set alongside state when it becomes
+  /// TRIAGED, and left unset otherwise.
+  resolved_into: ref.ObjectReference
+  /// Set only when state is DISCARDED.
+  discard_reason: string
+  /// When state last became TRIAGED or DISCARDED. Server-stamped, the one
+  /// fact here nobody declares.
+  triaged_time: instant
+}
+
+target protobuf for unmango.productivity.capture.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  CaptureItem {
+    resource("unmango.productivity.capture/CaptureItem", "captureItems/{capture_item}", "captureItem", "captureItems")
+    // tdl-gap: one reserved directive per declaration; proto has two statements
+    // reserved 6, 7: owner_refs, generation: nothing owns or reconciles a capture
+    // reserved 50, 51: observed_generation, conditions: nothing reconciles a capture
+    reserved(6, 7, 50, 51)
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    body => number(11)
+    suggested_kind {
+      number(12)
+      field_behavior(OPTIONAL)
+    }
+    tags => number(13)
+    state => number(14)
+    resolved_into {
+      number(15)
+      field_behavior(OPTIONAL)
+      resource_reference("*")
+    }
+    discard_reason {
+      number(16)
+      field_behavior(OPTIONAL)
+    }
+    triaged_time {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}

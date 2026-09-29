@@ -1,0 +1,263 @@
+package unmango.finance.account.v1alpha1
+
+import "../../../../shim/google/type.tdl" as gtype
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/scalar.tdl" as scalar
+
+// Where money is held:
+//
+//   Institution -> Account
+//
+// An Institution owns the Accounts held with it, so removing an institution
+// cascades to its accounts. Accounts are the thing finance.transaction
+// Transactions attach to.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum AccountType { Checking Savings CreditCard Investment Retirement Loan Mortgage Cash Crypto }
+
+enum InstitutionKind {
+  Bank
+  CreditUnion
+  Brokerage
+  CardIssuer
+  Lender
+  Exchange
+  /// Cash, physical assets, anything with no counterparty.
+  SelfHeld
+}
+
+/// How balances and transactions get in.
+type SyncConfig {
+  /// Aggregator or direct connection in use: "plaid", "simplefin", "manual".
+  provider: string
+  /// Identifier of this entity in the provider's namespace.
+  external_id: string
+  enabled: bool
+}
+
+// ---------------------------------------------------------------------------
+// Account
+// ---------------------------------------------------------------------------
+/// A single balance held at an Institution.
+type Account: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  type: AccountType
+  /// ISO 4217. Every Money on this account uses it.
+  currency_code: string
+  sync: SyncConfig
+  /// Last few digits, for matching against a statement.
+  mask: string
+  /// Borrowing ceiling, for CREDIT_CARD and LOAN.
+  credit_limit: gtype.Money
+  opened_date: gtype.Date
+  /// Retained for history but no longer transacting.
+  closed: bool
+  /// Exclude from net-worth and budget rollups. Useful for shared or
+  /// pass-through accounts.
+  excluded_from_totals: bool
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  /// Settled balance. Negative for money owed.
+  current_balance: gtype.Money
+  /// Current balance adjusted for holds and pending activity.
+  available_balance: gtype.Money
+  pending_balance: gtype.Money
+  transaction_count: int
+  last_transaction_time: instant
+  last_sync_time: instant
+}
+
+// ---------------------------------------------------------------------------
+// Institution
+// ---------------------------------------------------------------------------
+/// A counterparty holding one or more Accounts.
+type Institution: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  kind: InstitutionKind
+  website: string
+  /// Connection shared by every Account held here.
+  sync: SyncConfig
+  // Observed state.
+  observed_generation: int
+  conditions: [metav1.Condition]
+  account_count: scalar.int32
+  /// Summed across accounts, excluding those marked excluded_from_totals.
+  total_balance: gtype.Money
+  last_sync_time: instant
+}
+
+target protobuf for unmango.finance.account.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  SyncConfig {
+    provider => number(1)
+    external_id {
+      number(2)
+      field_behavior(OPTIONAL)
+    }
+    enabled => number(3)
+  }
+  Account {
+    resource("unmango.finance.account/Account", "accounts/{account}", "account", "accounts")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    type => number(11)
+    currency_code => number(12)
+    sync => number(13)
+    mask {
+      number(14)
+      field_behavior(OPTIONAL)
+    }
+    credit_limit => number(15)
+    opened_date => number(16)
+    closed => number(17)
+    excluded_from_totals => number(18)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    current_balance {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    available_balance {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    pending_balance {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    transaction_count {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_transaction_time {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_sync_time {
+      number(57)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  Institution {
+    resource("unmango.finance.account/Institution", "institutions/{institution}", "institution", "institutions")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    kind => number(11)
+    website {
+      number(12)
+      field_behavior(OPTIONAL)
+    }
+    sync => number(13)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    account_count {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    total_balance {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_sync_time {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}

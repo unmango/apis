@@ -43,6 +43,7 @@ Available tools in the dev shell: `api-linter`, `buf`, `gnumake`.
 | Check field bands | `make bands` |
 | Check breaking changes | `make breaking` (override the base ref with `make breaking AGAINST=<ref>`) |
 | Generate code | `buf generate` (only `proto/unmango/*`, see gotcha below) |
+| Regenerate the tdl model output | `make tdl`, then `make tdl-diff` for the fidelity report (see [docs/tdl.md](./docs/tdl.md)) |
 
 **Gotcha:** `buf generate` needs `protoc-gen-go` on `$PATH`, which `nix develop` does not currently provide in this environment.
 `make lint` is the practical check for schema changes instead.

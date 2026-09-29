@@ -1,0 +1,154 @@
+package unmango.productivity.project.v1alpha1
+
+import "../../../../shim/google/type.tdl" as gtype
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/scalar.tdl" as scalar
+
+// What organizes many Tasks toward one outcome:
+//
+//   Project => Task,  Project -> Project
+//
+// A Project claims independently-existing Tasks by selector, the same
+// Notebook => Note relationship record.note already uses, rather than
+// owning them: a Task predates any Project it joins, and leaving a Project
+// deletes nothing. Sub-projects (a portfolio, a phase breakdown) nest
+// through owner_refs like every other ownership edge in the repository.
+//
+// Project carries no priority or due-time-of-day; those are Task-level
+// executive-function concerns productivity.task Task already owns. What a
+// Project adds is the rollup: how many claimed Tasks exist and how many are
+// done.
+//
+// task.Task carries no reverse claimed_by field the way record.note Note
+// does for Notebook, since adding one means editing task.proto. Reverse
+// lookup is a query for now: list Projects, filter by selector match.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum ProjectPhase { Planned Active OnHold Completed }
+
+// ---------------------------------------------------------------------------
+// Project
+// ---------------------------------------------------------------------------
+/// A grouping of Tasks toward one outcome.
+type Project: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// A parent Project, for a sub-project or phase.
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  summary: string
+  notes: string
+  /// Which Tasks belong. An empty selector claims nothing, never everything.
+  selector: metav1.LabelSelector
+  start_date: gtype.Date
+  /// Unset means open-ended.
+  target_date: gtype.Date
+  /// Paused organizationally. Does not affect the underlying Tasks.
+  on_hold: bool
+  // Observed state.
+  observed_generation: int
+  phase: ProjectPhase
+  conditions: [metav1.Condition]
+  task_count: scalar.int32
+  completed_task_count: scalar.int32
+  overdue_task_count: scalar.int32
+  /// completed_task_count / task_count.
+  completion_rate: scalar.double
+  last_activity_time: instant
+}
+
+target protobuf for unmango.productivity.project.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  Project {
+    resource("unmango.productivity.project/Project", "projects/{project}", "project", "projects")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    summary => number(11)
+    notes {
+      number(12)
+      field_behavior(OPTIONAL)
+    }
+    selector => number(13)
+    start_date {
+      number(14)
+      field_behavior(OPTIONAL)
+    }
+    target_date {
+      number(15)
+      field_behavior(OPTIONAL)
+    }
+    on_hold => number(16)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    phase {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    task_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    completed_task_count {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    overdue_task_count {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    completion_rate {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+    last_activity_time {
+      number(57)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}

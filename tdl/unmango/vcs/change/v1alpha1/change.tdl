@@ -1,0 +1,675 @@
+package unmango.vcs.change.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as metav1
+import "../../../../shim/scalar.tdl" as scalar
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Proposed changes and their review:
+//
+//   ChangeSet -> Change ~> vcs.branch Branch
+//                  ^~ Review ~> people.contact Contact
+//   Change @ ci.job JobRun
+//
+// A Change is one proposal to move a branch: a pull request, a merge request,
+// a Gerrit change. The name is forge-neutral on purpose, since the same shape
+// serves all three.
+//
+// A Change attaches to its target Branch rather than being owned by it, and
+// the Branch admits or rejects it on its Protection rules. That is the
+// Gateway -> HTTPRoute relationship in its most literal form here: required
+// approvals and required checks are the branch's terms, evaluated against a
+// change the branch did not author.
+//
+// A ChangeSet materializes one Change per target repository from a template.
+// That is what a stacked or fleet-wide change is: an edit applied across many
+// repositories, tracked as one thing, where each Change carries an owner
+// reference back and the set reports how far the rollout has progressed.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum ChangePhase {
+  /// Authored but not yet offered for review.
+  Draft
+  Open
+  /// Enough approvals, checks green, waiting to merge.
+  Approved
+  /// A reviewer asked for work before this can proceed.
+  ChangesRequested
+  /// Cannot merge: conflicts, failing checks, or an unmet branch rule.
+  Blocked
+  Merged
+  Closed
+}
+
+enum MergeStrategy {
+  MergeCommit
+  Squash
+  Rebase
+  /// Refuse anything that is not already a fast-forward.
+  FastForwardOnly
+}
+
+enum ReviewVerdict {
+  /// Read, with remarks, but no position taken.
+  Comment
+  Approve
+  RequestChanges
+}
+
+/// How a ChangeSet sequences the Changes it materializes.
+enum RolloutOrder {
+  /// Open every Change at once.
+  Parallel
+  /// Open the next only once the previous has merged.
+  Sequential
+  /// Each Change targets the branch of the one before it, so the set forms a
+  /// dependent stack rather than independent proposals.
+  Stacked
+}
+
+/// A remark anchored to a location in the diff. Embedded rather than a kind:
+/// it has no lifetime apart from its Review and is never addressed alone.
+type ReviewComment {
+  path: string
+  /// Line in the post-image. Zero means the comment is on the file as a whole.
+  line: scalar.int32
+  body: string
+  resolved: bool
+  /// Concrete replacement the author can apply directly.
+  suggestion: string
+}
+
+// ---------------------------------------------------------------------------
+// Review
+// ---------------------------------------------------------------------------
+/// One reviewer's position on one Change. Attached to the Change and admitted
+/// by it, so a reviewer can record a verdict without write access to the
+/// proposal itself.
+type Review: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The Change being reviewed. The Change decides whether to admit this.
+  parent_ref: ref.ParentReference
+  /// The people.contact Contact reviewing.
+  reviewer: ref.ObjectReference
+  verdict: ReviewVerdict
+  body: string
+  comments: [ReviewComment]
+  /// The head commit this verdict was formed against. What
+  /// Protection.dismiss_stale_approvals compares to decide staleness.
+  reviewed_revision: string
+  /// The reviewer was asked rather than volunteering.
+  requested: bool
+  // Observed state.
+  observed_generation: int
+  /// Reports whether the Change admitted this review, and why not when it did
+  /// not.
+  conditions: [metav1.Condition]
+  submitted_time: instant
+  comment_count: scalar.int32
+  unresolved_comment_count: scalar.int32
+  /// The Change moved past reviewed_revision, so this verdict no longer
+  /// counts toward the target branch's required approvals.
+  stale: bool
+}
+
+// ---------------------------------------------------------------------------
+// Change
+// ---------------------------------------------------------------------------
+/// One proposal to move a branch. A pull request, a merge request, a change.
+type Change: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The ChangeSet that materialized this, when it came from one. A change
+  /// opened by hand has no owner.
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Templated desired state. ChangeTemplate mirrors 10-39.
+  title: string
+  body: string
+  draft: bool
+  merge_strategy: MergeStrategy
+  /// people.contact Contacts whose review is requested.
+  reviewers: [ref.ObjectReference]
+  /// people.contact Contact expected to carry the change forward.
+  assignee: ref.ObjectReference
+  /// Merge as soon as the target branch's rules are satisfied.
+  auto_merge: bool
+  delete_source_on_merge: bool
+  /// Which Reviews this Change claims.
+  selector: metav1.LabelSelector
+  // Assigned desired state. Computed per repository when materialized.
+  /// The vcs.branch Branch this change targets. Attachment: the branch admits
+  /// or rejects on its Protection rules, and was authored independently.
+  target_ref: ref.ParentReference
+  /// The vcs.branch Branch holding the proposed commits.
+  source_branch: ref.ObjectReference
+  /// The vcs.repository Repository both branches live in.
+  repository: ref.ObjectReference
+  /// Forge-assigned number. Zero before the change exists on the forge.
+  number: scalar.int32
+  /// people.contact Contact who opened it.
+  author: ref.ObjectReference
+  // Observed state.
+  observed_generation: int
+  phase: ChangePhase
+  /// Reports admission by the target branch, mergeability, and check status.
+  conditions: [metav1.Condition]
+  review_count: scalar.int32
+  approval_count: scalar.int32
+  rejection_count: scalar.int32
+  unresolved_comment_count: scalar.int32
+  /// Approvals still required by the target branch's Protection.
+  approvals_outstanding: scalar.int32
+  /// ci.job JobRuns triggered by this change.
+  check_runs: [ref.ObjectReference]
+  checks_passed: bool
+  /// No conflicts against the target branch.
+  mergeable: bool
+  merge_blocked_reason: string
+  head_revision: string
+  commit_count: scalar.int32
+  files_changed: scalar.int32
+  additions: scalar.int32
+  deletions: scalar.int32
+  opened_time: instant
+  merged_time: instant
+  closed_time: instant
+  merge_commit_revision: string
+}
+
+/// Desired state stamped onto Changes generated by a ChangeSet. Field numbers
+/// mirror Change 10-39; the assigned band is absent because branches,
+/// repository, and forge number are resolved per target.
+type ChangeTemplate {
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// Ref name to create in each target repository for the source branch.
+  source_ref_name: string
+  title: string
+  body: string
+  draft: bool
+  merge_strategy: MergeStrategy
+  reviewers: [ref.ObjectReference]
+  assignee: ref.ObjectReference
+  auto_merge: bool
+  delete_source_on_merge: bool
+  /// Which Reviews a generated Change claims.
+  selector: metav1.LabelSelector
+}
+
+// ---------------------------------------------------------------------------
+// ChangeSet
+// ---------------------------------------------------------------------------
+/// One edit applied across many repositories, tracked as a single thing. Owns
+/// every Change it materializes, so abandoning the set closes all of them.
+type ChangeSet: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [metav1.OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Stamped onto each materialized Change.
+  template: ChangeTemplate
+  /// vcs.repository Repositories to open a Change in. Named explicitly.
+  repositories: [ref.ObjectReference]
+  /// Or claimed by selector, via a vcs.repository RepositoryGroup. Applied in
+  /// addition to repositories above.
+  repository_group: ref.ObjectReference
+  /// Which Changes this set claims.
+  selector: metav1.LabelSelector
+  order: RolloutOrder
+  /// Changes permitted open at once. Zero means unbounded. Ignored when order
+  /// is SEQUENTIAL.
+  max_concurrent: scalar.int32
+  /// Stop opening new Changes without closing the ones already out.
+  suspended: bool
+  /// Close every open Change if any merged one is reverted.
+  rollback_on_revert: bool
+  /// Merged Changes to retain. Zero retains all.
+  change_history_limit: scalar.int32
+  // Observed state.
+  observed_generation: int
+  phase: ChangeSetPhase
+  conditions: [metav1.Condition]
+  /// Target repositories resolved from repositories and repository_group.
+  target_count: scalar.int32
+  change_count: scalar.int32
+  open_count: scalar.int32
+  approved_count: scalar.int32
+  merged_count: scalar.int32
+  closed_count: scalar.int32
+  blocked_count: scalar.int32
+  /// Merged over target_count, 0.0 to 1.0.
+  merged_fraction: scalar.double
+  /// The Change at the front of the queue, for SEQUENTIAL and STACKED.
+  next_change: ref.ObjectReference
+  first_opened_time: instant
+  completed_time: instant
+  /// Latest revision of the template. Changes record the revision they were
+  /// created with.
+  revision: string
+}
+
+enum ChangeSetPhase {
+  /// Declared, nothing opened yet.
+  Pending
+  /// Materializing and merging.
+  RollingOut
+  /// Every target merged.
+  Completed
+  /// Stalled on a blocked Change, for SEQUENTIAL and STACKED.
+  Stalled
+  /// Given up on, with outstanding Changes closed.
+  Abandoned
+}
+
+target protobuf for unmango.vcs.change.v1alpha1 {
+  out("gen/tdl")
+  edition("2024")
+  ReviewComment {
+    path => number(1)
+    line => number(2)
+    body => number(3)
+    resolved => number(4)
+    suggestion {
+      number(5)
+      field_behavior(OPTIONAL)
+    }
+  }
+  Review {
+    resource("unmango.vcs.change/Review", "reviews/{review}", "review", "reviews")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    parent_ref {
+      number(11)
+      resource_reference("unmango.vcs.change/Change")
+    }
+    reviewer {
+      number(12)
+      resource_reference("unmango.people.contact/Contact")
+    }
+    verdict => number(13)
+    body {
+      number(14)
+      field_behavior(OPTIONAL)
+    }
+    comments => number(15)
+    reviewed_revision => number(16)
+    requested => number(17)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    submitted_time {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    comment_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    unresolved_comment_count {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    stale {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  Change {
+    resource("unmango.vcs.change/Change", "changes/{change}", "change", "changes")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    title => number(11)
+    body {
+      number(12)
+      field_behavior(OPTIONAL)
+    }
+    draft => number(13)
+    merge_strategy => number(14)
+    reviewers {
+      number(15)
+      resource_reference("unmango.people.contact/Contact")
+    }
+    assignee {
+      number(16)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.people.contact/Contact")
+    }
+    auto_merge => number(17)
+    delete_source_on_merge => number(18)
+    selector => number(19)
+    target_ref {
+      number(40)
+      resource_reference("unmango.vcs.branch/Branch")
+    }
+    source_branch {
+      number(41)
+      resource_reference("unmango.vcs.branch/Branch")
+    }
+    repository {
+      number(42)
+      resource_reference("unmango.vcs.repository/Repository")
+    }
+    number {
+      number(43)
+      field_behavior(OUTPUT_ONLY)
+    }
+    author {
+      number(44)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.people.contact/Contact")
+    }
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    phase {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    review_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    approval_count {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    rejection_count {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    unresolved_comment_count {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+    approvals_outstanding {
+      number(57)
+      field_behavior(OUTPUT_ONLY)
+    }
+    check_runs {
+      number(58)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.ci.job/JobRun")
+    }
+    checks_passed {
+      number(59)
+      field_behavior(OUTPUT_ONLY)
+    }
+    mergeable {
+      number(60)
+      field_behavior(OUTPUT_ONLY)
+    }
+    merge_blocked_reason {
+      number(61)
+      field_behavior(OUTPUT_ONLY)
+    }
+    head_revision {
+      number(62)
+      field_behavior(OUTPUT_ONLY)
+    }
+    commit_count {
+      number(63)
+      field_behavior(OUTPUT_ONLY)
+    }
+    files_changed {
+      number(64)
+      field_behavior(OUTPUT_ONLY)
+    }
+    additions {
+      number(65)
+      field_behavior(OUTPUT_ONLY)
+    }
+    deletions {
+      number(66)
+      field_behavior(OUTPUT_ONLY)
+    }
+    opened_time {
+      number(67)
+      field_behavior(OUTPUT_ONLY)
+    }
+    merged_time {
+      number(68)
+      field_behavior(OUTPUT_ONLY)
+    }
+    closed_time {
+      number(69)
+      field_behavior(OUTPUT_ONLY)
+    }
+    merge_commit_revision {
+      number(70)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+  ChangeTemplate {
+    labels => number(1)
+    annotations => number(2)
+    source_ref_name => number(3)
+    title => number(10)
+    body {
+      number(11)
+      field_behavior(OPTIONAL)
+    }
+    draft => number(12)
+    merge_strategy => number(13)
+    reviewers {
+      number(14)
+      resource_reference("unmango.people.contact/Contact")
+    }
+    assignee {
+      number(15)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.people.contact/Contact")
+    }
+    auto_merge => number(16)
+    delete_source_on_merge => number(17)
+    selector => number(18)
+  }
+  ChangeSet {
+    resource("unmango.vcs.change/ChangeSet", "changeSets/{change_set}", "changeSet", "changeSets")
+    name {
+      number(1)
+      field_behavior(IDENTIFIER)
+    }
+    uid {
+      number(2)
+      field_behavior(OUTPUT_ONLY)
+      field_info(UUID4)
+    }
+    display_name {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      field_behavior(OUTPUT_ONLY)
+    }
+    create_time {
+      number(8)
+      field_behavior(OUTPUT_ONLY)
+    }
+    update_time {
+      number(9)
+      field_behavior(OUTPUT_ONLY)
+    }
+    delete_time {
+      number(10)
+      field_behavior(OUTPUT_ONLY)
+    }
+    template => number(11)
+    repositories {
+      number(12)
+      resource_reference("unmango.vcs.repository/Repository")
+    }
+    repository_group {
+      number(13)
+      field_behavior(OPTIONAL)
+      resource_reference("unmango.vcs.repository/RepositoryGroup")
+    }
+    selector => number(14)
+    order => number(15)
+    max_concurrent => number(16)
+    suspended => number(17)
+    rollback_on_revert => number(18)
+    change_history_limit => number(19)
+    observed_generation {
+      number(50)
+      field_behavior(OUTPUT_ONLY)
+    }
+    phase {
+      number(51)
+      field_behavior(OUTPUT_ONLY)
+    }
+    conditions {
+      number(52)
+      field_behavior(OUTPUT_ONLY)
+    }
+    target_count {
+      number(53)
+      field_behavior(OUTPUT_ONLY)
+    }
+    change_count {
+      number(54)
+      field_behavior(OUTPUT_ONLY)
+    }
+    open_count {
+      number(55)
+      field_behavior(OUTPUT_ONLY)
+    }
+    approved_count {
+      number(56)
+      field_behavior(OUTPUT_ONLY)
+    }
+    merged_count {
+      number(57)
+      field_behavior(OUTPUT_ONLY)
+    }
+    closed_count {
+      number(58)
+      field_behavior(OUTPUT_ONLY)
+    }
+    blocked_count {
+      number(59)
+      field_behavior(OUTPUT_ONLY)
+    }
+    merged_fraction {
+      number(60)
+      field_behavior(OUTPUT_ONLY)
+    }
+    next_change {
+      number(61)
+      field_behavior(OUTPUT_ONLY)
+      resource_reference("unmango.vcs.change/Change")
+    }
+    first_opened_time {
+      number(62)
+      field_behavior(OUTPUT_ONLY)
+    }
+    completed_time {
+      number(63)
+      field_behavior(OUTPUT_ONLY)
+    }
+    revision {
+      number(64)
+      field_behavior(OUTPUT_ONLY)
+    }
+  }
+}

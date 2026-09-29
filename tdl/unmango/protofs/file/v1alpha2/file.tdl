@@ -1,0 +1,176 @@
+package unmango.protofs.file.v1alpha2
+
+import "../../../../shim/protobuf.tdl" as wkt
+import "../../../../shim/rpc.tdl" as rpc
+import "../../../../shim/scalar.tdl" as scalar
+
+type File {
+  id: string  // server-issued handle, set by Open/Create responses
+  name: string
+  flag: int
+  perm: scalar.uint32  // bitmask
+}
+
+type FileInfo {
+  name: string
+  size: int
+  mode: scalar.uint32  // bitmask
+  mod_time: instant
+  is_dir: bool
+  sys: wkt.Any  // platform-specific underlying data; type URL must be agreed out-of-band
+}
+
+type FileService {
+  Read: rpc.Fn<ReadRequest, ReadResponse>
+  ReadAt: rpc.Fn<ReadAtRequest, ReadAtResponse>
+  Readdir: rpc.Fn<ReaddirRequest, rpc.Stream<ReaddirResponse>>
+  ReaddirNames: rpc.Fn<ReaddirNamesRequest, rpc.Stream<ReaddirNamesResponse>>
+  Stat: rpc.Fn<StatRequest, StatResponse>
+  Truncate: rpc.Fn<TruncateRequest, TruncateResponse>
+  Write: rpc.Fn<WriteRequest, WriteResponse>
+  WriteAt: rpc.Fn<WriteAtRequest, WriteAtResponse>
+}
+
+type ReaddirRequest {
+  file: File
+  count: scalar.int32
+}
+
+type ReaddirResponse {
+  file_infos: [FileInfo]
+}
+
+type ReaddirNamesRequest {
+  file: File
+  count: scalar.int32
+}
+
+type ReaddirNamesResponse {
+  names: [string]
+}
+
+type ReadAtRequest {
+  file: File
+  offset: int
+  length: int
+}
+
+type ReadAtResponse {
+  data: bytes
+}
+
+type ReadRequest {
+  file: File
+}
+
+type ReadResponse {
+  data: bytes
+}
+
+type StatRequest {
+  file: File
+}
+
+type StatResponse {
+  file_info: FileInfo
+}
+
+type TruncateRequest {
+  file: File
+  size: int
+}
+
+type TruncateResponse { }
+
+type WriteRequest {
+  file: File
+  data: bytes
+}
+
+type WriteResponse {
+  bytes_written: int
+}
+
+type WriteAtRequest {
+  file: File
+  data: bytes
+  offset: int
+}
+
+type WriteAtResponse { }
+
+target protobuf for unmango.protofs.file.v1alpha2 {
+  out("gen/tdl")
+  edition("2024")
+  File {
+    id => number(1)
+    name => number(2)
+    flag {
+      number(3)
+      field_behavior(OPTIONAL)
+    }
+    perm {
+      number(4)
+      field_behavior(OPTIONAL)
+    }
+  }
+  FileInfo {
+    name => number(1)
+    size => number(2)
+    mode => number(3)
+    mod_time => number(4)
+    is_dir => number(5)
+    sys => number(6)
+  }
+  FileService => service
+  ReaddirRequest {
+    file => number(1)
+    count => number(2)
+  }
+  ReaddirResponse {
+    file_infos => number(1)
+  }
+  ReaddirNamesRequest {
+    file => number(1)
+    count => number(2)
+  }
+  ReaddirNamesResponse {
+    names => number(1)
+  }
+  ReadAtRequest {
+    file => number(1)
+    offset => number(2)
+    length => number(3)
+  }
+  ReadAtResponse {
+    data => number(1)
+  }
+  ReadRequest {
+    file => number(1)
+  }
+  ReadResponse {
+    data => number(1)
+  }
+  StatRequest {
+    file => number(1)
+  }
+  StatResponse {
+    file_info => number(1)
+  }
+  TruncateRequest {
+    file => number(1)
+    size => number(2)
+  }
+  WriteRequest {
+    file => number(1)
+    data => number(2)
+  }
+  WriteResponse {
+    bytes_written => number(1)
+  }
+  WriteAtRequest {
+    file => number(1)
+    data => number(2)
+    offset => number(3)
+  }
+}
