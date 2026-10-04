@@ -1,8 +1,7 @@
 package unmango.music.artist.v1alpha1
 
-import "../../../../shim/google/type.tdl" as gtype
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Who made the music, and what they are credited on:
@@ -67,7 +66,7 @@ type Membership: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -80,9 +79,9 @@ type Membership: Entity {
   member: ref.ObjectReference
   /// What they played: "bass", "backing vocals", "drum programming".
   roles: [string]
-  joined: gtype.Date
+  joined: Date
   /// Unset while the membership is current.
-  left: gtype.Date
+  left: Date
   /// Present at the group's formation.
   founding: bool
   /// Plays live but does not appear on the recordings.
@@ -91,7 +90,7 @@ type Membership: Entity {
   observed_generation: int
   /// Reports whether the group admitted this membership, and why not when it
   /// did not.
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   admitted_time: instant
 }
 
@@ -106,7 +105,7 @@ type ArtistCredit: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -121,7 +120,7 @@ type ArtistCredit: Entity {
   /// can be credited for has no closed list worth freezing into the schema.
   role: string
   /// Ordering within the role. Lower is billed first.
-  billing_order: scalar.int32
+  billing_order: int32
   /// The album artist rather than a feature or a session player. At most one
   /// credit per Title per role should set this.
   primary: bool
@@ -130,7 +129,7 @@ type ArtistCredit: Entity {
   // Observed state.
   observed_generation: int
   /// Reports whether the Title admitted this credit.
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   admitted_time: instant
 }
 
@@ -146,7 +145,7 @@ type Artist: Entity {
   labels: {string -> string}
   annotations: {string -> string}
   /// The Artist behind an alias. Absent at the top of a hierarchy.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -166,9 +165,9 @@ type Artist: Entity {
   disambiguation: string
   summary: string
   /// Formed, or born, or first active under this name.
-  active_from: gtype.Date
+  active_from: Date
   /// Disbanded, or died. Unset while active.
-  active_until: gtype.Date
+  active_until: Date
   /// ISO 3166 code of where the artist is from.
   origin_country: string
   genres: [string]
@@ -180,265 +179,273 @@ type Artist: Entity {
   /// without coupling the packages.
   image_uri: string
   /// Personal rating, 0 to 100. Distinct from any external score.
-  rating: scalar.int32
+  rating: int32
   /// Which child Artists this one claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// Child Artists of kind ALIAS.
-  alias_count: scalar.int32
+  alias_count: int32
   /// Admitted Memberships naming this Artist as the group.
-  member_count: scalar.int32
+  member_count: int32
   /// Admitted Memberships naming this Artist as the member.
-  group_count: scalar.int32
+  group_count: int32
   /// Admitted ArtistCredits naming this Artist.
-  credit_count: scalar.int32
+  credit_count: int32
   /// Distinct media.title Titles this Artist is credited on.
-  title_count: scalar.int32
+  title_count: int32
 }
 
 target protobuf for unmango.music.artist.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("artist.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Date => foreign("google/type/date.proto", "google.type.Date")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   ExternalId {
     source => number(1)
     value => number(2)
   }
   Membership {
-    resource("unmango.music.artist/Membership", "memberships/{membership}", "membership", "memberships")
+    option("(google.api.resource)", "{ type: \"unmango.music.artist/Membership\" pattern: \"memberships/{membership}\" singular: \"membership\" plural: \"memberships\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     parent_ref {
       number(11)
-      resource_reference("unmango.music.artist/Artist")
+      option("(google.api.resource_reference).type", "\"unmango.music.artist/Artist\"")
     }
     member {
       number(12)
-      resource_reference("unmango.music.artist/Artist")
+      option("(google.api.resource_reference).type", "\"unmango.music.artist/Artist\"")
     }
     roles => number(13)
     joined {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     left {
       number(15)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     founding => number(16)
     touring_only => number(17)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     admitted_time {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   ArtistCredit {
-    resource("unmango.music.artist/ArtistCredit", "artistCredits/{artist_credit}", "artistCredit", "artistCredits")
+    option("(google.api.resource)", "{ type: \"unmango.music.artist/ArtistCredit\" pattern: \"artistCredits/{artist_credit}\" singular: \"artistCredit\" plural: \"artistCredits\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     parent_ref {
       number(11)
-      resource_reference("unmango.media.title/Title")
+      option("(google.api.resource_reference).type", "\"unmango.media.title/Title\"")
     }
     artist {
       number(12)
-      resource_reference("unmango.music.artist/Artist")
+      option("(google.api.resource_reference).type", "\"unmango.music.artist/Artist\"")
     }
     role => number(13)
     billing_order => number(14)
     primary => number(15)
     credited_as {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     admitted_time {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   Artist {
-    resource("unmango.music.artist/Artist", "artists/{artist}", "artist", "artists")
+    option("(google.api.resource)", "{ type: \"unmango.music.artist/Artist\" pattern: \"artists/{artist}\" singular: \"artist\" plural: \"artists\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     kind {
       number(11)
-      field_behavior(IMMUTABLE)
+      option("(google.api.field_behavior)", "IMMUTABLE")
     }
     artist_name => number(12)
     sort_name {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     disambiguation {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     summary {
       number(15)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     active_from {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     active_until {
       number(17)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     origin_country {
       number(18)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     genres => number(19)
     external_ids => number(20)
     contact {
       number(21)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     image_uri {
       number(22)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     rating {
       number(23)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     selector => number(24)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     alias_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     member_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     group_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     credit_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     title_count {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

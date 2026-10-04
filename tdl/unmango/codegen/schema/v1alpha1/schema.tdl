@@ -1,7 +1,6 @@
 package unmango.codegen.schema.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Machine-readable descriptions of an API, and the types inside them:
@@ -74,7 +73,7 @@ type Field {
   docs: string
   /// Field number, tag, or ordinal, for formats that assign one. Zero when the
   /// format orders by declaration instead.
-  number: scalar.int32
+  number: int32
   deprecated: bool
 }
 
@@ -99,7 +98,7 @@ type Schema: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -134,13 +133,13 @@ type Schema: Entity {
   root_path: string
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// Content hash of the source as last fetched. What a
   /// codegen.conversion ConversionInput pins and a codegen.artifact Artifact
   /// hashes over.
   digest: string
-  type_count: scalar.int32
-  service_count: scalar.int32
+  type_count: int32
+  service_count: int32
   last_fetch_time: instant
   /// Schemas whose imports name this one. Makes the import graph navigable
   /// from either end.
@@ -158,7 +157,7 @@ type TypeDef: Entity {
   labels: {string -> string}
   annotations: {string -> string}
   /// The Schema that declares this type.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -180,21 +179,27 @@ type TypeDef: Entity {
   methods: [Method]
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// Other TypeDefs whose fields, methods, or aliases name this one.
   referenced_by: [ref.ObjectReference]
-  field_count: scalar.int32
+  field_count: int32
 }
 
 target protobuf for unmango.codegen.schema.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("schema.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   TypeRef {
-    name => number(1)
+    name => oneof
     schema {
       number(2)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.codegen.schema/Schema")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.schema/Schema\"")
     }
     type_arguments => number(4)
   }
@@ -220,175 +225,175 @@ target protobuf for unmango.codegen.schema.v1alpha1 {
     docs => number(6)
   }
   Schema {
-    resource("unmango.codegen.schema/Schema", "schemas/{schema}", "schema", "schemas")
+    option("(google.api.resource)", "{ type: \"unmango.codegen.schema/Schema\" pattern: \"schemas/{schema}\" singular: \"schema\" plural: \"schemas\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     format => number(11)
     source_uri => number(12)
     version {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     platform {
       number(14)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.compute.platform/Platform")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
     }
     imports {
       number(15)
-      resource_reference("unmango.codegen.schema/Schema")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.schema/Schema\"")
     }
     repository {
       number(16)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     root_path {
       number(17)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     digest {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     type_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     service_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_fetch_time {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     imported_by {
       number(56)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.codegen.schema/Schema")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.schema/Schema\"")
     }
   }
   TypeDef {
-    resource("unmango.codegen.schema/TypeDef", "typeDefs/{type_def}", "typeDef", "typeDefs")
+    option("(google.api.resource)", "{ type: \"unmango.codegen.schema/TypeDef\" pattern: \"typeDefs/{type_def}\" singular: \"typeDef\" plural: \"typeDefs\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     type_name {
       number(11)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     kind {
       number(12)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     fields {
       number(13)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     enum_values {
       number(14)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     alias_of {
       number(15)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     docs {
       number(16)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     deprecated {
       number(17)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     methods {
       number(18)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     referenced_by {
       number(52)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.codegen.schema/TypeDef")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.schema/TypeDef\"")
     }
     field_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

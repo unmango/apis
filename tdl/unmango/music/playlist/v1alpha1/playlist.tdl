@@ -1,7 +1,6 @@
 package unmango.music.playlist.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Tracks in a chosen order:
@@ -51,9 +50,9 @@ type ExternalId {
 /// making the rule the membership.
 type PlaylistSource {
   /// Claims media.title Titles by label.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// Stop generating past this many entries. Zero means no limit.
-  limit: scalar.int32
+  limit: int32
   /// Labels applied to every generated PlaylistEntry, so generated and
   /// hand-added entries stay distinguishable.
   entry_labels: {string -> string}
@@ -69,7 +68,7 @@ type PlaylistEntry: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -91,7 +90,7 @@ type PlaylistEntry: Entity {
   added_time: instant
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// The referenced Title exists. False leaves the entry in place rather than
   /// deleting it, so a playlist survives a catalog that has not caught up.
   resolved: bool
@@ -99,7 +98,7 @@ type PlaylistEntry: Entity {
   runtime: duration
   /// Position under the playlist's ordering strategy, counting from one.
   /// Derived, since under every strategy but MANUAL nothing declares it.
-  position: scalar.int32
+  position: int32
 }
 
 // ---------------------------------------------------------------------------
@@ -114,7 +113,7 @@ type Playlist: Entity {
   annotations: {string -> string}
   /// The parent Playlist, for a playlist filed inside a folder. Absent at the
   /// top level.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -132,23 +131,30 @@ type Playlist: Entity {
   published: bool
   external_ids: [ExternalId]
   /// Which child Playlists this one claims as a folder.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
-  entry_count: scalar.int32
+  conditions: [Condition]
+  entry_count: int32
   /// Child Playlists.
-  child_count: scalar.int32
+  child_count: int32
   /// Summed over entries, counting only those that resolved.
   total_runtime: duration
   /// Entries whose track reference does not resolve.
-  unresolved_count: scalar.int32
+  unresolved_count: int32
   /// Entries written by source rather than added by hand.
-  generated_count: scalar.int32
+  generated_count: int32
 }
 
 target protobuf for unmango.music.playlist.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("playlist.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   ExternalId {
     source => number(1)
@@ -160,155 +166,155 @@ target protobuf for unmango.music.playlist.v1alpha1 {
     entry_labels => number(3)
   }
   PlaylistEntry {
-    resource("unmango.music.playlist/PlaylistEntry", "playlistEntries/{playlist_entry}", "playlistEntry", "playlistEntries")
+    option("(google.api.resource)", "{ type: \"unmango.music.playlist/PlaylistEntry\" pattern: \"playlistEntries/{playlist_entry}\" singular: \"playlistEntry\" plural: \"playlistEntries\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     track {
       number(11)
-      resource_reference("unmango.media.title/Title")
+      option("(google.api.resource_reference).type", "\"unmango.media.title/Title\"")
     }
     rank => number(12)
     prefer_edition {
       number(13)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.media.title/Edition")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.media.title/Edition\"")
     }
     note {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     added_time {
       number(15)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     resolved {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     runtime {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     position {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   Playlist {
-    resource("unmango.music.playlist/Playlist", "playlists/{playlist}", "playlist", "playlists")
+    option("(google.api.resource)", "{ type: \"unmango.music.playlist/Playlist\" pattern: \"playlists/{playlist}\" singular: \"playlist\" plural: \"playlists\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     description {
       number(11)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     source {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     ordering => number(13)
     image_uri {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     published => number(15)
     external_ids => number(16)
     selector => number(17)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     entry_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     child_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     total_runtime {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     unresolved_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     generated_count {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

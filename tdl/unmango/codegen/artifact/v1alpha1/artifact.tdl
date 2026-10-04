@@ -1,9 +1,8 @@
 package unmango.codegen.artifact.v1alpha1
 
-import "../../../../shim/google/type.tdl" as gtype
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/rpc.tdl" as rpc
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../../shim/rpc.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Generated output as a graph:
@@ -103,15 +102,15 @@ type Artifact: Entity {
   /// A dev.unmango.protofs root holding the generated tree.
   tree_uri: string
   size_bytes: int
-  file_count: scalar.int32
+  file_count: int32
   // Derived, computed by whoever indexes the graph.
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// The codegen.conversion ConversionRuns that reached this digest. Repeated
   /// and derived rather than content: the same inputs can be converted many
   /// times, and which run got there first is not part of the identity.
   produced_by: [ref.ObjectReference]
   /// Artifacts naming this one as an input.
-  consumer_count: scalar.int32
+  consumer_count: int32
   /// Where the bytes are published: an OCI reference, a Nix store path, a BSR
   /// module version. Derived because publishing does not change the content.
   published_uris: [string]
@@ -123,19 +122,19 @@ type Artifact: Entity {
 }
 
 type ArtifactService {
-  GetArtifact: rpc.Fn<GetArtifactRequest, GetArtifactResponse>
-  ListArtifacts: rpc.Fn<ListArtifactsRequest, ListArtifactsResponse>
-  WatchArtifacts: rpc.Fn<WatchArtifactsRequest, rpc.Stream<WatchArtifactsResponse>>
+  GetArtifact: Fn<GetArtifactRequest, GetArtifactResponse>
+  ListArtifacts: Fn<ListArtifactsRequest, ListArtifactsResponse>
+  WatchArtifacts: Fn<WatchArtifactsRequest, Stream<WatchArtifactsResponse>>
   /// Walk the input closure of a set of artifacts. The derivation-graph
   /// equivalent of vcs.commit WalkCommits.
-  WalkInputs: rpc.Fn<WalkInputsRequest, rpc.Stream<WalkInputsResponse>>
+  WalkInputs: Fn<WalkInputsRequest, Stream<WalkInputsResponse>>
   /// Walk the other way: everything built from a set of artifacts or sources,
   /// directly or transitively. This is what answers "the upstream schema
   /// moved, what regenerates".
-  WalkConsumers: rpc.Fn<WalkConsumersRequest, rpc.Stream<WalkConsumersResponse>>
+  WalkConsumers: Fn<WalkConsumersRequest, Stream<WalkConsumersResponse>>
   /// Whether a set of inputs already has output. The cache lookup a
   /// codegen.conversion ConversionRun performs before executing.
-  ResolveInputDigest: rpc.Fn<ResolveInputDigestRequest, ResolveInputDigestResponse>
+  ResolveInputDigest: Fn<ResolveInputDigestRequest, ResolveInputDigestResponse>
 }
 
 // Create, Update, and Delete are absent. They are not operations that exist
@@ -152,9 +151,9 @@ type GetArtifactResponse {
 }
 
 type ListArtifactsRequest {
-  page_size: scalar.int32
+  page_size: int32
   page_token: string
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// Field 4 is `converter` rather than the `owner` this position holds on
   /// every mutable kind. An artifact has no owner reference to list by; the
   /// converter is provenance, not ownership.
@@ -162,7 +161,7 @@ type ListArtifactsRequest {
   /// Restricts results to artifacts in this output format.
   format: string
   /// Restricts results to artifacts first seen within this window.
-  window: gtype.Interval
+  window: Interval
   /// Restricts results to artifacts consuming this input, by digest or by
   /// source reference. Only one level deep; WalkConsumers goes transitive.
   consumes: ArtifactInput
@@ -176,7 +175,7 @@ type ListArtifactsResponse {
 }
 
 type WatchArtifactsRequest {
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   converter: ref.ObjectReference
   /// Resume from this point instead of the current state, so a client that
   /// drops the stream does not have to replay from nothing. Unset starts
@@ -216,9 +215,9 @@ type WalkInputsRequest {
   /// provide".
   exclude_digests: [string]
   /// Stop after this many edges from the nearest start. Zero means unbounded.
-  max_depth: scalar.int32
+  max_depth: int32
   /// Stop after this many artifacts. Zero means unbounded.
-  limit: scalar.int32
+  limit: int32
   /// Emit only artifacts in one of these output formats. Empty emits all.
   formats: [string]
   /// Emit only artifacts produced by one of these Converters.
@@ -233,7 +232,7 @@ type WalkInputsResponse {
   /// The node reached by this edge.
   node: WalkInputsResponseNode
   /// Edges traversed from the nearest start digest to reach this node.
-  depth: scalar.int32
+  depth: int32
 }
 
 // tdl-gap: oneof becomes a separate message
@@ -251,8 +250,8 @@ type WalkConsumersRequest {
   /// codegen.schema Schema or vcs.commit Commit that just moved, which is not
   /// itself an Artifact.
   start_sources: [ref.ObjectReference]
-  max_depth: scalar.int32
-  limit: scalar.int32
+  max_depth: int32
+  limit: int32
   formats: [string]
   /// Emit only artifacts something published, which narrows an impact walk to
   /// what consumers outside the graph can actually see.
@@ -261,7 +260,7 @@ type WalkConsumersRequest {
 
 type WalkConsumersResponse {
   artifact: Artifact
-  depth: scalar.int32
+  depth: int32
   /// The codegen.conversion Conversions that would need re-running to rebuild
   /// this artifact. Carried on the walk so an impact query returns the work to
   /// do alongside the damage.
@@ -284,94 +283,103 @@ type ResolveInputDigestResponse {
 }
 
 target protobuf for unmango.codegen.artifact.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("artifact.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Interval => foreign("google/type/interval.proto", "google.type.Interval")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  Fn => rpc
+  Stream => stream
   edition("2024")
   ArtifactInput {
-    origin => number(1)
+    origin => oneof
     digest {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     port {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   ArtifactInputOrigin {
     ArtifactDigest => number(1)
     Source {
       number(2)
-      source => resource_reference("*")
+      source => option("(google.api.resource_reference).type", "\"*\"")
     }
   }
   Artifact {
-    resource("unmango.codegen.artifact/Artifact", "artifacts/{artifact}", "artifact", "artifacts")
+    option("(google.api.resource)", "{ type: \"unmango.codegen.artifact/Artifact\" pattern: \"artifacts/{artifact}\" singular: \"artifact\" plural: \"artifacts\" }")
     reserved(3, 6, 7, 9, 10)  // display_name, owner_refs, generation, update_time, delete_time: nothing declares, owns, or rewrites an artifact
     digest {
       number(1)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     labels => number(4)
     annotations => number(5)
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     inputs => number(11)
     converter {
       number(12)
-      resource_reference("unmango.codegen.converter/Converter")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.converter/Converter\"")
     }
     converter_tool_version => number(13)
     options => number(14)
     format => number(15)
     qualifier {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     tree_uri => number(17)
     size_bytes => number(18)
     file_count => number(19)
     conditions {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     produced_by {
       number(51)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.codegen.conversion/ConversionRun")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.conversion/ConversionRun\"")
     }
     consumer_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     published_uris {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     first_seen_time {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_produced_time {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     reproducible {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   ArtifactService => service
   GetArtifactRequest {
     digest {
       number(1)
-      field_behavior(REQUIRED)
+      option("(google.api.field_behavior)", "REQUIRED")
     }
   }
   GetArtifactResponse {
@@ -380,36 +388,36 @@ target protobuf for unmango.codegen.artifact.v1alpha1 {
   ListArtifactsRequest {
     page_size {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     page_token {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     selector {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     converter {
       number(4)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.codegen.converter/Converter")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.converter/Converter\"")
     }
     format {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     window {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     consumes {
       number(7)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     reachable_only {
       number(8)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   ListArtifactsResponse {
@@ -419,59 +427,59 @@ target protobuf for unmango.codegen.artifact.v1alpha1 {
   WatchArtifactsRequest {
     selector {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     converter {
       number(2)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.codegen.converter/Converter")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.converter/Converter\"")
     }
     resource_version {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   WatchArtifactsResponse {
     type => number(1)
     artifact {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     resource_version => number(3)
   }
   WalkInputsRequest {
     start_digests {
       number(1)
-      field_behavior(REQUIRED)
+      option("(google.api.field_behavior)", "REQUIRED")
     }
     exclude_digests {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     max_depth {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     limit {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     formats {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     converters {
       number(6)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.codegen.converter/Converter")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.converter/Converter\"")
     }
     include_sources {
       number(7)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   WalkInputsResponse {
-    node => number(1)
+    node => oneof
     depth => number(2)
   }
   WalkInputsResponseNode {
@@ -481,28 +489,28 @@ target protobuf for unmango.codegen.artifact.v1alpha1 {
   WalkConsumersRequest {
     start_digests {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     start_sources {
       number(2)
-      field_behavior(OPTIONAL)
-      resource_reference("*")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"*\"")
     }
     max_depth {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     limit {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     formats {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     published_only {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   WalkConsumersResponse {
@@ -510,17 +518,17 @@ target protobuf for unmango.codegen.artifact.v1alpha1 {
     depth => number(2)
     conversions {
       number(3)
-      resource_reference("unmango.codegen.conversion/Conversion")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.conversion/Conversion\"")
     }
   }
   ResolveInputDigestRequest {
     input_digest {
       number(1)
-      field_behavior(REQUIRED)
+      option("(google.api.field_behavior)", "REQUIRED")
     }
     format {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   ResolveInputDigestResponse {

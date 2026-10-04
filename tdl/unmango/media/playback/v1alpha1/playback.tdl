@@ -1,8 +1,7 @@
 package unmango.media.playback.v1alpha1
 
-import "../../../../shim/google/type.tdl" as gtype
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // What has been watched, read, or listened to, and by whom:
@@ -51,14 +50,14 @@ type PlaySession: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
   update_time: instant
   delete_time: instant
   // Desired state. Recorded facts, since a session is written as it happens.
-  when: gtype.Interval
+  when: Interval
   /// Offset into the title at the start and end of the sitting.
   start_position: duration
   end_position: duration
@@ -70,15 +69,15 @@ type PlaySession: Entity {
   /// The media.library LibraryItem the bytes came from, when played locally.
   library_item: ref.ObjectReference
   /// Playback speed. 1.0 is normal; audiobooks and podcasts often are not.
-  speed: scalar.double
+  speed: float64
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// end_position minus start_position. Differs from watched_duration when the
   /// sitting involved seeking.
   progress_delta: duration
   /// Fraction of the title's runtime covered by this sitting.
-  fraction_of_title: scalar.double
+  fraction_of_title: float64
 }
 
 // tdl-gap: oneof becomes a separate message
@@ -100,7 +99,7 @@ type PlayState: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -115,24 +114,24 @@ type PlayState: Entity {
   /// Where to resume. The one number a player needs.
   position: duration
   /// Personal rating, 0 to 100.
-  rating: scalar.int32
+  rating: int32
   /// Marked to watch next, independently of any Collection.
   queued: bool
   /// Hide from continue-watching without discarding the record.
   hidden: bool
   /// Which PlaySessions this state claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   notes: string
   // Observed state.
   observed_generation: int
   phase: PlaybackPhase
   /// Reports whether the Title admitted the attachment.
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// Position over the title's runtime, 0.0 to 1.0.
-  progress: scalar.double
+  progress: float64
   /// Times played to completion. Above one means rewatched.
-  play_count: scalar.int32
-  session_count: scalar.int32
+  play_count: int32
+  session_count: int32
   /// Summed over sessions, so a rewatched title reports more than its runtime.
   total_watched_duration: duration
   first_played_time: instant
@@ -143,175 +142,183 @@ type PlayState: Entity {
 }
 
 target protobuf for unmango.media.playback.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("playback.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Interval => foreign("google/type/interval.proto", "google.type.Interval")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   PlaySession {
-    resource("unmango.media.playback/PlaySession", "playSessions/{play_session}", "playSession", "playSessions")
+    option("(google.api.resource)", "{ type: \"unmango.media.playback/PlaySession\" pattern: \"playSessions/{play_session}\" singular: \"playSession\" plural: \"playSessions\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     when => number(11)
     start_position => number(12)
     end_position => number(13)
     watched_duration => number(14)
     outcome => number(15)
-    played_on => number(16)
+    played_on => oneof
     library_item {
       number(18)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.media.library/LibraryItem")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.media.library/LibraryItem\"")
     }
     speed => number(19)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     progress_delta {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     fraction_of_title {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   PlaySessionPlayedOn {
     Device {
       number(16)
-      device => resource_reference("unmango.compute.host/Host")
+      device => option("(google.api.resource_reference).type", "\"unmango.compute.host/Host\"")
     }
     ExternalDeviceName => number(17)
   }
   PlayState {
-    resource("unmango.media.playback/PlayState", "playStates/{play_state}", "playState", "playStates")
+    option("(google.api.resource)", "{ type: \"unmango.media.playback/PlayState\" pattern: \"playStates/{play_state}\" singular: \"playState\" plural: \"playStates\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     parent_ref {
       number(11)
-      resource_reference("unmango.media.title/Title")
+      option("(google.api.resource_reference).type", "\"unmango.media.title/Title\"")
     }
     viewer {
       number(12)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     position => number(13)
     rating {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     queued => number(15)
     hidden => number(16)
     selector => number(17)
     notes {
       number(18)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     phase {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     progress {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     play_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     session_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     total_watched_duration {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     first_played_time {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_played_time {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     completed_time {
       number(59)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     stalled {
       number(60)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

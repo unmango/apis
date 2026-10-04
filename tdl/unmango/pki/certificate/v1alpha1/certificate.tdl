@@ -1,9 +1,8 @@
 package unmango.pki.certificate.v1alpha1
 
-import "../../../../shim/google/type.tdl" as gtype
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/rpc.tdl" as rpc
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../../shim/rpc.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Standing requests for certificates, and their executions:
@@ -78,7 +77,7 @@ type CertificateRequest: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -92,7 +91,7 @@ type CertificateRequest: Entity {
   ip_addresses: [string]
   key_algorithm: KeyAlgorithm
   /// Bits, meaningful only for KEY_ALGORITHM_RSA.
-  key_size: scalar.int32
+  key_size: int32
   duration: duration
   /// Reissue once the current Certificate's remaining lifetime falls below
   /// this.
@@ -105,11 +104,11 @@ type CertificateRequest: Entity {
   output_uri: string
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   latest_issuance: ref.ObjectReference
   /// Fingerprint of the Certificate the latest successful issuance produced.
   current_certificate_fingerprint: string
-  issuance_count: scalar.int32
+  issuance_count: int32
   last_issuance_time: instant
   next_renewal_time: instant
   /// current_certificate_fingerprint has crossed renew_before, or does not yet
@@ -128,7 +127,7 @@ type CertificateIssuance: Entity {
   labels: {string -> string}
   annotations: {string -> string}
   /// The CertificateRequest that materialized this issuance.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -141,7 +140,7 @@ type CertificateIssuance: Entity {
   common_name: string
   ip_addresses: [string]
   key_algorithm: KeyAlgorithm
-  key_size: scalar.int32
+  key_size: int32
   duration: duration
   usages: [CertificateUsage]
   is_ca: bool
@@ -153,12 +152,12 @@ type CertificateIssuance: Entity {
   // Observed state.
   observed_generation: int
   phase: CertificateIssuancePhase
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   start_time: instant
   completion_time: instant
   /// Fingerprint of the Certificate this issuance produced.
   certificate_fingerprint: string
-  attempt: scalar.int32
+  attempt: int32
   /// Detail on failure: an ACME challenge rejection, a Vault error.
   error_reason: string
 }
@@ -201,7 +200,7 @@ type Certificate: Entity {
   /// A dev.unmango.protofs root holding the issued material.
   material_uri: string
   // Derived, computed by whoever indexes the graph.
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// The CertificateIssuances that reached this fingerprint. Repeated and
   /// derived rather than content, the same reason
   /// codegen.artifact Artifact.produced_by is: a retried issuance can reach an
@@ -222,12 +221,12 @@ type Certificate: Entity {
 /// codegen.artifact ArtifactService are: creating, editing, and deleting are
 /// not operations that exist for a content-addressed object.
 type CertificateService {
-  GetCertificate: rpc.Fn<GetCertificateRequest, GetCertificateResponse>
-  ListCertificates: rpc.Fn<ListCertificatesRequest, ListCertificatesResponse>
-  WatchCertificates: rpc.Fn<WatchCertificatesRequest, rpc.Stream<WatchCertificatesResponse>>
+  GetCertificate: Fn<GetCertificateRequest, GetCertificateResponse>
+  ListCertificates: Fn<ListCertificatesRequest, ListCertificatesResponse>
+  WatchCertificates: Fn<WatchCertificatesRequest, Stream<WatchCertificatesResponse>>
   /// Walk the issuer chain from a leaf toward its root, the trust-graph
   /// equivalent of vcs.commit WalkCommits and codegen.artifact WalkInputs.
-  WalkChain: rpc.Fn<WalkChainRequest, rpc.Stream<WalkChainResponse>>
+  WalkChain: Fn<WalkChainRequest, Stream<WalkChainResponse>>
 }
 
 type GetCertificateRequest {
@@ -240,9 +239,9 @@ type GetCertificateResponse {
 }
 
 type ListCertificatesRequest {
-  page_size: scalar.int32
+  page_size: int32
   page_token: string
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// Field 4 is `issuer` rather than the `owner` this position holds on every
   /// mutable kind. A certificate has no owner reference to list by; the
   /// issuer is provenance, not ownership.
@@ -250,7 +249,7 @@ type ListCertificatesRequest {
   dns_names: [string]
   /// Restricts results to certificates whose not_before_time falls within this
   /// window.
-  window: gtype.Interval
+  window: Interval
   revoked_only: bool
   expired_only: bool
 }
@@ -261,7 +260,7 @@ type ListCertificatesResponse {
 }
 
 type WatchCertificatesRequest {
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   issuer: ref.ObjectReference
   /// Resume from this point instead of the current state, so a client that
   /// drops the stream does not have to replay from nothing. Unset starts from
@@ -300,60 +299,70 @@ type WalkChainRequest {
 type WalkChainResponse {
   certificate: Certificate
   /// Edges traversed from start_fingerprint to reach this certificate.
-  depth: scalar.int32
+  depth: int32
 }
 
 target protobuf for unmango.pki.certificate.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("certificate.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Interval => foreign("google/type/interval.proto", "google.type.Interval")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  Fn => rpc
+  Stream => stream
   edition("2024")
   CertificateRequest {
-    resource("unmango.pki.certificate/CertificateRequest", "certificateRequests/{certificate_request}", "certificateRequest", "certificateRequests")
+    option("(google.api.resource)", "{ type: \"unmango.pki.certificate/CertificateRequest\" pattern: \"certificateRequests/{certificate_request}\" singular: \"certificateRequest\" plural: \"certificateRequests\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     issuer {
       number(11)
-      resource_reference("unmango.pki.issuer/Issuer")
+      option("(google.api.resource_reference).type", "\"unmango.pki.issuer/Issuer\"")
     }
     dns_names => number(12)
     common_name {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     ip_addresses => number(14)
     key_algorithm => number(15)
     key_size {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     duration => number(17)
     renew_before => number(18)
@@ -361,159 +370,159 @@ target protobuf for unmango.pki.certificate.v1alpha1 {
     is_ca => number(20)
     output_uri {
       number(21)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     latest_issuance {
       number(52)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.pki.certificate/CertificateIssuance")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.pki.certificate/CertificateIssuance\"")
     }
     current_certificate_fingerprint {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     issuance_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_issuance_time {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     next_renewal_time {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     renewal_due {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   CertificateIssuance {
-    resource("unmango.pki.certificate/CertificateIssuance", "certificateIssuances/{certificate_issuance}", "certificateIssuance", "certificateIssuances")
+    option("(google.api.resource)", "{ type: \"unmango.pki.certificate/CertificateIssuance\" pattern: \"certificateIssuances/{certificate_issuance}\" singular: \"certificateIssuance\" plural: \"certificateIssuances\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     issuer {
       number(11)
-      resource_reference("unmango.pki.issuer/Issuer")
+      option("(google.api.resource_reference).type", "\"unmango.pki.issuer/Issuer\"")
     }
     dns_names => number(12)
     common_name {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     ip_addresses => number(14)
     key_algorithm => number(15)
     key_size {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     duration => number(17)
     usages => number(18)
     is_ca => number(19)
     output_uri {
       number(20)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     job_run {
       number(40)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.ci.job/JobRun")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.ci.job/JobRun\"")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     phase {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     start_time {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     completion_time {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     certificate_fingerprint {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     attempt {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     error_reason {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   Certificate {
-    resource("unmango.pki.certificate/Certificate", "certificates/{certificate}", "certificate", "certificates")
+    option("(google.api.resource)", "{ type: \"unmango.pki.certificate/Certificate\" pattern: \"certificates/{certificate}\" singular: \"certificate\" plural: \"certificates\" }")
     reserved(3, 6, 7, 9, 10)  // display_name, owner_refs, generation, update_time, delete_time: nothing declares, owns, or rewrites a certificate
     fingerprint {
       number(1)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     labels => number(4)
     annotations => number(5)
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     serial_number => number(11)
     dns_names => number(12)
     common_name {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     ip_addresses => number(14)
     key_algorithm => number(15)
@@ -523,47 +532,47 @@ target protobuf for unmango.pki.certificate.v1alpha1 {
     not_after_time => number(19)
     issuer {
       number(20)
-      resource_reference("unmango.pki.issuer/Issuer")
+      option("(google.api.resource_reference).type", "\"unmango.pki.issuer/Issuer\"")
     }
     issuer_fingerprint {
       number(21)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     material_uri {
       number(22)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     conditions {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     issued_by {
       number(51)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.pki.certificate/CertificateIssuance")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.pki.certificate/CertificateIssuance\"")
     }
     revoked {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     revoke_time {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     revocation_reason {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     expired {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   CertificateService => service
   GetCertificateRequest {
     fingerprint {
       number(1)
-      field_behavior(REQUIRED)
+      option("(google.api.field_behavior)", "REQUIRED")
     }
   }
   GetCertificateResponse {
@@ -572,36 +581,36 @@ target protobuf for unmango.pki.certificate.v1alpha1 {
   ListCertificatesRequest {
     page_size {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     page_token {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     selector {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     issuer {
       number(4)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.pki.issuer/Issuer")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.pki.issuer/Issuer\"")
     }
     dns_names {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     window {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     revoked_only {
       number(7)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     expired_only {
       number(8)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   ListCertificatesResponse {
@@ -611,30 +620,30 @@ target protobuf for unmango.pki.certificate.v1alpha1 {
   WatchCertificatesRequest {
     selector {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     issuer {
       number(2)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.pki.issuer/Issuer")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.pki.issuer/Issuer\"")
     }
     resource_version {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   WatchCertificatesResponse {
     type => number(1)
     certificate {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     resource_version => number(3)
   }
   WalkChainRequest {
     start_fingerprint {
       number(1)
-      field_behavior(REQUIRED)
+      option("(google.api.field_behavior)", "REQUIRED")
     }
   }
   WalkChainResponse {

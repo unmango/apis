@@ -1,8 +1,7 @@
 package unmango.calendar.event.v1alpha1
 
-import "../../../../shim/google/type.tdl" as gtype
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Scheduled time, and who is coming:
@@ -38,18 +37,18 @@ enum RecurrenceFrequency { Daily Weekly Monthly Yearly }
 type RecurrenceRule {
   frequency: RecurrenceFrequency
   /// Periods between occurrences. Two with WEEKLY means fortnightly.
-  interval: scalar.int32
+  interval: int32
   /// Days the rule fires. WEEKLY only.
-  by_day: [gtype.DayOfWeek]
+  by_day: [DayOfWeek]
   /// Days of the month, 1 to 31, or negative to count back from the end.
   /// MONTHLY and YEARLY only.
-  by_month_day: [scalar.int32]
+  by_month_day: [int32]
   /// Stop after this many occurrences. Zero means unbounded.
-  count: scalar.int32
+  count: int32
   /// Stop on this date. Unset means unbounded.
-  until: gtype.Date
+  until: Date
   /// Dates to skip, for a series with holes in it.
-  exclude_dates: [gtype.Date]
+  exclude_dates: [Date]
   /// Schedule the next occurrence relative to when the last one was completed
   /// rather than when it was due. Mirrors productivity.task's copy of this
   /// field; keep the two in sync when either changes.
@@ -69,7 +68,7 @@ type Attendance: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -90,7 +89,7 @@ type Attendance: Entity {
   observed_generation: int
   /// Reports whether the Event admitted this attendance, and why not when it
   /// did not.
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   responded_time: instant
   /// Whether the attendee is double-booked over this event's interval.
   conflicting: bool
@@ -106,7 +105,7 @@ type Event: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -128,22 +127,22 @@ type Event: Entity {
   conference_uri: string
   // Assigned desired state.
   /// When it happens. Computed per occurrence for a materialized event.
-  when: gtype.Interval
+  when: Interval
   /// The asset.property Space booked for it. Unset means no room is held.
   space: ref.ObjectReference
   /// Date within the series this occurrence stands for. Set on materialized
   /// events, so an occurrence stays identifiable after it is moved.
-  occurrence_date: gtype.Date
+  occurrence_date: Date
   /// This occurrence was edited individually and no longer tracks its series.
   detached: bool
   // Observed state.
   observed_generation: int
   state: EventState
-  conditions: [metav1.Condition]
-  attendance_count: scalar.int32
-  accepted_count: scalar.int32
-  declined_count: scalar.int32
-  pending_count: scalar.int32
+  conditions: [Condition]
+  attendance_count: int32
+  accepted_count: int32
+  declined_count: int32
+  pending_count: int32
   /// Another Event overlaps this one for a shared attendee or the booked Space.
   conflicting: bool
 }
@@ -174,7 +173,7 @@ type RecurringEvent: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -185,36 +184,46 @@ type RecurringEvent: Entity {
   template: EventTemplate
   rule: RecurrenceRule
   /// Local time each occurrence starts, interpreted in template.time_zone.
-  start_date: gtype.Date
+  start_date: Date
   /// Seconds after midnight local time. Ignored when the template is all_day.
-  start_seconds: scalar.int32
+  start_seconds: int32
   duration: duration
   /// Materialize occurrences up to this date, bounding how far ahead the chain
   /// runs rather than generating an unbounded series.
-  materialize_through: gtype.Date
+  materialize_through: Date
   /// Which Events this series claims. Detached occurrences drop out of it.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// The Space every occurrence books, when the series holds a standing room.
   space: ref.ObjectReference
   /// Stop materializing without deleting the series.
   suspended: bool
   /// Past occurrences to retain. Zero retains all.
-  occurrence_history_limit: scalar.int32
+  occurrence_history_limit: int32
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
-  occurrence_count: scalar.int32
+  conditions: [Condition]
+  occurrence_count: int32
   /// Occurrences that were edited individually and no longer track the series.
-  detached_count: scalar.int32
-  next_occurrence_date: gtype.Date
-  materialized_through: gtype.Date
+  detached_count: int32
+  next_occurrence_date: Date
+  materialized_through: Date
   /// Latest revision of the template. Occurrences record the revision they were
   /// created with.
   revision: string
 }
 
 target protobuf for unmango.calendar.event.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("event.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Date => foreign("google/type/date.proto", "google.type.Date")
+  DayOfWeek => foreign("google/type/dayofweek.proto", "google.type.DayOfWeek")
+  Interval => foreign("google/type/interval.proto", "google.type.Interval")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   RecurrenceRule {
     frequency => number(1)
@@ -224,119 +233,119 @@ target protobuf for unmango.calendar.event.v1alpha1 {
     count => number(5)
     until {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     exclude_dates => number(7)
     from_completion => number(8)
   }
   Attendance {
-    resource("unmango.calendar.event/Attendance", "attendances/{attendance}", "attendance", "attendances")
+    option("(google.api.resource)", "{ type: \"unmango.calendar.event/Attendance\" pattern: \"attendances/{attendance}\" singular: \"attendance\" plural: \"attendances\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     parent_ref {
       number(11)
-      resource_reference("unmango.calendar.event/Event")
+      option("(google.api.resource_reference).type", "\"unmango.calendar.event/Event\"")
     }
     attendee {
       number(12)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     response => number(13)
     required => number(14)
     organizer => number(15)
     comment {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     responded_time {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conflicting {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   Event {
-    resource("unmango.calendar.event/Event", "events/{event}", "event", "events")
+    option("(google.api.resource)", "{ type: \"unmango.calendar.event/Event\" pattern: \"events/{event}\" singular: \"event\" plural: \"events\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     summary => number(11)
     description {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     location {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     transparency => number(14)
     all_day => number(15)
@@ -344,56 +353,56 @@ target protobuf for unmango.calendar.event.v1alpha1 {
     time_zone => number(17)
     conference_uri {
       number(18)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     when {
       number(40)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     space {
       number(41)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.asset.property/Space")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.asset.property/Space\"")
     }
     occurrence_date {
       number(42)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     detached {
       number(43)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     state {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     attendance_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     accepted_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     declined_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     pending_count {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conflicting {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   EventTemplate {
@@ -402,11 +411,11 @@ target protobuf for unmango.calendar.event.v1alpha1 {
     summary => number(10)
     description {
       number(11)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     location {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     transparency => number(13)
     all_day => number(14)
@@ -414,42 +423,42 @@ target protobuf for unmango.calendar.event.v1alpha1 {
     time_zone => number(16)
     conference_uri {
       number(17)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   RecurringEvent {
-    resource("unmango.calendar.event/RecurringEvent", "recurringEvents/{recurring_event}", "recurringEvent", "recurringEvents")
+    option("(google.api.resource)", "{ type: \"unmango.calendar.event/RecurringEvent\" pattern: \"recurringEvents/{recurring_event}\" singular: \"recurringEvent\" plural: \"recurringEvents\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     template => number(11)
     rule => number(12)
@@ -460,38 +469,38 @@ target protobuf for unmango.calendar.event.v1alpha1 {
     selector => number(17)
     space {
       number(18)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.asset.property/Space")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.asset.property/Space\"")
     }
     suspended => number(19)
     occurrence_history_limit => number(20)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     occurrence_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     detached_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     next_occurrence_date {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     materialized_through {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     revision {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

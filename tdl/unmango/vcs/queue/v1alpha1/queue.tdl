@@ -1,7 +1,6 @@
 package unmango.vcs.queue.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Serialized, speculatively-tested merges into one branch:
@@ -29,7 +28,7 @@ type MergeQueue: Entity {
   labels: {string -> string}
   annotations: {string -> string}
   /// The vcs.branch Branch this queue serializes merges into.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -37,20 +36,20 @@ type MergeQueue: Entity {
   delete_time: instant
   // Desired state.
   /// Entries tested together speculatively. One disables batching.
-  batch_size: scalar.int32
+  batch_size: int32
   /// Stop admitting new entries without draining the ones already queued.
   suspended: bool
   /// Which QueueEntries this queue claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// Rebase an entry onto the branch's current head before testing it.
   require_up_to_date: bool
   // Observed state.
   observed_generation: int
   phase: MergeQueuePhase
-  conditions: [metav1.Condition]
-  entry_count: scalar.int32
-  pending_count: scalar.int32
-  batched_count: scalar.int32
+  conditions: [Condition]
+  entry_count: int32
+  pending_count: int32
+  batched_count: int32
   /// Entry at the front of the queue, mirroring vcs.change ChangeSet.next_change.
   head_entry: ref.ObjectReference
   last_merge_time: instant
@@ -78,7 +77,7 @@ type QueueEntry: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -92,7 +91,7 @@ type QueueEntry: Entity {
   change: ref.ObjectReference
   /// Higher merges sooner within its batch eligibility. Zero is default FIFO
   /// order.
-  priority: scalar.int32
+  priority: int32
   // Assigned desired state.
   /// Which speculative batch this entry currently belongs to. Unset means not
   /// yet batched.
@@ -100,9 +99,9 @@ type QueueEntry: Entity {
   // Observed state.
   observed_generation: int
   phase: QueueEntryPhase
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// Current position in the queue. Lower merges sooner.
-  position: scalar.int32
+  position: int32
   /// Why the queue removed this entry: stale, checks failed, conflicts,
   /// target Protection unmet.
   eject_reason: string
@@ -123,41 +122,48 @@ enum QueueEntryPhase {
 }
 
 target protobuf for unmango.vcs.queue.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("queue.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   MergeQueue {
-    resource("unmango.vcs.queue/MergeQueue", "mergeQueues/{merge_queue}", "mergeQueue", "mergeQueues")
+    option("(google.api.resource)", "{ type: \"unmango.vcs.queue/MergeQueue\" pattern: \"mergeQueues/{merge_queue}\" singular: \"mergeQueue\" plural: \"mergeQueues\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     batch_size => number(11)
     suspended => number(12)
@@ -165,112 +171,112 @@ target protobuf for unmango.vcs.queue.v1alpha1 {
     require_up_to_date => number(14)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     phase {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     entry_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     pending_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     batched_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     head_entry {
       number(56)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.vcs.queue/QueueEntry")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.queue/QueueEntry\"")
     }
     last_merge_time {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   QueueEntry {
-    resource("unmango.vcs.queue/QueueEntry", "queueEntries/{queue_entry}", "queueEntry", "queueEntries")
+    option("(google.api.resource)", "{ type: \"unmango.vcs.queue/QueueEntry\" pattern: \"queueEntries/{queue_entry}\" singular: \"queueEntry\" plural: \"queueEntries\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     parent_ref {
       number(11)
-      resource_reference("unmango.vcs.queue/MergeQueue")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.queue/MergeQueue\"")
     }
     change {
       number(12)
-      resource_reference("unmango.vcs.change/Change")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.change/Change\"")
     }
     priority => number(13)
     batch_id {
       number(40)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     phase {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     position {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     eject_reason {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     queued_time {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     merged_time {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

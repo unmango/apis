@@ -1,31 +1,30 @@
 package unmango.cmd.v1alpha2
 
-import "../../../shim/protobuf.tdl" as wkt
-import "../../../shim/rpc.tdl" as rpc
-import "../../../shim/scalar.tdl" as scalar
+import "../../../shim/protobuf.tdl" as _
+import "../../../shim/rpc.tdl" as _
 
 type BuilderService {
   // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
-  FromJson: rpc.Fn<FromJsonRequest, FromJsonResponse>
+  FromJson: Fn<FromJsonRequest, FromJsonResponse>
   // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
-  FromYaml: rpc.Fn<FromYamlRequest, FromYamlResponse>
+  FromYaml: Fn<FromYamlRequest, FromYamlResponse>
   // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
-  FromProto: rpc.Fn<FromProtoRequest, FromProtoResponse>
+  FromProto: Fn<FromProtoRequest, FromProtoResponse>
 }
 
 /// Deprecated: use BuilderService. This was a naming error.
 deprecated("use BuilderService. This was a naming error.")
 type ConversionService {
   // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
-  FromJson: rpc.Fn<FromJsonRequest, FromJsonResponse>
+  FromJson: Fn<FromJsonRequest, FromJsonResponse>
   // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
-  FromYaml: rpc.Fn<FromYamlRequest, FromYamlResponse>
+  FromYaml: Fn<FromYamlRequest, FromYamlResponse>
   // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
-  FromProto: rpc.Fn<FromProtoRequest, FromProtoResponse>
+  FromProto: Fn<FromProtoRequest, FromProtoResponse>
 }
 
 type ExecutionService {
-  Run: rpc.Fn<RunRequest, RunResponse>
+  Run: Fn<RunRequest, RunResponse>
 }
 
 type FromJsonRequest {
@@ -39,7 +38,7 @@ type FromYamlRequest {
 }
 
 type FromProtoRequest {
-  spec: wkt.Any
+  spec: Any
 }
 
 type FromJsonResponse {
@@ -66,7 +65,7 @@ type RunResponse {
 }
 
 type ExitResult {
-  code: scalar.int32
+  code: int32
 }
 
 type Process {
@@ -77,7 +76,10 @@ type Process {
 }
 
 target protobuf for unmango.cmd.v1alpha2 {
-  out("gen/tdl")
+  out("proto")
+  file("cmd.proto")
+  Any => foreign("google/protobuf/any.proto", "google.protobuf.Any")
+  Fn => rpc
   edition("2024")
   BuilderService => service
   ConversionService => service

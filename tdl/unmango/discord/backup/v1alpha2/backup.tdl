@@ -1,6 +1,5 @@
 package unmango.discord.backup.v1alpha2
 
-import "../../../../shim/scalar.tdl" as scalar
 
 // ---- from backup.proto ----
 /// BackupMetadata holds information about a backup snapshot itself.
@@ -48,22 +47,22 @@ type Guild {
   preferred_locale: string
   nsfw_level: NsfwLevel
   premium_tier: PremiumTier
-  premium_subscription_count: scalar.int32
+  premium_subscription_count: int32
   vanity_url_code: string
   owner_id: string
   afk_channel_id: string
-  afk_timeout: scalar.int32  // seconds
+  afk_timeout: int32  // seconds
   system_channel_id: string
   rules_channel_id: string
   public_updates_channel_id: string
   safety_alerts_channel_id: string
-  max_members: scalar.int32
-  max_presences: scalar.int32
-  max_video_channel_users: scalar.int32
+  max_members: int32
+  max_presences: int32
+  max_video_channel_users: int32
   widget_enabled: bool
   widget_channel_id: string
-  approximate_member_count: scalar.int32
-  approximate_presence_count: scalar.int32
+  approximate_member_count: int32
+  approximate_presence_count: int32
   joined_at: instant
 }
 
@@ -72,22 +71,22 @@ type Channel {
   id: string
   type: ChannelType
   name: string
-  position: scalar.int32
+  position: int32
   topic: string
   nsfw: bool
   parent_id: string
-  bitrate: scalar.int32
-  user_limit: scalar.int32
-  rate_limit_per_user: scalar.int32
+  bitrate: int32
+  user_limit: int32
+  rate_limit_per_user: int32
   permission_overwrites: [PermissionOverwrite]
-  default_auto_archive_duration: scalar.int32  // minutes
+  default_auto_archive_duration: int32  // minutes
   flags: int  // bitmask
   default_forum_layout: ForumLayout
   default_sort_order: SortOrder
   available_tags: [ForumTag]
   default_reaction_emoji: DefaultReaction
   video_quality_mode: VideoQualityMode
-  default_thread_rate_limit_per_user: scalar.int32
+  default_thread_rate_limit_per_user: int32
   thread_metadata: ThreadMetadata
 }
 
@@ -95,11 +94,11 @@ type Channel {
 type Role {
   id: string
   name: string
-  color: scalar.uint32  // RGB color value in low 24 bits
+  color: uint32  // RGB color value in low 24 bits
   hoist: bool
   icon_url: string
   unicode_emoji: string
-  position: scalar.int32
+  position: int32
   permissions: int  // bitmask; use int64 for bit 48+
   managed: bool
   mentionable: bool
@@ -156,7 +155,7 @@ type Sticker {
   available: bool
   guild_id: string
   user_id: string
-  sort_value: scalar.int32
+  sort_value: int32
 }
 
 /// Webhook represents a Discord webhook.
@@ -197,7 +196,7 @@ type ScheduledEvent {
   entity_type: ScheduledEventEntityType
   entity_id: string
   entity_metadata: ScheduledEventEntityMetadata
-  user_count: scalar.int32
+  user_count: int32
   image_url: string
 }
 
@@ -205,9 +204,9 @@ type ScheduledEvent {
 type AutoModTriggerMetadata {
   keyword_filter: [string]
   regex_patterns: [string]
-  presets: [scalar.int32]  // AutoMod keyword preset values
+  presets: [int32]  // AutoMod keyword preset values
   allow_list: [string]
-  mention_total_limit: scalar.int32
+  mention_total_limit: int32
   mention_raid_protection_enabled: bool
 }
 
@@ -215,7 +214,7 @@ type AutoModTriggerMetadata {
 type AutoModAction {
   type: AutoModActionType
   channel_id: string  // for SEND_ALERT_MESSAGE actions
-  duration_seconds: scalar.int32  // for TIMEOUT actions
+  duration_seconds: int32  // for TIMEOUT actions
   custom_message: string  // for BLOCK_MESSAGE actions
 }
 
@@ -239,10 +238,10 @@ type Invite {
   code: string
   channel_id: string
   inviter_id: string
-  max_age: scalar.int32  // seconds; 0 = never expires
-  max_uses: scalar.int32  // 0 = unlimited
+  max_age: int32  // seconds; 0 = never expires
+  max_uses: int32  // 0 = unlimited
   temporary: bool
-  uses: scalar.int32
+  uses: int32
   created_at: instant
   revoked: bool
 }
@@ -257,10 +256,10 @@ type Attachment {
   size: int  // bytes
   url: string
   proxy_url: string
-  height: scalar.int32
-  width: scalar.int32
+  height: int32
+  width: int32
   ephemeral: bool
-  duration_secs: scalar.float
+  duration_secs: float32
   waveform: string  // base64-encoded waveform for voice messages
   flags: int  // bitmask
 }
@@ -276,24 +275,24 @@ type EmbedFooter {
 type EmbedImage {
   url: string
   proxy_url: string
-  height: scalar.int32
-  width: scalar.int32
+  height: int32
+  width: int32
 }
 
 /// EmbedThumbnail represents the thumbnail of a message embed.
 type EmbedThumbnail {
   url: string
   proxy_url: string
-  height: scalar.int32
-  width: scalar.int32
+  height: int32
+  width: int32
 }
 
 /// EmbedVideo represents the video of a message embed.
 type EmbedVideo {
   url: string
   proxy_url: string
-  height: scalar.int32
-  width: scalar.int32
+  height: int32
+  width: int32
 }
 
 /// EmbedProvider represents the provider of a message embed.
@@ -324,7 +323,7 @@ type Embed {
   description: string
   url: string
   timestamp: instant
-  color: scalar.uint32  // RGB color value in low 24 bits
+  color: uint32  // RGB color value in low 24 bits
   footer: EmbedFooter
   image: EmbedImage
   thumbnail: EmbedThumbnail
@@ -344,10 +343,10 @@ type ReactionEmoji {
 /// Reaction represents a reaction on a message.
 type Reaction {
   emoji: ReactionEmoji
-  count: scalar.int32
+  count: int32
   me: bool
-  count_details_burst: scalar.int32
-  count_details_normal: scalar.int32
+  count_details_burst: int32
+  count_details_normal: int32
   burst_colors: [string]  // hex color strings for super-reaction burst colors
 }
 
@@ -382,7 +381,7 @@ type Message {
   referenced_message_id: string
   flags: int  // bitmask
   thread_id: string
-  position: scalar.int32
+  position: int32
 }
 
 /// ChannelMessages groups messages belonging to a single channel.
@@ -533,7 +532,7 @@ type RoleTag {
 /// ThreadMetadata holds archival and locking state for thread channels.
 type ThreadMetadata {
   archived: bool
-  auto_archive_duration: scalar.int32  // minutes: 60, 1440, 4320, or 10080
+  auto_archive_duration: int32  // minutes: 60, 1440, 4320, or 10080
   archive_timestamp: instant
   locked: bool
   invitable: bool  // only present on private threads
@@ -541,7 +540,63 @@ type ThreadMetadata {
 }
 
 target protobuf for unmango.discord.backup.v1alpha2 {
-  out("gen/tdl")
+  out("proto")
+  PermissionOverwrite => file("types.proto")
+  ForumTag => file("types.proto")
+  DefaultReaction => file("types.proto")
+  RoleTag => file("types.proto")
+  ThreadMetadata => file("types.proto")
+  ChannelType => file("types.proto")
+  VerificationLevel => file("types.proto")
+  ExplicitContentFilter => file("types.proto")
+  DefaultMessageNotifications => file("types.proto")
+  NsfwLevel => file("types.proto")
+  PremiumTier => file("types.proto")
+  OverwriteType => file("types.proto")
+  ForumLayout => file("types.proto")
+  SortOrder => file("types.proto")
+  VideoQualityMode => file("types.proto")
+  PrivacyLevel => file("types.proto")
+  ScheduledEventStatus => file("types.proto")
+  ScheduledEventEntityType => file("types.proto")
+  AutoModEventType => file("types.proto")
+  AutoModTriggerType => file("types.proto")
+  AutoModActionType => file("types.proto")
+  StickerFormatType => file("types.proto")
+  WebhookType => file("types.proto")
+  MessageType => file("types.proto")
+  EmbedType => file("types.proto")
+  Guild => file("guild.proto")
+  Channel => file("guild.proto")
+  Role => file("guild.proto")
+  User => file("guild.proto")
+  Member => file("guild.proto")
+  Emoji => file("guild.proto")
+  Sticker => file("guild.proto")
+  Webhook => file("guild.proto")
+  ScheduledEventEntityMetadata => file("guild.proto")
+  ScheduledEvent => file("guild.proto")
+  AutoModTriggerMetadata => file("guild.proto")
+  AutoModAction => file("guild.proto")
+  AutoModRule => file("guild.proto")
+  Invite => file("guild.proto")
+  Attachment => file("message.proto")
+  EmbedFooter => file("message.proto")
+  EmbedImage => file("message.proto")
+  EmbedThumbnail => file("message.proto")
+  EmbedVideo => file("message.proto")
+  EmbedProvider => file("message.proto")
+  EmbedAuthor => file("message.proto")
+  EmbedField => file("message.proto")
+  Embed => file("message.proto")
+  ReactionEmoji => file("message.proto")
+  Reaction => file("message.proto")
+  MentionChannel => file("message.proto")
+  Message => file("message.proto")
+  ChannelMessages => file("message.proto")
+  BackupMetadata => file("backup.proto")
+  ServerBackup => file("backup.proto")
+  import("google/api/field_behavior.proto")
   edition("2024")
   BackupMetadata {
     backup_id => number(1)
@@ -550,7 +605,7 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     schema_version => number(4)
     tool_version {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   ServerBackup {
@@ -573,27 +628,27 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     name => number(2)
     description {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     icon_url {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     banner_url {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     splash_url {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     discovery_splash_url {
       number(7)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     region {
       number(8)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     features => number(9)
     verification_level => number(10)
@@ -605,58 +660,58 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     premium_tier => number(16)
     premium_subscription_count {
       number(17)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     vanity_url_code {
       number(18)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     owner_id => number(19)
     afk_channel_id {
       number(20)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     afk_timeout => number(21)
     system_channel_id {
       number(22)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     rules_channel_id {
       number(23)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     public_updates_channel_id {
       number(24)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     safety_alerts_channel_id {
       number(25)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     max_members {
       number(26)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     max_presences {
       number(27)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     max_video_channel_users {
       number(28)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     widget_enabled => number(29)
     widget_channel_id {
       number(30)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     approximate_member_count {
       number(31)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     approximate_presence_count {
       number(32)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     joined_at => number(33)
   }
@@ -665,17 +720,17 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     type => number(2)
     name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     position => number(4)
     topic {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     nsfw => number(6)
     parent_id {
       number(7)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     bitrate => number(8)
     user_limit => number(9)
@@ -698,11 +753,11 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     hoist => number(4)
     icon_url {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     unicode_emoji {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     position => number(7)
     permissions => number(8)
@@ -716,15 +771,15 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     username => number(2)
     discriminator {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     global_name {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     avatar_url {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     bot => number(6)
     system => number(7)
@@ -733,17 +788,17 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     user_id => number(1)
     nickname {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     guild_avatar_url {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     role_ids => number(4)
     joined_at => number(5)
     premium_since {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     deaf => number(7)
     mute => number(8)
@@ -751,7 +806,7 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     flags => number(10)
     communication_disabled_until {
       number(11)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   Emoji {
@@ -760,7 +815,7 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     role_ids => number(3)
     user_id {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     require_colons => number(5)
     managed => number(6)
@@ -771,23 +826,23 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     id => number(1)
     pack_id {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     name => number(3)
     description {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     tags => number(5)
     format_type => number(6)
     available => number(7)
     guild_id {
       number(8)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     user_id {
       number(9)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     sort_value => number(10)
   }
@@ -796,49 +851,49 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     type => number(2)
     guild_id {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     channel_id {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     user_id {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     name {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     avatar_url {
       number(7)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     token {
       number(8)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     application_id {
       number(9)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     url {
       number(10)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     source_guild_id {
       number(11)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     source_channel_id {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   ScheduledEventEntityMetadata {
     location {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   ScheduledEvent {
@@ -846,34 +901,34 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     guild_id => number(2)
     channel_id {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     creator_id {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     name => number(5)
     description {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     scheduled_start_time => number(7)
     scheduled_end_time {
       number(8)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     privacy_level => number(9)
     status => number(10)
     entity_type => number(11)
     entity_id {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     entity_metadata => number(13)
     user_count => number(14)
     image_url {
       number(15)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   AutoModTriggerMetadata {
@@ -888,12 +943,12 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     type => number(1)
     channel_id {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     duration_seconds => number(3)
     custom_message {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   AutoModRule {
@@ -914,7 +969,7 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     channel_id => number(2)
     inviter_id {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     max_age => number(4)
     max_uses => number(5)
@@ -928,31 +983,31 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     filename => number(2)
     description {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     content_type {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     size => number(5)
     url => number(6)
     proxy_url => number(7)
     height {
       number(8)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     width {
       number(9)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     ephemeral => number(10)
     duration_secs {
       number(11)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     waveform {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     flags => number(13)
   }
@@ -960,84 +1015,84 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     text => number(1)
     icon_url {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     proxy_icon_url {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   EmbedImage {
     url => number(1)
     proxy_url {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     height {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     width {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   EmbedThumbnail {
     url => number(1)
     proxy_url {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     height {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     width {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   EmbedVideo {
     url {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     proxy_url {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     height {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     width {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   EmbedProvider {
     name {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     url {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   EmbedAuthor {
     name => number(1)
     url {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     icon_url {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     proxy_icon_url {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   EmbedField {
@@ -1048,16 +1103,16 @@ target protobuf for unmango.discord.backup.v1alpha2 {
   Embed {
     title {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     type => number(2)
     description {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     url {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     timestamp => number(5)
     color => number(6)
@@ -1072,11 +1127,11 @@ target protobuf for unmango.discord.backup.v1alpha2 {
   ReactionEmoji {
     id {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     name {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     animated => number(3)
   }
@@ -1102,7 +1157,7 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     timestamp => number(5)
     edited_timestamp {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     tts => number(7)
     mention_everyone => number(8)
@@ -1116,20 +1171,20 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     type => number(16)
     webhook_id {
       number(17)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     application_id {
       number(18)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     referenced_message_id {
       number(19)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     flags => number(20)
     thread_id {
       number(21)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     position => number(22)
   }
@@ -1164,35 +1219,35 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     moderated => number(3)
     emoji_id {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     emoji_name {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   DefaultReaction {
     emoji_id {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     emoji_name {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   RoleTag {
     bot_id {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     integration_id {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     subscription_listing_id {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     premium_subscriber => number(4)
     available_for_purchase => number(5)
@@ -1205,7 +1260,7 @@ target protobuf for unmango.discord.backup.v1alpha2 {
     locked => number(4)
     invitable {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     create_timestamp => number(6)
   }

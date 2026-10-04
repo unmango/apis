@@ -1,7 +1,6 @@
 package unmango.ci.runner.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 import "../../../uom/v1alpha1/uom.tdl" as uom
 
@@ -36,9 +35,9 @@ type RolloutStrategy {
   type: RolloutStrategyType
   /// Extra Runners permitted above the desired replica count during a rollout.
   /// ROLLING_UPDATE only.
-  max_surge: scalar.int32
+  max_surge: int32
   /// Runners permitted to be unavailable during a rollout. ROLLING_UPDATE only.
-  max_unavailable: scalar.int32
+  max_unavailable: int32
 }
 
 enum RolloutStrategyType {
@@ -59,7 +58,7 @@ type Runner: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -74,17 +73,17 @@ type Runner: Entity {
   /// Exit after completing a single job. The standard posture for untrusted
   /// workloads, since it guarantees a clean environment per job.
   ephemeral: bool
-  max_concurrency: scalar.int32
+  max_concurrency: int32
   resources: uom.ResourceQuantity
   /// Restricts which Hosts this Runner may be bound to.
-  host_selector: metav1.LabelSelector
+  host_selector: LabelSelector
   // Assigned desired state.
   /// The Host this Runner is bound to. Unset means unscheduled.
   host: ref.ObjectReference
   // Observed state.
   observed_generation: int
   phase: RunnerPhase
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// The job currently executing, when phase is BUSY.
   current_job: ref.ObjectReference
   bind_time: instant
@@ -120,10 +119,10 @@ type RunnerTemplate {
   capabilities: [string]
   version: string
   ephemeral: bool
-  max_concurrency: scalar.int32
+  max_concurrency: int32
   resources: uom.ResourceQuantity
   /// Restricts which Hosts a generated Runner may be bound to.
-  host_selector: metav1.LabelSelector
+  host_selector: LabelSelector
 }
 
 // ---------------------------------------------------------------------------
@@ -138,16 +137,16 @@ type RunnerSet: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
   update_time: instant
   delete_time: instant
   // Desired state.
-  replicas: scalar.int32
+  replicas: int32
   /// Which Runners this set claims. Must match template.labels.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// Stamped onto every generated Runner. Immutable once set; a RunnerPool
   /// creates a new RunnerSet rather than mutating this.
   template: RunnerTemplate
@@ -157,11 +156,11 @@ type RunnerSet: Entity {
   // Observed state.
   observed_generation: int
   /// Runners currently claimed by this set.
-  observed_replicas: scalar.int32
-  ready_replicas: scalar.int32
+  observed_replicas: int32
+  ready_replicas: int32
   /// Ready and idle, so available to accept a job.
-  available_replicas: scalar.int32
-  conditions: [metav1.Condition]
+  available_replicas: int32
+  conditions: [Condition]
 }
 
 // ---------------------------------------------------------------------------
@@ -176,49 +175,56 @@ type RunnerPool: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
   update_time: instant
   delete_time: instant
   // Desired state.
-  replicas: scalar.int32
+  replicas: int32
   /// Which RunnerSets this pool claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// Editing this creates a new RunnerSet revision and starts a rollout.
   template: RunnerTemplate
   strategy: RolloutStrategy
   /// Superseded RunnerSets kept for rollback. Zero keeps none.
-  revision_history_limit: scalar.int32
+  revision_history_limit: int32
   /// Lower and upper replica bounds when an autoscaler drives this pool. Unset
   /// min disables autoscaling.
-  min_replicas: scalar.int32
-  max_replicas: scalar.int32
+  min_replicas: int32
+  max_replicas: int32
   // Observed state.
   observed_generation: int
-  observed_replicas: scalar.int32
+  observed_replicas: int32
   /// Replicas running the newest template revision.
-  updated_replicas: scalar.int32
-  ready_replicas: scalar.int32
-  available_replicas: scalar.int32
+  updated_replicas: int32
+  ready_replicas: int32
+  available_replicas: int32
   /// Replicas owned by superseded RunnerSets, still draining.
-  outdated_replicas: scalar.int32
+  outdated_replicas: int32
   /// Revision of the RunnerSet currently serving most traffic.
   current_revision: string
   /// Revision being rolled out. Equal to current_revision when settled.
   update_revision: string
-  conditions: [metav1.Condition]
+  conditions: [Condition]
 }
 
 target protobuf for unmango.ci.runner.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("runner.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   RunnerScope {
     owner => number(1)
     repository {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   RolloutStrategy {
@@ -227,42 +233,42 @@ target protobuf for unmango.ci.runner.v1alpha1 {
     max_unavailable => number(3)
   }
   Runner {
-    resource("unmango.ci.runner/Runner", "runners/{runner}", "runner", "runners")
+    option("(google.api.resource)", "{ type: \"unmango.ci.runner/Runner\" pattern: \"runners/{runner}\" singular: \"runner\" plural: \"runners\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     platform {
       number(11)
-      resource_reference("unmango.compute.platform/Platform")
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
     }
     scope => number(12)
     capabilities => number(13)
@@ -273,37 +279,37 @@ target protobuf for unmango.ci.runner.v1alpha1 {
     host_selector => number(18)
     host {
       number(40)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.compute.host/Host")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.compute.host/Host\"")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     phase {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     current_job {
       number(53)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.ci.job/JobRun")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.ci.job/JobRun\"")
     }
     bind_time {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_heartbeat_time {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     completed_job_count {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   RunnerTemplate {
@@ -311,7 +317,7 @@ target protobuf for unmango.ci.runner.v1alpha1 {
     annotations => number(2)
     platform {
       number(10)
-      resource_reference("unmango.compute.platform/Platform")
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
     }
     scope => number(11)
     capabilities => number(12)
@@ -322,38 +328,38 @@ target protobuf for unmango.ci.runner.v1alpha1 {
     host_selector => number(17)
   }
   RunnerSet {
-    resource("unmango.ci.runner/RunnerSet", "runnerSets/{runner_set}", "runnerSet", "runnerSets")
+    option("(google.api.resource)", "{ type: \"unmango.ci.runner/RunnerSet\" pattern: \"runnerSets/{runner_set}\" singular: \"runnerSet\" plural: \"runnerSets\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     replicas => number(11)
     selector => number(12)
@@ -361,58 +367,58 @@ target protobuf for unmango.ci.runner.v1alpha1 {
     revision => number(14)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     observed_replicas {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     ready_replicas {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     available_replicas {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   RunnerPool {
-    resource("unmango.ci.runner/RunnerPool", "runnerPools/{runner_pool}", "runnerPool", "runnerPools")
+    option("(google.api.resource)", "{ type: \"unmango.ci.runner/RunnerPool\" pattern: \"runnerPools/{runner_pool}\" singular: \"runnerPool\" plural: \"runnerPools\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     replicas => number(11)
     selector => number(12)
@@ -421,47 +427,47 @@ target protobuf for unmango.ci.runner.v1alpha1 {
     revision_history_limit => number(15)
     min_replicas {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     max_replicas {
       number(17)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     observed_replicas {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     updated_replicas {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     ready_replicas {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     available_replicas {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     outdated_replicas {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     current_revision {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_revision {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

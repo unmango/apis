@@ -1,7 +1,6 @@
 package unmango.codegen.conversion.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Standing instructions to convert something, and their executions:
@@ -87,7 +86,7 @@ type Conversion: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -109,15 +108,15 @@ type Conversion: Entity {
   /// reviewed before it lands.
   change_target: ref.ObjectReference
   timeout: duration
-  max_retries: scalar.int32
+  max_retries: int32
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   latest_run: ref.ObjectReference
   /// Digest of the primary codegen.artifact Artifact the latest successful run
   /// produced.
   latest_artifact_digest: string
-  run_count: scalar.int32
+  run_count: int32
   last_success_time: instant
   /// An unpinned input's digest has moved past what latest_run consumed, or
   /// the Converter's tool_version has. The output on disk no longer follows
@@ -136,7 +135,7 @@ type ConversionRun: Entity {
   labels: {string -> string}
   annotations: {string -> string}
   /// The Conversion that materialized this run.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -151,7 +150,7 @@ type ConversionRun: Entity {
   options: {string -> string}
   output_uri: string
   timeout: duration
-  max_retries: scalar.int32
+  max_retries: int32
   // Assigned desired state.
   /// The ci.job JobRun executing this run. Unset while pending, exactly as an
   /// unscheduled Pod has no node.
@@ -159,7 +158,7 @@ type ConversionRun: Entity {
   // Observed state.
   observed_generation: int
   phase: ConversionPhase
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   trigger: ConversionTrigger
   start_time: instant
   completion_time: instant
@@ -173,74 +172,80 @@ type ConversionRun: Entity {
   input_digest: string
   /// Set when input_digest already had artifacts and nothing executed.
   cache_hit: bool
-  attempt: scalar.int32
+  attempt: int32
   logs_uri: string
-  output_file_count: scalar.int32
+  output_file_count: int32
   output_bytes: int
 }
 
 target protobuf for unmango.codegen.conversion.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("conversion.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   ConversionTrigger {
     kind => number(1)
     schedule {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   ConversionInput {
     port => number(1)
     source {
       number(2)
-      resource_reference("*")
+      option("(google.api.resource_reference).type", "\"*\"")
     }
     digest {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     subpath {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   Conversion {
-    resource("unmango.codegen.conversion/Conversion", "conversions/{conversion}", "conversion", "conversions")
+    option("(google.api.resource)", "{ type: \"unmango.codegen.conversion/Conversion\" pattern: \"conversions/{conversion}\" singular: \"conversion\" plural: \"conversions\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     converter {
       number(11)
-      resource_reference("unmango.codegen.converter/Converter")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.converter/Converter\"")
     }
     inputs => number(12)
     options => number(13)
@@ -248,78 +253,78 @@ target protobuf for unmango.codegen.conversion.v1alpha1 {
     triggers => number(15)
     change_target {
       number(16)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.vcs.branch/Branch")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.branch/Branch\"")
     }
     timeout => number(17)
     max_retries => number(18)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     latest_run {
       number(52)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.codegen.conversion/ConversionRun")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.conversion/ConversionRun\"")
     }
     latest_artifact_digest {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     run_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_success_time {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     stale {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   ConversionRun {
-    resource("unmango.codegen.conversion/ConversionRun", "conversionRuns/{conversion_run}", "conversionRun", "conversionRuns")
+    option("(google.api.resource)", "{ type: \"unmango.codegen.conversion/ConversionRun\" pattern: \"conversionRuns/{conversion_run}\" singular: \"conversionRun\" plural: \"conversionRuns\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     converter {
       number(11)
-      resource_reference("unmango.codegen.converter/Converter")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.converter/Converter\"")
     }
     converter_tool_version => number(12)
     inputs => number(13)
@@ -329,61 +334,61 @@ target protobuf for unmango.codegen.conversion.v1alpha1 {
     max_retries => number(17)
     job_run {
       number(40)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.ci.job/JobRun")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.ci.job/JobRun\"")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     phase {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     trigger {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     start_time {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     completion_time {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     artifacts {
       number(56)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.codegen.artifact/Artifact")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.artifact/Artifact\"")
     }
     input_digest {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     cache_hit {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     attempt {
       number(59)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     logs_uri {
       number(60)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     output_file_count {
       number(61)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     output_bytes {
       number(62)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

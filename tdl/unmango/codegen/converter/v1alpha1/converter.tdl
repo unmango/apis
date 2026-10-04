@@ -1,8 +1,7 @@
 package unmango.codegen.converter.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/rpc.tdl" as rpc
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../../shim/rpc.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Tools that turn one representation into another, and how they are grouped:
@@ -139,7 +138,7 @@ type Converter: Entity {
   /// Also the surface a ConverterRegistry selector matches against.
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -174,12 +173,12 @@ type Converter: Entity {
   rpc_invocation: RpcInvocation
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// Registries whose selectors currently claim this converter. Makes the
   /// selector edge navigable from the converter side.
   claimed_by: [ref.ObjectReference]
   /// codegen.conversion Conversions naming this converter.
-  conversion_count: scalar.int32
+  conversion_count: int32
   last_run_time: instant
   /// Set by whoever last ran TestConverter.
   last_conformance_time: instant
@@ -190,7 +189,7 @@ type ConverterService {
   /// claims on inputs, produce what it claims on outputs, honor
   /// deterministic. Declares nothing and reconciles toward nothing, which is
   /// why it is a bare RPC rather than another Conversion kind.
-  TestConverter: rpc.Fn<TestConverterRequest, TestConverterResponse>
+  TestConverter: Fn<TestConverterRequest, TestConverterResponse>
 }
 
 type TestConverterRequest {
@@ -258,7 +257,7 @@ type ConverterRegistry: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -267,7 +266,7 @@ type ConverterRegistry: Entity {
   // Desired state.
   /// Which Converters belong. An empty selector claims nothing, never
   /// everything.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   summary: string
   /// Stamped onto converters created through this registry, which is how a new
   /// converter ends up matching the selector.
@@ -280,19 +279,27 @@ type ConverterRegistry: Entity {
   discovery: [DiscoverySource]
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
-  converter_count: scalar.int32
+  conditions: [Condition]
+  converter_count: int32
   last_discovery_time: instant
 }
 
 target protobuf for unmango.codegen.converter.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("converter.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  Fn => rpc
   edition("2024")
   Port {
     format => number(1)
     qualifier {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     optional => number(3)
   }
@@ -301,95 +308,95 @@ target protobuf for unmango.codegen.converter.v1alpha1 {
     target => number(2)
   }
   Converter {
-    resource("unmango.codegen.converter/Converter", "converters/{converter}", "converter", "converters")
+    option("(google.api.resource)", "{ type: \"unmango.codegen.converter/Converter\" pattern: \"converters/{converter}\" singular: \"converter\" plural: \"converters\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     kind => number(11)
     inputs => number(12)
     outputs => number(13)
     platform {
       number(14)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.compute.platform/Platform")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
     }
     entrypoint => number(15)
     tool_version {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     default_options => number(17)
     deterministic => number(18)
     repository {
       number(19)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     invocation_kind => number(20)
     rpc_invocation {
       number(21)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     claimed_by {
       number(52)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.codegen.converter/ConverterRegistry")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.converter/ConverterRegistry\"")
     }
     conversion_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_run_time {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_conformance_time {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   ConverterService => service
   TestConverterRequest {
     name {
       number(1)
-      field_behavior(REQUIRED)
+      option("(google.api.field_behavior)", "REQUIRED")
     }
   }
   TestConverterResponse {
@@ -397,17 +404,17 @@ target protobuf for unmango.codegen.converter.v1alpha1 {
     failures => number(2)
   }
   DiscoverySource {
-    kind => number(1)
+    kind => oneof
   }
   DiscoverySourceKind {
     Directory => number(1)
     ReleaseArtifact => number(2)
   }
   DirectorySource {
-    root => number(1)
+    root => oneof
     name_pattern {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   DirectorySourceRoot {
@@ -417,73 +424,73 @@ target protobuf for unmango.codegen.converter.v1alpha1 {
   ReleaseArtifactSource {
     repository {
       number(1)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     asset_pattern {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   ConverterRegistry {
-    resource("unmango.codegen.converter/ConverterRegistry", "converterRegistries/{converter_registry}", "converterRegistry", "converterRegistries")
+    option("(google.api.resource)", "{ type: \"unmango.codegen.converter/ConverterRegistry\" pattern: \"converterRegistries/{converter_registry}\" singular: \"converterRegistry\" plural: \"converterRegistries\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     selector => number(11)
     summary {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     converter_labels => number(13)
     index_uri {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     discovery => number(15)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     converter_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_discovery_time {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }
