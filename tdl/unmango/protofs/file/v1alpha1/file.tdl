@@ -4,22 +4,25 @@ import "../../../../shim/protobuf.tdl" as _
 import "../../../../shim/rpc.tdl" as _
 
 type File {
-  id: string  // server-issued handle, set by Open/Create responses
+  /// server-issued handle, set by Open/Create responses
+  id: string
   name: string
   flag: int
-  perm: uint32  // bitmask
+  /// bitmask
+  perm: uint32
 }
 
 type FileInfo {
   name: string
   size: int
-  mode: uint32  // bitmask
+  /// bitmask
+  mode: uint32
   mod_time: instant
   is_dir: bool
-  sys: Any  // platform-specific underlying data; type URL must be agreed out-of-band
+  /// platform-specific underlying data; type URL must be agreed out-of-band
+  sys: Any
 }
 
-/// Deprecated: use unmango.protofs.file.v1alpha2.FileService.
 deprecated("use unmango.protofs.file.v1alpha2.FileService.")
 type FileService {
   Read: Fn<ReadRequest, ReadResponse>

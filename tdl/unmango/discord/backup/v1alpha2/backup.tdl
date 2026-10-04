@@ -1,6 +1,5 @@
 package unmango.discord.backup.v1alpha2
 
-
 // ---- from backup.proto ----
 /// BackupMetadata holds information about a backup snapshot itself.
 type BackupMetadata {
@@ -18,7 +17,8 @@ type ServerBackup {
   channels: [Channel]
   roles: [Role]
   members: [Member]
-  users: [User]  // deduplicated roster; all other messages reference by user_id
+  /// deduplicated roster; all other messages reference by user_id
+  users: [User]
   emojis: [Emoji]
   stickers: [Sticker]
   webhooks: [Webhook]
@@ -38,12 +38,14 @@ type Guild {
   banner_url: string
   splash_url: string
   discovery_splash_url: string
-  region: string  // deprecated but may still appear in backups
+  /// deprecated but may still appear in backups
+  region: string
   features: [string]
   verification_level: VerificationLevel
   explicit_content_filter: ExplicitContentFilter
   default_message_notifications: DefaultMessageNotifications
-  system_channel_flags: int  // bitmask
+  /// bitmask
+  system_channel_flags: int
   preferred_locale: string
   nsfw_level: NsfwLevel
   premium_tier: PremiumTier
@@ -51,7 +53,8 @@ type Guild {
   vanity_url_code: string
   owner_id: string
   afk_channel_id: string
-  afk_timeout: int32  // seconds
+  /// seconds
+  afk_timeout: int32
   system_channel_id: string
   rules_channel_id: string
   public_updates_channel_id: string
@@ -79,8 +82,10 @@ type Channel {
   user_limit: int32
   rate_limit_per_user: int32
   permission_overwrites: [PermissionOverwrite]
-  default_auto_archive_duration: int32  // minutes
-  flags: int  // bitmask
+  /// minutes
+  default_auto_archive_duration: int32
+  /// bitmask
+  flags: int
   default_forum_layout: ForumLayout
   default_sort_order: SortOrder
   available_tags: [ForumTag]
@@ -94,23 +99,27 @@ type Channel {
 type Role {
   id: string
   name: string
-  color: uint32  // RGB color value in low 24 bits
+  /// RGB color value in low 24 bits
+  color: uint32
   hoist: bool
   icon_url: string
   unicode_emoji: string
   position: int32
-  permissions: int  // bitmask; use int64 for bit 48+
+  /// bitmask; use int64 for bit 48+
+  permissions: int
   managed: bool
   mentionable: bool
   tags: RoleTag
-  flags: int  // bitmask
+  /// bitmask
+  flags: int
 }
 
 /// User represents a Discord user account.
 type User {
   id: string
   username: string
-  discriminator: string  // legacy four-digit tag; "0" for new usernames
+  /// legacy four-digit tag; "0" for new usernames
+  discriminator: string
   global_name: string
   avatar_url: string
   bot: bool
@@ -128,7 +137,8 @@ type Member {
   deaf: bool
   mute: bool
   pending: bool
-  flags: int  // bitmask
+  /// bitmask
+  flags: int
   communication_disabled_until: instant
 }
 
@@ -150,7 +160,8 @@ type Sticker {
   pack_id: string
   name: string
   description: string
-  tags: string  // comma-separated list of tags
+  /// comma-separated list of tags
+  tags: string
   format_type: StickerFormatType
   available: bool
   guild_id: string
@@ -204,7 +215,8 @@ type ScheduledEvent {
 type AutoModTriggerMetadata {
   keyword_filter: [string]
   regex_patterns: [string]
-  presets: [int32]  // AutoMod keyword preset values
+  /// AutoMod keyword preset values
+  presets: [int32]
   allow_list: [string]
   mention_total_limit: int32
   mention_raid_protection_enabled: bool
@@ -213,9 +225,12 @@ type AutoModTriggerMetadata {
 /// AutoModAction represents an action taken when an auto-moderation rule is triggered.
 type AutoModAction {
   type: AutoModActionType
-  channel_id: string  // for SEND_ALERT_MESSAGE actions
-  duration_seconds: int32  // for TIMEOUT actions
-  custom_message: string  // for BLOCK_MESSAGE actions
+  /// for SEND_ALERT_MESSAGE actions
+  channel_id: string
+  /// for TIMEOUT actions
+  duration_seconds: int32
+  /// for BLOCK_MESSAGE actions
+  custom_message: string
 }
 
 /// AutoModRule represents an auto-moderation rule.
@@ -238,8 +253,10 @@ type Invite {
   code: string
   channel_id: string
   inviter_id: string
-  max_age: int32  // seconds; 0 = never expires
-  max_uses: int32  // 0 = unlimited
+  /// seconds; 0 = never expires
+  max_age: int32
+  /// 0 = unlimited
+  max_uses: int32
   temporary: bool
   uses: int32
   created_at: instant
@@ -253,15 +270,18 @@ type Attachment {
   filename: string
   description: string
   content_type: string
-  size: int  // bytes
+  /// bytes
+  size: int
   url: string
   proxy_url: string
   height: int32
   width: int32
   ephemeral: bool
   duration_secs: float32
-  waveform: string  // base64-encoded waveform for voice messages
-  flags: int  // bitmask
+  /// base64-encoded waveform for voice messages
+  waveform: string
+  /// bitmask
+  flags: int
 }
 
 /// EmbedFooter represents the footer of a message embed.
@@ -323,7 +343,8 @@ type Embed {
   description: string
   url: string
   timestamp: instant
-  color: uint32  // RGB color value in low 24 bits
+  /// RGB color value in low 24 bits
+  color: uint32
   footer: EmbedFooter
   image: EmbedImage
   thumbnail: EmbedThumbnail
@@ -335,8 +356,10 @@ type Embed {
 
 /// ReactionEmoji represents the emoji used in a reaction.
 type ReactionEmoji {
-  id: string  // empty for unicode emoji
-  name: string  // unicode character or custom emoji name
+  /// empty for unicode emoji
+  id: string
+  /// unicode character or custom emoji name
+  name: string
   animated: bool
 }
 
@@ -347,7 +370,8 @@ type Reaction {
   me: bool
   count_details_burst: int32
   count_details_normal: int32
-  burst_colors: [string]  // hex color strings for super-reaction burst colors
+  /// hex color strings for super-reaction burst colors
+  burst_colors: [string]
 }
 
 /// MentionChannel represents a channel referenced in a message.
@@ -379,7 +403,8 @@ type Message {
   webhook_id: string
   application_id: string
   referenced_message_id: string
-  flags: int  // bitmask
+  /// bitmask
+  flags: int
   thread_id: string
   position: int32
 }
@@ -500,8 +525,10 @@ enum EmbedType { Rich Image Video Gifv Article Link PollResult }
 type PermissionOverwrite {
   id: string
   type: OverwriteType
-  allow: int  // bitmask of allowed permissions
-  deny: int  // bitmask of denied permissions
+  /// bitmask of allowed permissions
+  allow: int
+  /// bitmask of denied permissions
+  deny: int
 }
 
 /// ForumTag represents a tag that can be applied to threads in a forum channel.
@@ -509,33 +536,45 @@ type ForumTag {
   id: string
   name: string
   moderated: bool
-  emoji_id: string  // set for custom emoji
-  emoji_name: string  // set for unicode emoji
+  /// set for custom emoji
+  emoji_id: string
+  /// set for unicode emoji
+  emoji_name: string
 }
 
 /// DefaultReaction represents the default emoji reaction for a forum channel post.
 type DefaultReaction {
-  emoji_id: string  // set for custom emoji
-  emoji_name: string  // set for unicode emoji
+  /// set for custom emoji
+  emoji_id: string
+  /// set for unicode emoji
+  emoji_name: string
 }
 
 /// RoleTag holds metadata about special role types.
 type RoleTag {
-  bot_id: string  // role is managed by this bot
-  integration_id: string  // role is managed by this integration
-  subscription_listing_id: string  // role is available for purchase
-  premium_subscriber: bool  // role is the guild's premium subscriber (booster) role
-  available_for_purchase: bool  // role can be purchased
-  guild_connections: bool  // role is a guild's linked role
+  /// role is managed by this bot
+  bot_id: string
+  /// role is managed by this integration
+  integration_id: string
+  /// role is available for purchase
+  subscription_listing_id: string
+  /// role is the guild's premium subscriber (booster) role
+  premium_subscriber: bool
+  /// role can be purchased
+  available_for_purchase: bool
+  /// role is a guild's linked role
+  guild_connections: bool
 }
 
 /// ThreadMetadata holds archival and locking state for thread channels.
 type ThreadMetadata {
   archived: bool
-  auto_archive_duration: int32  // minutes: 60, 1440, 4320, or 10080
+  /// minutes: 60, 1440, 4320, or 10080
+  auto_archive_duration: int32
   archive_timestamp: instant
   locked: bool
-  invitable: bool  // only present on private threads
+  /// only present on private threads
+  invitable: bool
   create_timestamp: instant
 }
 

@@ -63,7 +63,8 @@ type MediaFile {
 }
 
 type VideoTrack {
-  codec: string  // "h264", "hevc", "av1"
+  /// "h264", "hevc", "av1"
+  codec: string
   width: int32
   height: int32
   frame_rate: float64
@@ -73,7 +74,8 @@ type VideoTrack {
 }
 
 type AudioTrack {
-  codec: string  // "aac", "flac", "truehd"
+  /// "aac", "flac", "truehd"
+  codec: string
   channels: int32
   sample_rate_hz: int32
   bitrate_bps: int
@@ -84,7 +86,8 @@ type AudioTrack {
 }
 
 type SubtitleTrack {
-  codec: string  // "subrip", "pgs", "ass"
+  /// "subrip", "pgs", "ass"
+  codec: string
   /// ISO 639 code.
   language_code: string
   /// Covers only foreign dialogue rather than all speech.
