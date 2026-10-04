@@ -1,8 +1,7 @@
 package unmango.asset.vehicle.v1alpha1
 
-import "../../../../shim/google/type.tdl" as gtype
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 import "../../../uom/v1alpha1/uom.tdl" as uom
 
@@ -45,7 +44,7 @@ type OdometerReading: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -53,17 +52,17 @@ type OdometerReading: Entity {
   delete_time: instant
   // Desired state.
   reading: uom.Quantity
-  observed_date: gtype.Date
+  observed_date: Date
   source: OdometerSource
   note: string
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// Difference from the previous reading. Negative flags a rollback or a
   /// mistyped entry.
   delta: uom.Quantity
   /// Days since the previous reading.
-  days_since_previous: scalar.int32
+  days_since_previous: int32
 }
 
 enum OdometerSource {
@@ -85,7 +84,7 @@ type Vehicle: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -96,21 +95,21 @@ type Vehicle: Entity {
   make: string
   model: string
   trim: string
-  model_year: scalar.int32
+  model_year: int32
   fuel_type: FuelType
   vin: string
   license_plate: string
   color: string
-  acquired_date: gtype.Date
-  purchase_price: gtype.Money
+  acquired_date: Date
+  purchase_price: Money
   /// Distance unit this vehicle's readings and service intervals use.
   distance_unit: uom.Unit
   /// Which OdometerReadings this Vehicle claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// Registration and insurance renewal dates, surfaced so a
   /// asset.maintenance plan can act on them.
-  registration_expiry: gtype.Date
-  insurance_expiry: gtype.Date
+  registration_expiry: Date
+  insurance_expiry: Date
   /// The finance.account Account carrying its loan or lease.
   finance_account: ref.ObjectReference
   // Assigned desired state.
@@ -119,199 +118,208 @@ type Vehicle: Entity {
   // Observed state.
   observed_generation: int
   state: VehicleState
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// From the most recent OdometerReading.
   current_odometer: uom.Quantity
-  last_reading_date: gtype.Date
-  reading_count: scalar.int32
+  last_reading_date: Date
+  reading_count: int32
   /// Mean distance per day across the reading history, used to forecast when a
   /// distance-based service interval will come due.
-  average_daily_distance: scalar.double
+  average_daily_distance: float64
   /// Open asset.maintenance WorkOrders whose subject is this Vehicle.
-  open_work_order_count: scalar.int32
+  open_work_order_count: int32
   /// Summed over completed ServiceRecords.
-  lifetime_maintenance_cost: gtype.Money
+  lifetime_maintenance_cost: Money
 }
 
 target protobuf for unmango.asset.vehicle.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("vehicle.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Date => foreign("google/type/date.proto", "google.type.Date")
+  Money => foreign("google/type/money.proto", "google.type.Money")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   OdometerReading {
-    resource("unmango.asset.vehicle/OdometerReading", "odometerReadings/{odometer_reading}", "odometerReading", "odometerReadings")
+    option("(google.api.resource)", "{ type: \"unmango.asset.vehicle/OdometerReading\" pattern: \"odometerReadings/{odometer_reading}\" singular: \"odometerReading\" plural: \"odometerReadings\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     reading => number(11)
     observed_date => number(12)
     source => number(13)
     note {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delta {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     days_since_previous {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   Vehicle {
-    resource("unmango.asset.vehicle/Vehicle", "vehicles/{vehicle}", "vehicle", "vehicles")
+    option("(google.api.resource)", "{ type: \"unmango.asset.vehicle/Vehicle\" pattern: \"vehicles/{vehicle}\" singular: \"vehicle\" plural: \"vehicles\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     type => number(11)
     make => number(12)
     model => number(13)
     trim {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     model_year {
       number(15)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     fuel_type => number(16)
     vin {
       number(17)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     license_plate {
       number(18)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     color {
       number(19)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     acquired_date {
       number(20)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     purchase_price => number(21)
     distance_unit => number(22)
     selector => number(23)
     registration_expiry {
       number(24)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     insurance_expiry {
       number(25)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     finance_account {
       number(26)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.finance.account/Account")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.finance.account/Account\"")
     }
     parked_at {
       number(40)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.asset.property/Space")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.asset.property/Space\"")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     state {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     current_odometer {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_reading_date {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     reading_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     average_daily_distance {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     open_work_order_count {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     lifetime_maintenance_cost {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

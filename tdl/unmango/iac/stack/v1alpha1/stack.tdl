@@ -1,8 +1,7 @@
 package unmango.iac.stack.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/protobuf.tdl" as wkt
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../../shim/protobuf.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Standing instructions to provision infrastructure, and their executions:
@@ -52,7 +51,7 @@ type Stack: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -62,7 +61,7 @@ type Stack: Entity {
   /// The iac.module Module to run.
   module: ref.ObjectReference
   /// Variables passed to the module.
-  inputs: wkt.Struct
+  inputs: Struct
   /// Open string: "prod", "staging", a caller-defined name. Not an enum,
   /// since the set of environments is defined by the caller, not this schema.
   target_environment: string
@@ -70,12 +69,12 @@ type Stack: Entity {
   /// address, a Pulumi stack URI, or empty for a tool with no external state.
   state_uri: string
   timeout: duration
-  max_retries: scalar.int32
+  max_retries: int32
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
-  resource_count: scalar.int32
-  run_count: scalar.int32
+  conditions: [Condition]
+  resource_count: int32
+  run_count: int32
   last_run: ref.ObjectReference
   last_run_phase: RunPhase
   last_apply_time: instant
@@ -92,7 +91,7 @@ type Run: Entity {
   labels: {string -> string}
   annotations: {string -> string}
   /// The Stack that materialized this run.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -102,7 +101,7 @@ type Run: Entity {
   // reproducible after the Stack is edited.
   run_kind: RunKind
   module: ref.ObjectReference
-  inputs: wkt.Struct
+  inputs: Struct
   target_environment: string
   state_uri: string
   timeout: duration
@@ -113,197 +112,204 @@ type Run: Entity {
   // Observed state.
   observed_generation: int
   phase: RunPhase
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   start_time: instant
   completion_time: instant
   /// Summary counts, meaningful once the run completes.
-  resources_added: scalar.int32
-  resources_changed: scalar.int32
-  resources_destroyed: scalar.int32
+  resources_added: int32
+  resources_changed: int32
+  resources_destroyed: int32
   error_message: string
-  attempt: scalar.int32
+  attempt: int32
   logs_uri: string
 }
 
 target protobuf for unmango.iac.stack.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("stack.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  Struct => foreign("google/protobuf/struct.proto", "google.protobuf.Struct")
   edition("2024")
   Stack {
-    resource("unmango.iac.stack/Stack", "stacks/{stack}", "stack", "stacks")
+    option("(google.api.resource)", "{ type: \"unmango.iac.stack/Stack\" pattern: \"stacks/{stack}\" singular: \"stack\" plural: \"stacks\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     module {
       number(11)
-      resource_reference("unmango.iac.module/Module")
+      option("(google.api.resource_reference).type", "\"unmango.iac.module/Module\"")
     }
     inputs => number(12)
     target_environment {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     state_uri {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     timeout => number(15)
     max_retries => number(16)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     resource_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     run_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_run {
       number(54)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.iac.stack/Run")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.iac.stack/Run\"")
     }
     last_run_phase {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_apply_time {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   Run {
-    resource("unmango.iac.stack/Run", "runs/{run}", "run", "runs")
+    option("(google.api.resource)", "{ type: \"unmango.iac.stack/Run\" pattern: \"runs/{run}\" singular: \"run\" plural: \"runs\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     run_kind => number(11)
     module {
       number(12)
-      resource_reference("unmango.iac.module/Module")
+      option("(google.api.resource_reference).type", "\"unmango.iac.module/Module\"")
     }
     inputs => number(13)
     target_environment {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     state_uri {
       number(15)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     timeout => number(16)
     job_run {
       number(40)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.ci.job/JobRun")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.ci.job/JobRun\"")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     phase {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     start_time {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     completion_time {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     resources_added {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     resources_changed {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     resources_destroyed {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     error_message {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     attempt {
       number(59)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     logs_uri {
       number(60)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

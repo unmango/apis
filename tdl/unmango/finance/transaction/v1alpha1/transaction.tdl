@@ -1,8 +1,7 @@
 package unmango.finance.transaction.v1alpha1
 
-import "../../../../shim/google/type.tdl" as gtype
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Money moving, and the standing arrangements that move it:
@@ -50,7 +49,7 @@ type Split {
   /// Category label, kept alongside the reference so a split stays meaningful
   /// when no budget exists.
   category: string
-  amount: gtype.Money
+  amount: Money
   note: string
 }
 
@@ -68,14 +67,14 @@ type Transaction: Entity {
   /// matching an Allocation that expects the old convention.
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
   update_time: instant
   delete_time: instant
   // Templated desired state. TransactionTemplate mirrors 10-39.
-  amount: gtype.Money
+  amount: Money
   direction: TransactionDirection
   merchant: string
   description: string
@@ -88,7 +87,7 @@ type Transaction: Entity {
   /// ownership: the fact outlives the account.
   account: ref.ObjectReference
   /// Date the institution assigned. What budget periods bucket on.
-  posted_date: gtype.Date
+  posted_date: Date
   /// The matching leg, when direction is TRANSFER.
   transfer_peer: ref.ObjectReference
   /// Identifier at the institution, used to deduplicate on re-sync.
@@ -96,13 +95,13 @@ type Transaction: Entity {
   // Observed state.
   observed_generation: int
   state: TransactionState
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   booked_time: instant
   /// Allocations whose selectors currently claim this transaction. Makes the
   /// selector edge navigable from the transaction side.
   claimed_by: [ref.ObjectReference]
   /// Account balance immediately after this transaction settled.
-  running_balance: gtype.Money
+  running_balance: Money
   /// The projected Transaction this one was matched against, if any.
   matched_projection: ref.ObjectReference
 }
@@ -113,7 +112,7 @@ type Transaction: Entity {
 type TransactionTemplate {
   labels: {string -> string}
   annotations: {string -> string}
-  amount: gtype.Money
+  amount: Money
   direction: TransactionDirection
   merchant: string
   description: string
@@ -132,7 +131,7 @@ type RecurringTransaction: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -144,143 +143,153 @@ type RecurringTransaction: Entity {
   /// Account the projected transactions attach to.
   account: ref.ObjectReference
   /// How often it recurs.
-  period: gtype.CalendarPeriod
+  period: CalendarPeriod
   /// Number of periods between occurrences. Two with period MONTH means
   /// every other month.
-  interval: scalar.int32
-  start_date: gtype.Date
+  interval: int32
+  start_date: Date
   /// Unset means indefinitely.
-  end_date: gtype.Date
+  end_date: Date
   /// Project occurrences up to this date, bounding how far the chain runs.
-  materialize_through: gtype.Date
+  materialize_through: Date
   /// Which projected Transactions this arrangement claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// Stop projecting without deleting the arrangement. What a paused
   /// subscription looks like.
   suspended: bool
   /// Tolerance in days when matching a real transaction to a projection.
-  match_window_days: scalar.int32
+  match_window_days: int32
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
-  projected_count: scalar.int32
+  conditions: [Condition]
+  projected_count: int32
   matched_count: int
-  next_occurrence_date: gtype.Date
-  last_matched_date: gtype.Date
-  materialized_through: gtype.Date
+  next_occurrence_date: Date
+  last_matched_date: Date
+  materialized_through: Date
   /// Mean of matched amounts, which drifts from the templated amount as prices
   /// change.
-  observed_amount: gtype.Money
+  observed_amount: Money
 }
 
 target protobuf for unmango.finance.transaction.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("transaction.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  CalendarPeriod => foreign("google/type/calendar_period.proto", "google.type.CalendarPeriod")
+  Date => foreign("google/type/date.proto", "google.type.Date")
+  Money => foreign("google/type/money.proto", "google.type.Money")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Split {
     allocation {
       number(1)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.finance.budget/Allocation")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.finance.budget/Allocation\"")
     }
     category => number(2)
     amount => number(3)
     note {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   Transaction {
-    resource("unmango.finance.transaction/Transaction", "transactions/{transaction}", "transaction", "transactions")
+    option("(google.api.resource)", "{ type: \"unmango.finance.transaction/Transaction\" pattern: \"transactions/{transaction}\" singular: \"transaction\" plural: \"transactions\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     amount => number(11)
     direction => number(12)
     merchant {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     description {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     splits => number(15)
     note {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     account {
       number(40)
-      resource_reference("unmango.finance.account/Account")
+      option("(google.api.resource_reference).type", "\"unmango.finance.account/Account\"")
     }
     posted_date => number(41)
     transfer_peer {
       number(42)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.finance.transaction/Transaction")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.finance.transaction/Transaction\"")
     }
     external_id {
       number(43)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     state {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     booked_time {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     claimed_by {
       number(54)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.finance.budget/Allocation")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.finance.budget/Allocation\"")
     }
     running_balance {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     matched_projection {
       number(56)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.finance.transaction/Transaction")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.finance.transaction/Transaction\"")
     }
   }
   TransactionTemplate {
@@ -290,63 +299,63 @@ target protobuf for unmango.finance.transaction.v1alpha1 {
     direction => number(11)
     merchant {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     description {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     splits => number(14)
     note {
       number(15)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   RecurringTransaction {
-    resource("unmango.finance.transaction/RecurringTransaction", "recurringTransactions/{recurring_transaction}", "recurringTransaction", "recurringTransactions")
+    option("(google.api.resource)", "{ type: \"unmango.finance.transaction/RecurringTransaction\" pattern: \"recurringTransactions/{recurring_transaction}\" singular: \"recurringTransaction\" plural: \"recurringTransactions\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     template => number(11)
     account {
       number(12)
-      resource_reference("unmango.finance.account/Account")
+      option("(google.api.resource_reference).type", "\"unmango.finance.account/Account\"")
     }
     period => number(13)
     interval => number(14)
     start_date => number(15)
     end_date {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     materialize_through => number(17)
     selector => number(18)
@@ -354,35 +363,35 @@ target protobuf for unmango.finance.transaction.v1alpha1 {
     match_window_days => number(20)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     projected_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     matched_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     next_occurrence_date {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_matched_date {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     materialized_through {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     observed_amount {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

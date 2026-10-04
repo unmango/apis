@@ -1,8 +1,7 @@
 package unmango.finance.account.v1alpha1
 
-import "../../../../shim/google/type.tdl" as gtype
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
 
 // Where money is held:
 //
@@ -46,7 +45,7 @@ type Account: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -60,8 +59,8 @@ type Account: Entity {
   /// Last few digits, for matching against a statement.
   mask: string
   /// Borrowing ceiling, for CREDIT_CARD and LOAN.
-  credit_limit: gtype.Money
-  opened_date: gtype.Date
+  credit_limit: Money
+  opened_date: Date
   /// Retained for history but no longer transacting.
   closed: bool
   /// Exclude from net-worth and budget rollups. Useful for shared or
@@ -69,12 +68,12 @@ type Account: Entity {
   excluded_from_totals: bool
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// Settled balance. Negative for money owed.
-  current_balance: gtype.Money
+  current_balance: Money
   /// Current balance adjusted for holds and pending activity.
-  available_balance: gtype.Money
-  pending_balance: gtype.Money
+  available_balance: Money
+  pending_balance: Money
   transaction_count: int
   last_transaction_time: instant
   last_sync_time: instant
@@ -90,7 +89,7 @@ type Institution: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -103,64 +102,72 @@ type Institution: Entity {
   sync: SyncConfig
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
-  account_count: scalar.int32
+  conditions: [Condition]
+  account_count: int32
   /// Summed across accounts, excluding those marked excluded_from_totals.
-  total_balance: gtype.Money
+  total_balance: Money
   last_sync_time: instant
 }
 
 target protobuf for unmango.finance.account.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("account.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Date => foreign("google/type/date.proto", "google.type.Date")
+  Money => foreign("google/type/money.proto", "google.type.Money")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   SyncConfig {
     provider => number(1)
     external_id {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     enabled => number(3)
   }
   Account {
-    resource("unmango.finance.account/Account", "accounts/{account}", "account", "accounts")
+    option("(google.api.resource)", "{ type: \"unmango.finance.account/Account\" pattern: \"accounts/{account}\" singular: \"account\" plural: \"accounts\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     type => number(11)
     currency_code => number(12)
     sync => number(13)
     mask {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     credit_limit => number(15)
     opened_date => number(16)
@@ -168,96 +175,96 @@ target protobuf for unmango.finance.account.v1alpha1 {
     excluded_from_totals => number(18)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     current_balance {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     available_balance {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     pending_balance {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     transaction_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_transaction_time {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_sync_time {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   Institution {
-    resource("unmango.finance.account/Institution", "institutions/{institution}", "institution", "institutions")
+    option("(google.api.resource)", "{ type: \"unmango.finance.account/Institution\" pattern: \"institutions/{institution}\" singular: \"institution\" plural: \"institutions\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     kind => number(11)
     website {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     sync => number(13)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     account_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     total_balance {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_sync_time {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

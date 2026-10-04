@@ -1,7 +1,6 @@
 package unmango.record.note.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Written material, and how it is grouped:
@@ -63,7 +62,7 @@ type Note: Entity {
   labels: {string -> string}
   annotations: {string -> string}
   /// A parent Note for a sub-note. Absent at the top of a document.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   create_time: instant
   /// Last write, server-stamped.
   update_time: instant
@@ -79,24 +78,24 @@ type Note: Entity {
   /// a clipping, an imported file.
   source_uri: string
   /// Which sub-notes this Note claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// Keep at the top of listings.
   pinned: bool
   /// Retained but out of the way. Distinct from deleted.
   archived: bool
   /// Position among sibling sub-notes. Lower sorts first.
-  sequence_number: scalar.int32
+  sequence_number: int32
   // Observed state.
   /// Notebooks whose selectors currently claim this note. Makes the selector
   /// edge navigable from the note side.
   claimed_by: [ref.ObjectReference]
-  child_count: scalar.int32
-  link_count: scalar.int32
+  child_count: int32
+  link_count: int32
   /// Other Notes whose links point at this one.
-  backlink_count: scalar.int32
+  backlink_count: int32
   /// Links whose target no longer resolves.
-  broken_link_count: scalar.int32
-  word_count: scalar.int32
+  broken_link_count: int32
+  word_count: int32
   last_edited_time: instant
 }
 
@@ -110,7 +109,7 @@ type Notebook: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -118,7 +117,7 @@ type Notebook: Entity {
   delete_time: instant
   // Desired state.
   /// Which Notes belong. An empty selector claims nothing, never everything.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   summary: string
   /// Stamped onto notes created through this notebook, which is how a new note
   /// ends up matching the selector.
@@ -129,28 +128,35 @@ type Notebook: Entity {
   subject: ref.ObjectReference
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
-  note_count: scalar.int32
-  archived_note_count: scalar.int32
+  conditions: [Condition]
+  note_count: int32
+  archived_note_count: int32
   last_edited_time: instant
 }
 
 target protobuf for unmango.record.note.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("note.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Link {
     target {
       number(1)
-      resource_reference("*")
+      option("(google.api.resource_reference).type", "\"*\"")
     }
     relation => number(2)
     label {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     custom_relation {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   Attachment {
@@ -160,38 +166,38 @@ target protobuf for unmango.record.note.v1alpha1 {
     size_bytes => number(4)
   }
   Note {
-    resource("unmango.record.note/Note", "notes/{note}", "note", "notes")
+    option("(google.api.resource)", "{ type: \"unmango.record.note/Note\" pattern: \"notes/{note}\" singular: \"note\" plural: \"notes\" }")
     // tdl-gap: one reserved directive per declaration; proto has two statements
     // reserved 7: generation: nothing reconciles a Note toward a declared state
     // reserved 50, 51: observed_generation, conditions: nothing reconciles a Note
     reserved(7, 50, 51)
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     title => number(11)
     body => number(12)
@@ -200,7 +206,7 @@ target protobuf for unmango.record.note.v1alpha1 {
     attachments => number(15)
     source_uri {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     selector => number(17)
     pinned => number(18)
@@ -208,99 +214,99 @@ target protobuf for unmango.record.note.v1alpha1 {
     sequence_number => number(20)
     claimed_by {
       number(52)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.record.note/Notebook")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.record.note/Notebook\"")
     }
     child_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     link_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     backlink_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     broken_link_count {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     word_count {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_edited_time {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   Notebook {
-    resource("unmango.record.note/Notebook", "notebooks/{notebook}", "notebook", "notebooks")
+    option("(google.api.resource)", "{ type: \"unmango.record.note/Notebook\" pattern: \"notebooks/{notebook}\" singular: \"notebook\" plural: \"notebooks\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     selector => number(11)
     summary {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     note_labels => number(13)
     default_format => number(14)
     subject {
       number(15)
-      field_behavior(OPTIONAL)
-      resource_reference("*")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"*\"")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     note_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     archived_note_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_edited_time {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

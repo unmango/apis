@@ -1,4 +1,4 @@
-package google.gtype
+package google.type
 
 // tdl-gap: `type` is a keyword and cannot be a package segment, so this is
 // google.gtype rather than google.type.
@@ -55,7 +55,7 @@ type PostalAddress {
 }
 
 /// A phone number.
-type PhoneNumber {
+type GooglePhoneNumber {
   kind: PhoneNumberKind
   extension: string
 }

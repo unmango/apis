@@ -1,7 +1,6 @@
 package unmango.ci.job.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // CI work definitions and their executions:
@@ -68,7 +67,7 @@ type Step {
   phase: JobPhase
   start_time: instant
   completion_time: instant
-  exit_code: scalar.int32
+  exit_code: int32
 }
 
 // ---------------------------------------------------------------------------
@@ -81,7 +80,7 @@ type JobRun: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -91,9 +90,9 @@ type JobRun: Entity {
   steps: [Step]
   parameters: {string -> string}
   /// Restricts which Runners may pick this up.
-  runner_selector: metav1.LabelSelector
+  runner_selector: LabelSelector
   timeout: duration
-  max_retries: scalar.int32
+  max_retries: int32
   /// JobRuns that must succeed before this one may bind.
   depends_on: [ref.ObjectReference]
   // Assigned desired state.
@@ -102,14 +101,14 @@ type JobRun: Entity {
   // Observed state.
   observed_generation: int
   phase: JobPhase
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   trigger: Trigger
   queue_time: instant
   bind_time: instant
   start_time: instant
   completion_time: instant
-  exit_code: scalar.int32
-  attempt: scalar.int32
+  exit_code: int32
+  attempt: int32
   /// Where logs can be fetched. A plain string so it can address a
   /// dev.unmango.protofs path without coupling the packages.
   logs_uri: string
@@ -124,9 +123,9 @@ type JobTemplate {
   steps: [Step]
   parameters: {string -> string}
   /// Restricts which Runners may pick up a generated JobRun.
-  runner_selector: metav1.LabelSelector
+  runner_selector: LabelSelector
   timeout: duration
-  max_retries: scalar.int32
+  max_retries: int32
   depends_on: [ref.ObjectReference]
 }
 
@@ -140,7 +139,7 @@ type Pipeline: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -158,13 +157,13 @@ type Pipeline: Entity {
   /// Stop producing new JobRuns without deleting the definition.
   suspended: bool
   /// Completed JobRuns to retain. Zero retains all.
-  run_history_limit: scalar.int32
+  run_history_limit: int32
   /// Cancel an in-flight JobRun when a newer one is triggered for the same ref.
   cancel_superseded: bool
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
-  active_run_count: scalar.int32
+  conditions: [Condition]
+  active_run_count: int32
   total_run_count: int
   succeeded_run_count: int
   failed_run_count: int
@@ -175,24 +174,31 @@ type Pipeline: Entity {
 }
 
 target protobuf for unmango.ci.job.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("job.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Trigger {
     kind => number(1)
     ref {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     commit_sha {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
-    actor => number(4)
+    actor => oneof
   }
   TriggerActor {
     Contact {
       number(4)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     SystemActor => number(5)
   }
@@ -201,54 +207,54 @@ target protobuf for unmango.ci.job.v1alpha1 {
     command => number(2)
     phase {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     start_time {
       number(11)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     completion_time {
       number(12)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     exit_code {
       number(13)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   JobRun {
-    resource("unmango.ci.job/JobRun", "jobRuns/{job_run}", "jobRun", "jobRuns")
+    option("(google.api.resource)", "{ type: \"unmango.ci.job/JobRun\" pattern: \"jobRuns/{job_run}\" singular: \"jobRun\" plural: \"jobRuns\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     steps => number(11)
     parameters => number(12)
@@ -257,56 +263,56 @@ target protobuf for unmango.ci.job.v1alpha1 {
     max_retries => number(15)
     depends_on {
       number(16)
-      resource_reference("unmango.ci.job/JobRun")
+      option("(google.api.resource_reference).type", "\"unmango.ci.job/JobRun\"")
     }
     runner {
       number(40)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.ci.runner/Runner")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.ci.runner/Runner\"")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     phase {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     trigger {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     queue_time {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     bind_time {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     start_time {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     completion_time {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     exit_code {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     attempt {
       number(59)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     logs_uri {
       number(60)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   JobTemplate {
@@ -319,97 +325,97 @@ target protobuf for unmango.ci.job.v1alpha1 {
     max_retries => number(14)
     depends_on {
       number(15)
-      resource_reference("unmango.ci.job/JobRun")
+      option("(google.api.resource_reference).type", "\"unmango.ci.job/JobRun\"")
     }
   }
   Pipeline {
-    resource("unmango.ci.job/Pipeline", "pipelines/{pipeline}", "pipeline", "pipelines")
+    option("(google.api.resource)", "{ type: \"unmango.ci.job/Pipeline\" pattern: \"pipelines/{pipeline}\" singular: \"pipeline\" plural: \"pipelines\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     template => number(11)
     triggers => number(12)
     schedule {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     repository {
       number(14)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     suspended => number(15)
     run_history_limit => number(16)
     cancel_superseded => number(17)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     active_run_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     total_run_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     succeeded_run_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     failed_run_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_run {
       number(56)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.ci.job/JobRun")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.ci.job/JobRun\"")
     }
     last_run_phase {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_run_time {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     next_schedule_time {
       number(59)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

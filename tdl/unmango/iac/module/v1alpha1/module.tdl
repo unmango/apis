@@ -1,7 +1,6 @@
 package unmango.iac.module.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Runnable infrastructure-as-code definitions, and how they are grouped:
@@ -35,7 +34,7 @@ type Module: Entity {
   /// Also the surface a ModuleRegistry selector matches against.
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -59,11 +58,11 @@ type Module: Entity {
   tool_version: string
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// Registries whose selectors currently claim this module.
   claimed_by: [ref.ObjectReference]
   /// iac.stack Stacks naming this module.
-  stack_count: scalar.int32
+  stack_count: int32
 }
 
 // ---------------------------------------------------------------------------
@@ -76,7 +75,7 @@ type ModuleRegistry: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -85,7 +84,7 @@ type ModuleRegistry: Entity {
   // Desired state.
   /// Which Modules belong. An empty selector claims nothing, never
   /// everything.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   summary: string
   /// Stamped onto modules created through this registry, which is how a new
   /// module ends up matching the selector.
@@ -96,146 +95,153 @@ type ModuleRegistry: Entity {
   discovery_repository: ref.ObjectReference
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
-  module_count: scalar.int32
+  conditions: [Condition]
+  module_count: int32
   last_discovery_time: instant
 }
 
 target protobuf for unmango.iac.module.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("module.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Module {
-    resource("unmango.iac.module/Module", "modules/{module}", "module", "modules")
+    option("(google.api.resource)", "{ type: \"unmango.iac.module/Module\" pattern: \"modules/{module}\" singular: \"module\" plural: \"modules\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     tool {
       number(11)
-      resource_reference("unmango.compute.platform/Platform")
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
     }
     repository {
       number(12)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     path {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     entrypoint {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     tool_version {
       number(15)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     claimed_by {
       number(52)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.iac.module/ModuleRegistry")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.iac.module/ModuleRegistry\"")
     }
     stack_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   ModuleRegistry {
-    resource("unmango.iac.module/ModuleRegistry", "moduleRegistries/{module_registry}", "moduleRegistry", "moduleRegistries")
+    option("(google.api.resource)", "{ type: \"unmango.iac.module/ModuleRegistry\" pattern: \"moduleRegistries/{module_registry}\" singular: \"moduleRegistry\" plural: \"moduleRegistries\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     selector => number(11)
     summary {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     module_labels => number(13)
     discovery_repository {
       number(14)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     module_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_discovery_time {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

@@ -1,7 +1,6 @@
 package unmango.journal.entry.v1alpha1
 
-import "../../../../shim/google/type.tdl" as gtype
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/google/type.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // A personal, dated log:
@@ -76,7 +75,7 @@ type Entry: Entity {
   /// Distinct from create_time: a backfilled entry is written today with an
   /// entry_date from last week. Not enforced unique per day, the same way
   /// record.note allows more than one note in a day.
-  entry_date: gtype.Date
+  entry_date: Date
   title: string
   body: string
   format: ContentFormat
@@ -96,12 +95,17 @@ type Entry: Entity {
   attachments: [Attachment]
   visibility: Visibility
   // Observed state.
-  word_count: scalar.int32
+  word_count: int32
   last_edited_time: instant
 }
 
 target protobuf for unmango.journal.entry.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("entry.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Date => foreign("google/type/date.proto", "google.type.Date")
   edition("2024")
   Attachment {
     uri => number(1)
@@ -110,42 +114,42 @@ target protobuf for unmango.journal.entry.v1alpha1 {
     size_bytes => number(4)
   }
   Entry {
-    resource("unmango.journal.entry/Entry", "entries/{entry}", "entry", "entries")
+    option("(google.api.resource)", "{ type: \"unmango.journal.entry/Entry\" pattern: \"entries/{entry}\" singular: \"entry\" plural: \"entries\" }")
     // tdl-gap: one reserved directive per block, so both proto reserved ranges are merged.
     // 6, 7: owner_refs, generation: nothing owns or reconciles an entry
     // 50, 51: observed_generation, conditions: nothing reconciles an entry
     reserved(6, 7, 50, 51)
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     entry_date => number(11)
     title {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     body => number(13)
     format => number(14)
@@ -154,23 +158,23 @@ target protobuf for unmango.journal.entry.v1alpha1 {
     tags => number(17)
     author {
       number(18)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     mood_measurement {
       number(19)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.health.measurement/Measurement")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.health.measurement/Measurement\"")
     }
     attachments => number(20)
     visibility => number(21)
     word_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_edited_time {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

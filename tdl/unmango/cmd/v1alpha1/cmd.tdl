@@ -1,18 +1,17 @@
 package unmango.cmd.v1alpha1
 
-import "../../cli/v1alpha1/cli.tdl" as cli
-import "../../../shim/rpc.tdl" as rpc
-import "../../../shim/scalar.tdl" as scalar
+import "../../cli/v1alpha1/cli.tdl" as _
+import "../../../shim/rpc.tdl" as _
 
 // Deprecated: use unmango.cmd.v1alpha2.
 // Run there takes a Process, which names an executable and its arguments
 // directly, rather than a cli Utility that still has to be rendered into one.
 type ExecutionService {
-  Run: rpc.Fn<RunRequest, RunResponse>
+  Run: Fn<RunRequest, RunResponse>
 }
 
 type RunRequest {
-  utility: cli.Utility
+  utility: Utility
   stdin: bytes
 }
 
@@ -23,13 +22,16 @@ type RunResponse {
 }
 
 type ExitResult {
-  code: scalar.int32
+  code: int32
 }
 
 target protobuf for unmango.cmd.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("cmd.proto")
+  Utility => foreign("unmango/cli/v1alpha1/cli.proto", "unmango.cli.v1alpha1.Utility")
+  Fn => rpc
   edition("2024")
-  deprecated
+  option("deprecated", "true")
   ExecutionService => service
   RunRequest {
     utility => number(1)

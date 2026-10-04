@@ -1,7 +1,6 @@
 package unmango.vcs.change.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Proposed changes and their review:
@@ -72,7 +71,7 @@ enum RolloutOrder {
 type ReviewComment {
   path: string
   /// Line in the post-image. Zero means the comment is on the file as a whole.
-  line: scalar.int32
+  line: int32
   body: string
   resolved: bool
   /// Concrete replacement the author can apply directly.
@@ -91,7 +90,7 @@ type Review: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -114,10 +113,10 @@ type Review: Entity {
   observed_generation: int
   /// Reports whether the Change admitted this review, and why not when it did
   /// not.
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   submitted_time: instant
-  comment_count: scalar.int32
-  unresolved_comment_count: scalar.int32
+  comment_count: int32
+  unresolved_comment_count: int32
   /// The Change moved past reviewed_revision, so this verdict no longer
   /// counts toward the target branch's required approvals.
   stale: bool
@@ -135,7 +134,7 @@ type Change: Entity {
   annotations: {string -> string}
   /// The ChangeSet that materialized this, when it came from one. A change
   /// opened by hand has no owner.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -154,7 +153,7 @@ type Change: Entity {
   auto_merge: bool
   delete_source_on_merge: bool
   /// Which Reviews this Change claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   // Assigned desired state. Computed per repository when materialized.
   /// The vcs.branch Branch this change targets. Attachment: the branch admits
   /// or rejects on its Protection rules, and was authored independently.
@@ -164,20 +163,20 @@ type Change: Entity {
   /// The vcs.repository Repository both branches live in.
   repository: ref.ObjectReference
   /// Forge-assigned number. Zero before the change exists on the forge.
-  number: scalar.int32
+  number: int32
   /// people.contact Contact who opened it.
   author: ref.ObjectReference
   // Observed state.
   observed_generation: int
   phase: ChangePhase
   /// Reports admission by the target branch, mergeability, and check status.
-  conditions: [metav1.Condition]
-  review_count: scalar.int32
-  approval_count: scalar.int32
-  rejection_count: scalar.int32
-  unresolved_comment_count: scalar.int32
+  conditions: [Condition]
+  review_count: int32
+  approval_count: int32
+  rejection_count: int32
+  unresolved_comment_count: int32
   /// Approvals still required by the target branch's Protection.
-  approvals_outstanding: scalar.int32
+  approvals_outstanding: int32
   /// ci.job JobRuns triggered by this change.
   check_runs: [ref.ObjectReference]
   checks_passed: bool
@@ -185,10 +184,10 @@ type Change: Entity {
   mergeable: bool
   merge_blocked_reason: string
   head_revision: string
-  commit_count: scalar.int32
-  files_changed: scalar.int32
-  additions: scalar.int32
-  deletions: scalar.int32
+  commit_count: int32
+  files_changed: int32
+  additions: int32
+  deletions: int32
   opened_time: instant
   merged_time: instant
   closed_time: instant
@@ -212,7 +211,7 @@ type ChangeTemplate {
   auto_merge: bool
   delete_source_on_merge: bool
   /// Which Reviews a generated Change claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
 }
 
 // ---------------------------------------------------------------------------
@@ -226,7 +225,7 @@ type ChangeSet: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -241,31 +240,31 @@ type ChangeSet: Entity {
   /// addition to repositories above.
   repository_group: ref.ObjectReference
   /// Which Changes this set claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   order: RolloutOrder
   /// Changes permitted open at once. Zero means unbounded. Ignored when order
   /// is SEQUENTIAL.
-  max_concurrent: scalar.int32
+  max_concurrent: int32
   /// Stop opening new Changes without closing the ones already out.
   suspended: bool
   /// Close every open Change if any merged one is reverted.
   rollback_on_revert: bool
   /// Merged Changes to retain. Zero retains all.
-  change_history_limit: scalar.int32
+  change_history_limit: int32
   // Observed state.
   observed_generation: int
   phase: ChangeSetPhase
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// Target repositories resolved from repositories and repository_group.
-  target_count: scalar.int32
-  change_count: scalar.int32
-  open_count: scalar.int32
-  approved_count: scalar.int32
-  merged_count: scalar.int32
-  closed_count: scalar.int32
-  blocked_count: scalar.int32
+  target_count: int32
+  change_count: int32
+  open_count: int32
+  approved_count: int32
+  merged_count: int32
+  closed_count: int32
+  blocked_count: int32
   /// Merged over target_count, 0.0 to 1.0.
-  merged_fraction: scalar.double
+  merged_fraction: float64
   /// The Change at the front of the queue, for SEQUENTIAL and STACKED.
   next_change: ref.ObjectReference
   first_opened_time: instant
@@ -289,7 +288,14 @@ enum ChangeSetPhase {
 }
 
 target protobuf for unmango.vcs.change.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("change.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   ReviewComment {
     path => number(1)
@@ -298,242 +304,242 @@ target protobuf for unmango.vcs.change.v1alpha1 {
     resolved => number(4)
     suggestion {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   Review {
-    resource("unmango.vcs.change/Review", "reviews/{review}", "review", "reviews")
+    option("(google.api.resource)", "{ type: \"unmango.vcs.change/Review\" pattern: \"reviews/{review}\" singular: \"review\" plural: \"reviews\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     parent_ref {
       number(11)
-      resource_reference("unmango.vcs.change/Change")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.change/Change\"")
     }
     reviewer {
       number(12)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     verdict => number(13)
     body {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     comments => number(15)
     reviewed_revision => number(16)
     requested => number(17)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     submitted_time {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     comment_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     unresolved_comment_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     stale {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   Change {
-    resource("unmango.vcs.change/Change", "changes/{change}", "change", "changes")
+    option("(google.api.resource)", "{ type: \"unmango.vcs.change/Change\" pattern: \"changes/{change}\" singular: \"change\" plural: \"changes\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     title => number(11)
     body {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     draft => number(13)
     merge_strategy => number(14)
     reviewers {
       number(15)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     assignee {
       number(16)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     auto_merge => number(17)
     delete_source_on_merge => number(18)
     selector => number(19)
     target_ref {
       number(40)
-      resource_reference("unmango.vcs.branch/Branch")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.branch/Branch\"")
     }
     source_branch {
       number(41)
-      resource_reference("unmango.vcs.branch/Branch")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.branch/Branch\"")
     }
     repository {
       number(42)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     number {
       number(43)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     author {
       number(44)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     phase {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     review_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     approval_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     rejection_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     unresolved_comment_count {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     approvals_outstanding {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     check_runs {
       number(58)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.ci.job/JobRun")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.ci.job/JobRun\"")
     }
     checks_passed {
       number(59)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     mergeable {
       number(60)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     merge_blocked_reason {
       number(61)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     head_revision {
       number(62)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     commit_count {
       number(63)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     files_changed {
       number(64)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     additions {
       number(65)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     deletions {
       number(66)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     opened_time {
       number(67)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     merged_time {
       number(68)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     closed_time {
       number(69)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     merge_commit_revision {
       number(70)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   ChangeTemplate {
@@ -543,66 +549,66 @@ target protobuf for unmango.vcs.change.v1alpha1 {
     title => number(10)
     body {
       number(11)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     draft => number(12)
     merge_strategy => number(13)
     reviewers {
       number(14)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     assignee {
       number(15)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     auto_merge => number(16)
     delete_source_on_merge => number(17)
     selector => number(18)
   }
   ChangeSet {
-    resource("unmango.vcs.change/ChangeSet", "changeSets/{change_set}", "changeSet", "changeSets")
+    option("(google.api.resource)", "{ type: \"unmango.vcs.change/ChangeSet\" pattern: \"changeSets/{change_set}\" singular: \"changeSet\" plural: \"changeSets\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     template => number(11)
     repositories {
       number(12)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     repository_group {
       number(13)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.vcs.repository/RepositoryGroup")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/RepositoryGroup\"")
     }
     selector => number(14)
     order => number(15)
@@ -612,64 +618,64 @@ target protobuf for unmango.vcs.change.v1alpha1 {
     change_history_limit => number(19)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     phase {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     target_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     change_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     open_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     approved_count {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     merged_count {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     closed_count {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     blocked_count {
       number(59)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     merged_fraction {
       number(60)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     next_change {
       number(61)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.vcs.change/Change")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.change/Change\"")
     }
     first_opened_time {
       number(62)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     completed_time {
       number(63)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     revision {
       number(64)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

@@ -1,37 +1,36 @@
 package unmango.protofs.fs.v1alpha2
 
 import "../../file/v1alpha2/file.tdl" as file
-import "../../../../shim/rpc.tdl" as rpc
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/rpc.tdl" as _
 
 type FsService {
-  Chmod: rpc.Fn<ChmodRequest, ChmodResponse>
-  Chown: rpc.Fn<ChownRequest, ChownResponse>
-  Chtimes: rpc.Fn<ChtimesRequest, ChtimesResponse>
-  Create: rpc.Fn<CreateRequest, CreateResponse>
-  Mkdir: rpc.Fn<MkdirRequest, MkdirResponse>
-  MkdirAll: rpc.Fn<MkdirAllRequest, MkdirAllResponse>
-  Open: rpc.Fn<OpenRequest, OpenResponse>
-  OpenFile: rpc.Fn<OpenFileRequest, OpenFileResponse>
-  Read: rpc.Fn<ReadRequest, rpc.Stream<ReadResponse>>
-  Remove: rpc.Fn<RemoveRequest, RemoveResponse>
-  RemoveAll: rpc.Fn<RemoveAllRequest, RemoveAllResponse>
-  Rename: rpc.Fn<RenameRequest, RenameResponse>
-  Stat: rpc.Fn<StatRequest, StatResponse>
-  Write: rpc.Fn<rpc.Stream<WriteRequest>, WriteResponse>
+  Chmod: Fn<ChmodRequest, ChmodResponse>
+  Chown: Fn<ChownRequest, ChownResponse>
+  Chtimes: Fn<ChtimesRequest, ChtimesResponse>
+  Create: Fn<CreateRequest, CreateResponse>
+  Mkdir: Fn<MkdirRequest, MkdirResponse>
+  MkdirAll: Fn<MkdirAllRequest, MkdirAllResponse>
+  Open: Fn<OpenRequest, OpenResponse>
+  OpenFile: Fn<OpenFileRequest, OpenFileResponse>
+  Read: Fn<ReadRequest, Stream<ReadResponse>>
+  Remove: Fn<RemoveRequest, RemoveResponse>
+  RemoveAll: Fn<RemoveAllRequest, RemoveAllResponse>
+  Rename: Fn<RenameRequest, RenameResponse>
+  Stat: Fn<StatRequest, StatResponse>
+  Write: Fn<Stream<WriteRequest>, WriteResponse>
 }
 
 type ChmodRequest {
   name: string
-  mode: scalar.uint32  // bitmask; see file.v1alpha2.FileModeConst
+  mode: uint32  // bitmask; see file.v1alpha2.FileModeConst
 }
 
 type ChmodResponse { }
 
 type ChownRequest {
   name: string
-  uid: scalar.uint32
-  gid: scalar.uint32
+  uid: uint32
+  gid: uint32
 }
 
 type ChownResponse { }
@@ -54,14 +53,14 @@ type CreateResponse {
 
 type MkdirAllRequest {
   name: string
-  perm: scalar.uint32  // bitmask; see file.v1alpha2.FileModeConst
+  perm: uint32  // bitmask; see file.v1alpha2.FileModeConst
 }
 
 type MkdirAllResponse { }
 
 type MkdirRequest {
   name: string
-  perm: scalar.uint32  // bitmask; see file.v1alpha2.FileModeConst
+  perm: uint32  // bitmask; see file.v1alpha2.FileModeConst
 }
 
 type MkdirResponse { }
@@ -77,7 +76,7 @@ type OpenResponse {
 type OpenFileRequest {
   name: string
   flag: int  // os.O_RDONLY, os.O_WRONLY, os.O_RDWR etc. (platform-specific)
-  perm: scalar.uint32  // bitmask; see file.v1alpha2.FileModeConst
+  perm: uint32  // bitmask; see file.v1alpha2.FileModeConst
 }
 
 type OpenFileResponse {
@@ -134,7 +133,10 @@ type WriteResponse {
 }
 
 target protobuf for unmango.protofs.fs.v1alpha2 {
-  out("gen/tdl")
+  out("proto")
+  file("fs.proto")
+  Fn => rpc
+  Stream => stream
   edition("2024")
   FsService => service
   ChmodRequest {
@@ -202,7 +204,7 @@ target protobuf for unmango.protofs.fs.v1alpha2 {
     file_info => number(1)
   }
   WriteRequest {
-    payload => number(1)
+    payload => oneof
   }
   WriteRequestPayload {
     Name => number(1)

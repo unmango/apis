@@ -79,60 +79,64 @@ type CaptureItem: Entity {
 }
 
 target protobuf for unmango.productivity.capture.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("capture.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
   edition("2024")
   CaptureItem {
-    resource("unmango.productivity.capture/CaptureItem", "captureItems/{capture_item}", "captureItem", "captureItems")
+    option("(google.api.resource)", "{ type: \"unmango.productivity.capture/CaptureItem\" pattern: \"captureItems/{capture_item}\" singular: \"captureItem\" plural: \"captureItems\" }")
     // tdl-gap: one reserved directive per declaration; proto has two statements
     // reserved 6, 7: owner_refs, generation: nothing owns or reconciles a capture
     // reserved 50, 51: observed_generation, conditions: nothing reconciles a capture
     reserved(6, 7, 50, 51)
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     body => number(11)
     suggested_kind {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     tags => number(13)
     state => number(14)
     resolved_into {
       number(15)
-      field_behavior(OPTIONAL)
-      resource_reference("*")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"*\"")
     }
     discard_reason {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     triaged_time {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

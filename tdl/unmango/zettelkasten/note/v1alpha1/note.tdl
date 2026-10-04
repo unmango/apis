@@ -1,7 +1,6 @@
 package unmango.zettelkasten.note.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // A slip-box of atomic notes and the connections between them:
@@ -104,13 +103,13 @@ type Note: Entity {
   source_uri: string
   // Observed state.
   /// Links this note owns.
-  outbound_link_count: scalar.int32
+  outbound_link_count: int32
   /// Links elsewhere in the box whose target is this note. A note with a high
   /// backlink count and few outbound links is a hub the box grew on its own.
-  backlink_count: scalar.int32
+  backlink_count: int32
   /// Owned links whose target no longer resolves.
-  broken_link_count: scalar.int32
-  word_count: scalar.int32
+  broken_link_count: int32
+  word_count: int32
   last_edited_time: instant
 }
 
@@ -134,7 +133,7 @@ type Link: Entity {
   labels: {string -> string}
   annotations: {string -> string}
   /// The source Note. A Link is meaningless without one and cascades with it.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -156,151 +155,157 @@ type Link: Entity {
   // Observed state.
   observed_generation: int
   /// Carries the Accepted condition: whether the target admits the connection.
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// Whether the target currently resolves to a live resource. False makes this
   /// one of the source note's broken_link_count.
   target_resolved: bool
 }
 
 target protobuf for unmango.zettelkasten.note.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("note.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Note {
-    resource("unmango.zettelkasten.note/Note", "notes/{note}", "note", "notes")
+    option("(google.api.resource)", "{ type: \"unmango.zettelkasten.note/Note\" pattern: \"notes/{note}\" singular: \"note\" plural: \"notes\" }")
     // tdl-gap: one reserved directive per declaration; proto has two statements
     // reserved 6, 7: owner_refs, generation: zettel are flat, and nothing reconciles one
     // reserved 50, 51: observed_generation, conditions: nothing reconciles a note
     reserved(6, 7, 50, 51)
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     zettel_id {
       number(11)
-      field_behavior(IMMUTABLE)
+      option("(google.api.field_behavior)", "IMMUTABLE")
     }
     title => number(12)
-    content => number(13)
+    content => oneof
     format => number(15)
     note_type => number(16)
     tags {
       number(17)
-      resource_reference("unmango.zettelkasten.tag/Tag")
+      option("(google.api.resource_reference).type", "\"unmango.zettelkasten.tag/Tag\"")
     }
     source_uri {
       number(18)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     outbound_link_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     backlink_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     broken_link_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     word_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_edited_time {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   NoteContent {
     Body => number(13)
     ContentRef {
       number(14)
-      content_ref => resource_reference("*")
+      content_ref => option("(google.api.resource_reference).type", "\"*\"")
     }
   }
   Link {
-    resource("unmango.zettelkasten.note/Link", "links/{link}", "link", "links")
+    option("(google.api.resource)", "{ type: \"unmango.zettelkasten.note/Link\" pattern: \"links/{link}\" singular: \"link\" plural: \"links\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     target {
       number(11)
-      field_behavior(IMMUTABLE)
-      resource_reference("*")
+      option("(google.api.field_behavior)", "IMMUTABLE")
+      option("(google.api.resource_reference).type", "\"*\"")
     }
     relation => number(12)
     custom_relation {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     rationale {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     target_resolved {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

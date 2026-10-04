@@ -1,7 +1,7 @@
 package unmango.cli.v1alpha1
 
-import "../../../shim/protobuf.tdl" as wkt
-import "../../../shim/rpc.tdl" as rpc
+import "../../../shim/protobuf.tdl" as _
+import "../../../shim/rpc.tdl" as _
 
 // ---- from cli.proto ----
 // https://stackoverflow.com/questions/8957222/are-there-standards-for-linux-command-line-switches-and-arguments
@@ -11,7 +11,7 @@ import "../../../shim/rpc.tdl" as rpc
 // - http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html
 // - http://www.gnu.org/software/libc/manual/html_node/Getopt-Long-Options.html
 type AnalysisService {
-  Parse: rpc.Fn<ParseRequest, ParseResponse>
+  Parse: Fn<ParseRequest, ParseResponse>
 }
 
 type ParseRequest {
@@ -21,7 +21,7 @@ type ParseRequest {
 
 // tdl-gap: oneof becomes a separate message
 enum ParseRequestInput {
-  Proto { proto: wkt.Any }
+  Proto { proto: Any }
 }
 
 type ParseResponse {
@@ -101,7 +101,7 @@ enum AssignmentStyle {
 
 // ---- from parser.proto ----
 type ParserService {
-  ParseCommand: rpc.Fn<ParseCommandRequest, ParseCommandResponse>
+  ParseCommand: Fn<ParseCommandRequest, ParseCommandResponse>
 }
 
 type ParseCommandRequest {
@@ -114,11 +114,31 @@ type ParseCommandResponse {
 }
 
 target protobuf for unmango.cli.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  ParseRequest => file("cli.proto")
+  ParseResponse => file("cli.proto")
+  Option => file("cli.proto")
+  Utility => file("cli.proto")
+  Convention => file("cli.proto")
+  AnalysisService => file("cli.proto")
+  CommandLine => file("cst.proto")
+  Token => file("cst.proto")
+  Word => file("cst.proto")
+  ShortFlag => file("cst.proto")
+  LongFlag => file("cst.proto")
+  EndOfOptions => file("cst.proto")
+  FlagAssignment => file("cst.proto")
+  QuoteStyle => file("cst.proto")
+  AssignmentStyle => file("cst.proto")
+  ParseCommandRequest => file("parser.proto")
+  ParseCommandResponse => file("parser.proto")
+  ParserService => file("parser.proto")
+  Any => foreign("google/protobuf/any.proto", "google.protobuf.Any")
+  Fn => rpc
   edition("2024")
   AnalysisService => service
   ParseRequest {
-    input => number(1)
+    input => oneof
     convention => number(100)
   }
   ParseRequestInput {
@@ -141,7 +161,7 @@ target protobuf for unmango.cli.v1alpha1 {
     tokens => number(2)
   }
   Token {
-    kind => number(1)
+    kind => oneof
   }
   TokenKind {
     Word => number(1)

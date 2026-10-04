@@ -1,8 +1,7 @@
 package unmango.productivity.task.v1alpha1
 
-import "../../../../shim/google/type.tdl" as gtype
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Work to be done, with or without a fixed time:
@@ -34,12 +33,12 @@ enum RecurrenceFrequency { Daily Weekly Monthly Yearly }
 /// version independently.
 type RecurrenceRule {
   frequency: RecurrenceFrequency
-  interval: scalar.int32
-  by_day: [gtype.DayOfWeek]
-  by_month_day: [scalar.int32]
-  count: scalar.int32
-  until: gtype.Date
-  exclude_dates: [gtype.Date]
+  interval: int32
+  by_day: [DayOfWeek]
+  by_month_day: [int32]
+  count: int32
+  until: Date
+  exclude_dates: [Date]
   /// Schedule the next occurrence relative to when the last one was completed
   /// rather than when it was due. A chore that is done late should not
   /// immediately be due again. Mirrors calendar.event's copy of this field;
@@ -59,7 +58,7 @@ type Task: Entity {
   annotations: {string -> string}
   /// A parent Task for a subtask, or a RecurringTask for a materialized
   /// occurrence.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -75,29 +74,29 @@ type Task: Entity {
   /// The people.contact Contact responsible.
   assignee: ref.ObjectReference
   /// Which subtasks this Task claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// How far ahead to notify.
   reminders: [duration]
   /// Every subtask must be DONE before this one may be.
   blocked_by_subtasks: bool
   // Assigned desired state. Computed per occurrence for a materialized task.
-  due_date: gtype.Date
+  due_date: Date
   /// Time of day the deadline falls. Unset means end of day.
-  due_time: gtype.TimeOfDay
+  due_time: TimeOfDay
   /// Earliest date this should surface. Hides work that cannot start yet.
-  defer_until: gtype.Date
+  defer_until: Date
   /// The calendar.event Event booked to do this.
   scheduled_event: ref.ObjectReference
   // Observed state.
   observed_generation: int
   state: TaskState
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   started_time: instant
   completion_time: instant
-  subtask_count: scalar.int32
-  completed_subtask_count: scalar.int32
+  subtask_count: int32
+  completed_subtask_count: int32
   /// Days past due_date. Negative means not yet due.
-  days_overdue: scalar.int32
+  days_overdue: int32
   /// A dependency has not reached DONE.
   blocked: bool
   actual_effort: duration
@@ -116,7 +115,7 @@ type TaskTemplate {
   depends_on: [ref.ObjectReference]
   assignee: ref.ObjectReference
   /// Which subtasks a generated Task claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   reminders: [duration]
   blocked_by_subtasks: bool
 }
@@ -131,7 +130,7 @@ type RecurringTask: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -141,38 +140,48 @@ type RecurringTask: Entity {
   /// Stamped onto each materialized Task.
   template: TaskTemplate
   rule: RecurrenceRule
-  start_date: gtype.Date
-  due_time: gtype.TimeOfDay
+  start_date: Date
+  due_time: TimeOfDay
   /// Surface each occurrence this many days before it is due.
-  lead_time_days: scalar.int32
+  lead_time_days: int32
   /// Materialize occurrences up to this date.
-  materialize_through: gtype.Date
+  materialize_through: Date
   /// Which Tasks this chore claims.
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// Stop materializing without deleting the chore.
   suspended: bool
   /// Keep at most one incomplete occurrence outstanding, rather than letting
   /// missed occurrences pile up. What a daily habit wants.
   skip_missed: bool
   /// Completed occurrences to retain. Zero retains all.
-  occurrence_history_limit: scalar.int32
+  occurrence_history_limit: int32
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
-  open_occurrence_count: scalar.int32
+  conditions: [Condition]
+  open_occurrence_count: int32
   completed_occurrence_count: int
   missed_occurrence_count: int
-  next_due_date: gtype.Date
-  last_completed_date: gtype.Date
-  materialized_through: gtype.Date
+  next_due_date: Date
+  last_completed_date: Date
+  materialized_through: Date
   /// Completed divided by materialized, over the retained history.
-  completion_rate: scalar.double
+  completion_rate: float64
   /// Consecutive occurrences completed on time.
-  current_streak: scalar.int32
+  current_streak: int32
 }
 
 target protobuf for unmango.productivity.task.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("task.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Date => foreign("google/type/date.proto", "google.type.Date")
+  DayOfWeek => foreign("google/type/dayofweek.proto", "google.type.DayOfWeek")
+  TimeOfDay => foreign("google/type/timeofday.proto", "google.type.TimeOfDay")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   RecurrenceRule {
     frequency => number(1)
@@ -182,120 +191,120 @@ target protobuf for unmango.productivity.task.v1alpha1 {
     count => number(5)
     until {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     exclude_dates => number(7)
     from_completion => number(8)
   }
   Task {
-    resource("unmango.productivity.task/Task", "tasks/{task}", "task", "tasks")
+    option("(google.api.resource)", "{ type: \"unmango.productivity.task/Task\" pattern: \"tasks/{task}\" singular: \"task\" plural: \"tasks\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     summary => number(11)
     notes {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     priority => number(13)
     estimated_effort => number(14)
     depends_on {
       number(15)
-      resource_reference("unmango.productivity.task/Task")
+      option("(google.api.resource_reference).type", "\"unmango.productivity.task/Task\"")
     }
     assignee {
       number(16)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     selector => number(17)
     reminders => number(18)
     blocked_by_subtasks => number(19)
     due_date {
       number(40)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     due_time {
       number(41)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     defer_until {
       number(42)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     scheduled_event {
       number(43)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.calendar.event/Event")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.calendar.event/Event\"")
     }
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     state {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     started_time {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     completion_time {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     subtask_count {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     completed_subtask_count {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     days_overdue {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     blocked {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     actual_effort {
       number(59)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   TaskTemplate {
@@ -304,63 +313,63 @@ target protobuf for unmango.productivity.task.v1alpha1 {
     summary => number(10)
     notes {
       number(11)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     priority => number(12)
     estimated_effort => number(13)
     depends_on {
       number(14)
-      resource_reference("unmango.productivity.task/Task")
+      option("(google.api.resource_reference).type", "\"unmango.productivity.task/Task\"")
     }
     assignee {
       number(15)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     selector => number(16)
     reminders => number(17)
     blocked_by_subtasks => number(18)
   }
   RecurringTask {
-    resource("unmango.productivity.task/RecurringTask", "recurringTasks/{recurring_task}", "recurringTask", "recurringTasks")
+    option("(google.api.resource)", "{ type: \"unmango.productivity.task/RecurringTask\" pattern: \"recurringTasks/{recurring_task}\" singular: \"recurringTask\" plural: \"recurringTasks\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     template => number(11)
     rule => number(12)
     start_date => number(13)
     due_time {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     lead_time_days => number(15)
     materialize_through => number(16)
@@ -370,43 +379,43 @@ target protobuf for unmango.productivity.task.v1alpha1 {
     occurrence_history_limit => number(20)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     open_occurrence_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     completed_occurrence_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     missed_occurrence_count {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     next_due_date {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_completed_date {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     materialized_through {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     completion_rate {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     current_streak {
       number(59)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

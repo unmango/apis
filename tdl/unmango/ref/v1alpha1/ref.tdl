@@ -46,7 +46,10 @@ enum DeletePropagation {
 }
 
 target protobuf for unmango.ref.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("ref.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
   edition("2024")
   ObjectReference {
     api_version => number(1)
@@ -54,23 +57,23 @@ target protobuf for unmango.ref.v1alpha1 {
     name => number(3)
     namespace {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     resource_version {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     uid {
       number(6)
-      field_behavior(OPTIONAL)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.field_info).format", "UUID4")
     }
   }
   ParentReference {
     ref => number(1)
     section {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   DeletePropagation {

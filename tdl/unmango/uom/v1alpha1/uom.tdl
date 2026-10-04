@@ -1,6 +1,5 @@
 package unmango.uom.v1alpha1
 
-import "../../../shim/scalar.tdl" as scalar
 
 // Shared measurement vocabulary, so a value's unit is comparable across
 // domains instead of being a free-text string each package invents its own
@@ -44,7 +43,7 @@ enum Unit {
 
 /// A value paired with its unit.
 type Quantity {
-  value: scalar.double
+  value: float64
   unit: Unit
   /// Set only when unit is UNIT_CUSTOM.
   custom_unit: string
@@ -62,11 +61,13 @@ type ResourceQuantity {
   cpu_millicores: int
   memory_bytes: int
   storage_bytes: int
-  gpu_count: scalar.int32
+  gpu_count: int32
 }
 
 target protobuf for unmango.uom.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("uom.proto")
+  import("google/api/field_behavior.proto")
   edition("2024")
   Unit {
     Custom => number(1)
@@ -94,7 +95,7 @@ target protobuf for unmango.uom.v1alpha1 {
     unit => number(2)
     custom_unit {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   ResourceQuantity {

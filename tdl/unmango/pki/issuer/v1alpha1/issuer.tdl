@@ -1,7 +1,6 @@
 package unmango.pki.issuer.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // A signing mechanism, not the certificates it produces:
@@ -74,7 +73,7 @@ type Issuer: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -84,13 +83,13 @@ type Issuer: Entity {
   config: IssuerConfig
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   /// This issuer's own signing credential, set once self_signed or ca has
   /// minted it. Absent for acme and vault, which sign against a certificate
   /// this API does not hold.
   ca_certificate_fingerprint: string
   /// pki.certificate CertificateRequests naming this issuer.
-  certificate_request_count: scalar.int32
+  certificate_request_count: int32
 }
 
 // tdl-gap: oneof becomes a separate message
@@ -102,30 +101,36 @@ enum IssuerConfig {
 }
 
 target protobuf for unmango.pki.issuer.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("issuer.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   CaConfig {
     issuer {
       number(1)
-      resource_reference("unmango.pki.issuer/Issuer")
+      option("(google.api.resource_reference).type", "\"unmango.pki.issuer/Issuer\"")
     }
   }
   AcmeConfig {
     platform {
       number(1)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.compute.platform/Platform")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
     }
     directory_url {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     account_email => number(3)
     challenge_kind => number(4)
     challenge_solver {
       number(5)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.compute.platform/Platform")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
     }
   }
   VaultConfig {
@@ -134,55 +139,55 @@ target protobuf for unmango.pki.issuer.v1alpha1 {
     role => number(3)
   }
   Issuer {
-    resource("unmango.pki.issuer/Issuer", "issuers/{issuer}", "issuer", "issuers")
+    option("(google.api.resource)", "{ type: \"unmango.pki.issuer/Issuer\" pattern: \"issuers/{issuer}\" singular: \"issuer\" plural: \"issuers\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
-    config => number(11)
+    config => oneof
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     ca_certificate_fingerprint {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     certificate_request_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   IssuerConfig {

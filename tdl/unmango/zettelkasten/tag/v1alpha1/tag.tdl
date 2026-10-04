@@ -1,7 +1,6 @@
 package unmango.zettelkasten.tag.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 
 // The controlled vocabulary a zettelkasten Note is filed under:
 //
@@ -36,7 +35,7 @@ type Tag: Entity {
   labels: {string -> string}
   annotations: {string -> string}
   /// The broader term this one narrows. Absent at the top of the vocabulary.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   create_time: instant
   /// Last write, server-stamped.
   update_time: instant
@@ -50,67 +49,72 @@ type Tag: Entity {
   /// form.
   aliases: [string]
   // Observed state.
-  note_count: scalar.int32
+  note_count: int32
   /// Narrower terms owned by this one.
-  child_count: scalar.int32
+  child_count: int32
   /// When a note was last filed under this term. A vocabulary entry nothing has
   /// used in years is a candidate for merging away.
   last_used_time: instant
 }
 
 target protobuf for unmango.zettelkasten.tag.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("tag.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Tag {
-    resource("unmango.zettelkasten.tag/Tag", "tags/{tag}", "tag", "tags")
+    option("(google.api.resource)", "{ type: \"unmango.zettelkasten.tag/Tag\" pattern: \"tags/{tag}\" singular: \"tag\" plural: \"tags\" }")
     // tdl-gap: one reserved directive per declaration; proto has two statements
     // reserved 7: generation: the vocabulary is authored, not reconciled
     // reserved 50, 51: observed_generation, conditions: nothing reconciles a tag
     reserved(7, 50, 51)
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     description {
       number(11)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     aliases => number(12)
     note_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     child_count {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     last_used_time {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }

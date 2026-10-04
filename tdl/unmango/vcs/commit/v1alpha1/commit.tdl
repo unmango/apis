@@ -1,9 +1,8 @@
 package unmango.vcs.commit.v1alpha1
 
-import "../../../../shim/google/type.tdl" as gtype
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/rpc.tdl" as rpc
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../../shim/rpc.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // History as a graph:
@@ -49,9 +48,9 @@ type Trailer {
 }
 
 type DiffStat {
-  files_changed: scalar.int32
-  additions: scalar.int32
-  deletions: scalar.int32
+  files_changed: int32
+  additions: int32
+  deletions: int32
 }
 
 /// Shape of a commit, derived from how many parents it has.
@@ -123,7 +122,7 @@ type Commit: Entity {
   /// First line of message.
   summary: string
   kind: CommitKind
-  parent_count: scalar.int32
+  parent_count: int32
   signature_verified: bool
   /// vcs.branch Branches and Tags pointing directly at this commit.
   refs: [ref.ObjectReference]
@@ -135,11 +134,11 @@ type Commit: Entity {
   /// walking, since a commit can never reach one with a higher number.
   generation_number: int
   /// Commits between here and the nearest root along first parents.
-  depth: scalar.int32
+  depth: int32
   /// Reachable from at least one ref. False means the object survives only
   /// until the next garbage collection.
   reachable: bool
-  conditions: [metav1.Condition]
+  conditions: [Condition]
 }
 
 // ---------------------------------------------------------------------------
@@ -152,15 +151,15 @@ type Commit: Entity {
 /// Beyond the usual reads, this service is where the graph is actually
 /// traversed.
 type CommitService {
-  GetCommit: rpc.Fn<GetCommitRequest, GetCommitResponse>
-  ListCommits: rpc.Fn<ListCommitsRequest, ListCommitsResponse>
-  WatchCommits: rpc.Fn<WatchCommitsRequest, rpc.Stream<WatchCommitsResponse>>
+  GetCommit: Fn<GetCommitRequest, GetCommitResponse>
+  ListCommits: Fn<ListCommitsRequest, ListCommitsResponse>
+  WatchCommits: Fn<WatchCommitsRequest, Stream<WatchCommitsResponse>>
   /// Walk the graph from a set of tips.
-  WalkCommits: rpc.Fn<WalkCommitsRequest, rpc.Stream<WalkCommitsResponse>>
+  WalkCommits: Fn<WalkCommitsRequest, Stream<WalkCommitsResponse>>
   /// Lowest common ancestors of two or more commits.
-  GetMergeBase: rpc.Fn<GetMergeBaseRequest, GetMergeBaseResponse>
+  GetMergeBase: Fn<GetMergeBaseRequest, GetMergeBaseResponse>
   /// Divergence between two points: ahead, behind, and what lies between.
-  CompareCommits: rpc.Fn<CompareCommitsRequest, CompareCommitsResponse>
+  CompareCommits: Fn<CompareCommitsRequest, CompareCommitsResponse>
 }
 
 type GetCommitRequest {
@@ -176,15 +175,15 @@ type GetCommitResponse {
 }
 
 type ListCommitsRequest {
-  page_size: scalar.int32
+  page_size: int32
   page_token: string
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   /// Field 4 is `repository` rather than the `owner` this position holds on
   /// every mutable kind. A commit has no owner reference to list by; the
   /// repository is scope, not ownership.
   repository: ref.ObjectReference
   /// Restricts results to commits within this window, by commit_time.
-  window: gtype.Interval
+  window: Interval
   /// Restricts results to commits authored by this people.contact Contact.
   author: ref.ObjectReference
   kinds: [CommitKind]
@@ -198,7 +197,7 @@ type ListCommitsResponse {
 }
 
 type WatchCommitsRequest {
-  selector: metav1.LabelSelector
+  selector: LabelSelector
   repository: ref.ObjectReference
   /// Restricts the stream to commits reachable from these refs.
   watch_refs: [ref.ObjectReference]
@@ -244,12 +243,12 @@ type WalkCommitsRequest {
   /// mainline.
   first_parent_only: bool
   /// Stop after this many edges from the nearest tip. Zero means unbounded.
-  max_depth: scalar.int32
+  max_depth: int32
   /// Stop after this many commits. Zero means unbounded.
-  limit: scalar.int32
+  limit: int32
   /// Emit only commits touching one of these paths.
   paths: [string]
-  window: gtype.Interval
+  window: Interval
   author: ref.ObjectReference
   /// Substring match against message.
   query: string
@@ -258,7 +257,7 @@ type WalkCommitsRequest {
 type WalkCommitsResponse {
   commit: Commit
   /// Edges traversed from the nearest start revision to reach this commit.
-  depth: scalar.int32
+  depth: int32
   /// True when this commit sits on a side branch rather than the first-parent
   /// mainline.
   off_mainline: bool
@@ -302,14 +301,14 @@ type CompareCommitsRequest {
   head_revision: string
   /// Include the commits themselves rather than only the counts.
   include_commits: bool
-  page_size: scalar.int32
+  page_size: int32
   page_token: string
 }
 
 type CompareCommitsResponse {
   /// Commits head has that base does not, and the reverse.
-  ahead_count: scalar.int32
-  behind_count: scalar.int32
+  ahead_count: int32
+  behind_count: int32
   merge_base: Commit
   /// Populated only when include_commits was set. The ahead set.
   commits: [Commit]
@@ -321,7 +320,15 @@ type CompareCommitsResponse {
 }
 
 target protobuf for unmango.vcs.commit.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("commit.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/resource.proto")
+  Interval => foreign("google/type/interval.proto", "google.type.Interval")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  Fn => rpc
+  Stream => stream
   edition("2024")
   Signature {
     name => number(1)
@@ -329,8 +336,8 @@ target protobuf for unmango.vcs.commit.v1alpha1 {
     sign_time => number(3)
     contact {
       number(4)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
   }
   Trailer {
@@ -343,19 +350,19 @@ target protobuf for unmango.vcs.commit.v1alpha1 {
     deletions => number(3)
   }
   Commit {
-    resource("unmango.vcs.commit/Commit", "commits/{commit}", "commit", "commits")
+    option("(google.api.resource)", "{ type: \"unmango.vcs.commit/Commit\" pattern: \"commits/{commit}\" singular: \"commit\" plural: \"commits\" }")
     reserved(2, 3, 6, 7, 9, 10)  // uid, display_name, owner_refs, generation, update_time, delete_time: the revision is the whole identity, and nothing declares, owns, or rewrites a commit
     revision {
       number(1)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     labels => number(4)
     annotations => number(5)
     commit_time => number(8)
     repository {
       number(11)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     parent_revisions => number(12)
     tree_revision => number(13)
@@ -365,69 +372,69 @@ target protobuf for unmango.vcs.commit.v1alpha1 {
     trailers => number(17)
     tree_uri {
       number(18)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     signature {
       number(19)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     summary {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     kind {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     parent_count {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     signature_verified {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     refs {
       number(54)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("*")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"*\"")
     }
     changes {
       number(55)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.vcs.change/Change")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.change/Change\"")
     }
     stats {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     generation_number {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     depth {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     reachable {
       number(59)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(60)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   CommitService => service
   GetCommitRequest {
     repository {
       number(1)
-      field_behavior(REQUIRED)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.field_behavior)", "REQUIRED")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     revision {
       number(2)
-      field_behavior(REQUIRED)
+      option("(google.api.field_behavior)", "REQUIRED")
     }
   }
   GetCommitResponse {
@@ -436,37 +443,37 @@ target protobuf for unmango.vcs.commit.v1alpha1 {
   ListCommitsRequest {
     page_size {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     page_token {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     selector {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     repository {
       number(4)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     window {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     author {
       number(6)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     kinds {
       number(7)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     reachable_only {
       number(8)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   ListCommitsResponse {
@@ -476,81 +483,81 @@ target protobuf for unmango.vcs.commit.v1alpha1 {
   WatchCommitsRequest {
     selector {
       number(1)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     repository {
       number(2)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     watch_refs {
       number(3)
-      field_behavior(OPTIONAL)
-      resource_reference("*")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"*\"")
     }
     resource_version {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   WatchCommitsResponse {
     type => number(1)
     commit {
       number(2)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     resource_version => number(3)
   }
   WalkCommitsRequest {
     repository {
       number(1)
-      field_behavior(REQUIRED)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.field_behavior)", "REQUIRED")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     start_revisions {
       number(2)
-      field_behavior(REQUIRED)
+      option("(google.api.field_behavior)", "REQUIRED")
     }
     exclude_revisions {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     direction {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     order {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     first_parent_only {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     max_depth {
       number(7)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     limit {
       number(8)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     paths {
       number(9)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     window {
       number(10)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     author {
       number(11)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     query {
       number(12)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   WalkCommitsResponse {
@@ -561,16 +568,16 @@ target protobuf for unmango.vcs.commit.v1alpha1 {
   GetMergeBaseRequest {
     repository {
       number(1)
-      field_behavior(REQUIRED)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.field_behavior)", "REQUIRED")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     revisions {
       number(2)
-      field_behavior(REQUIRED)
+      option("(google.api.field_behavior)", "REQUIRED")
     }
     all {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   GetMergeBaseResponse {
@@ -580,28 +587,28 @@ target protobuf for unmango.vcs.commit.v1alpha1 {
   CompareCommitsRequest {
     repository {
       number(1)
-      field_behavior(REQUIRED)
-      resource_reference("unmango.vcs.repository/Repository")
+      option("(google.api.field_behavior)", "REQUIRED")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
     }
     base_revision {
       number(2)
-      field_behavior(REQUIRED)
+      option("(google.api.field_behavior)", "REQUIRED")
     }
     head_revision {
       number(3)
-      field_behavior(REQUIRED)
+      option("(google.api.field_behavior)", "REQUIRED")
     }
     include_commits {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     page_size {
       number(5)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     page_token {
       number(6)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   CompareCommitsResponse {

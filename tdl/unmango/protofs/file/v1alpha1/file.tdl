@@ -1,41 +1,40 @@
 package unmango.protofs.file.v1alpha1
 
-import "../../../../shim/protobuf.tdl" as wkt
-import "../../../../shim/rpc.tdl" as rpc
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/protobuf.tdl" as _
+import "../../../../shim/rpc.tdl" as _
 
 type File {
   id: string  // server-issued handle, set by Open/Create responses
   name: string
   flag: int
-  perm: scalar.uint32  // bitmask
+  perm: uint32  // bitmask
 }
 
 type FileInfo {
   name: string
   size: int
-  mode: scalar.uint32  // bitmask
+  mode: uint32  // bitmask
   mod_time: instant
   is_dir: bool
-  sys: wkt.Any  // platform-specific underlying data; type URL must be agreed out-of-band
+  sys: Any  // platform-specific underlying data; type URL must be agreed out-of-band
 }
 
 /// Deprecated: use unmango.protofs.file.v1alpha2.FileService.
 deprecated("use unmango.protofs.file.v1alpha2.FileService.")
 type FileService {
-  Read: rpc.Fn<ReadRequest, ReadResponse>
-  ReadAt: rpc.Fn<ReadAtRequest, ReadAtResponse>
-  Readdir: rpc.Fn<ReaddirRequest, rpc.Stream<ReaddirResponse>>
-  ReaddirNames: rpc.Fn<ReaddirNamesRequest, rpc.Stream<ReaddirNamesResponse>>
-  Stat: rpc.Fn<StatRequest, StatResponse>
-  Truncate: rpc.Fn<TruncateRequest, TruncateResponse>
-  Write: rpc.Fn<WriteRequest, WriteResponse>
-  WriteAt: rpc.Fn<WriteAtRequest, WriteAtResponse>
+  Read: Fn<ReadRequest, ReadResponse>
+  ReadAt: Fn<ReadAtRequest, ReadAtResponse>
+  Readdir: Fn<ReaddirRequest, Stream<ReaddirResponse>>
+  ReaddirNames: Fn<ReaddirNamesRequest, Stream<ReaddirNamesResponse>>
+  Stat: Fn<StatRequest, StatResponse>
+  Truncate: Fn<TruncateRequest, TruncateResponse>
+  Write: Fn<WriteRequest, WriteResponse>
+  WriteAt: Fn<WriteAtRequest, WriteAtResponse>
 }
 
 type ReaddirRequest {
   file: File
-  count: scalar.int32
+  count: int32
 }
 
 type ReaddirResponse {
@@ -44,7 +43,7 @@ type ReaddirResponse {
 
 type ReaddirNamesRequest {
   file: File
-  count: scalar.int32
+  count: int32
 }
 
 type ReaddirNamesResponse {
@@ -102,18 +101,23 @@ type WriteAtRequest {
 type WriteAtResponse { }
 
 target protobuf for unmango.protofs.file.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("file.proto")
+  import("google/api/field_behavior.proto")
+  Any => foreign("google/protobuf/any.proto", "google.protobuf.Any")
+  Fn => rpc
+  Stream => stream
   edition("2023")
   File {
     id => number(1)
     name => number(2)
     flag {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     perm {
       number(4)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
   }
   FileInfo {

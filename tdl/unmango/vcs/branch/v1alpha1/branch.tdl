@@ -1,7 +1,6 @@
 package unmango.vcs.branch.v1alpha1
 
-import "../../../../shim/k8s/meta.tdl" as metav1
-import "../../../../shim/scalar.tdl" as scalar
+import "../../../../shim/k8s/meta.tdl" as _
 import "../../../ref/v1alpha1/ref.tdl" as ref
 
 // Named pointers into history:
@@ -29,7 +28,7 @@ import "../../../ref/v1alpha1/ref.tdl" as ref
 /// targeting this branch is admitted or rejected on these terms.
 type Protection {
   /// Approving reviews required before a change may merge.
-  required_approvals: scalar.int32
+  required_approvals: int32
   /// ci.job Pipeline names that must succeed.
   required_checks: [string]
   /// Reject merge commits, forcing rebase or squash.
@@ -67,7 +66,7 @@ type Branch: Entity {
   labels: {string -> string}
   annotations: {string -> string}
   /// The vcs.repository Repository this branch lives in.
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -93,16 +92,16 @@ type Branch: Entity {
   // head_revision names a node in the vcs.commit graph.
   observed_generation: int
   phase: BranchPhase
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   head_revision: string
   head_message: string
   head_author: ref.ObjectReference
   head_commit_time: instant
   /// Commits this branch has that its base does not, and the reverse.
-  ahead_count: scalar.int32
-  behind_count: scalar.int32
+  ahead_count: int32
+  behind_count: int32
   /// Open vcs.change Changes with this branch as their source.
-  open_change_count: scalar.int32
+  open_change_count: int32
   /// Merged into its base and safe to delete.
   merged: bool
   /// No commits for long enough to be a candidate for cleanup.
@@ -131,7 +130,7 @@ type Tag: Entity {
   display_name: string
   labels: {string -> string}
   annotations: {string -> string}
-  owner_refs: [metav1.OwnerReference]
+  owner_refs: [OwnerReference]
   generation: int
   create_time: instant
   /// Last write, server-stamped.
@@ -154,19 +153,25 @@ type Tag: Entity {
   prerelease: bool
   // Observed state.
   observed_generation: int
-  conditions: [metav1.Condition]
+  conditions: [Condition]
   tagged_time: instant
   signature_verified: bool
   /// The declared target no longer resolves, or resolves to a different commit
   /// than when the tag was recorded.
   dangling: bool
   /// Commits between this tag and the previous one, so release size is visible.
-  commits_since_previous: scalar.int32
+  commits_since_previous: int32
   previous_ref_name: string
 }
 
 target protobuf for unmango.vcs.branch.v1alpha1 {
-  out("gen/tdl")
+  out("proto")
+  file("branch.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Protection {
     required_approvals => number(1)
@@ -180,195 +185,195 @@ target protobuf for unmango.vcs.branch.v1alpha1 {
     enforce_for_admins => number(9)
     push_allowlist {
       number(10)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
   }
   Branch {
-    resource("unmango.vcs.branch/Branch", "branches/{branch}", "branch", "branches")
+    option("(google.api.resource)", "{ type: \"unmango.vcs.branch/Branch\" pattern: \"branches/{branch}\" singular: \"branch\" plural: \"branches\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     ref_name => number(11)
     is_default => number(12)
     protection {
       number(13)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     base_ref_name {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     upstream_remote {
       number(15)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.vcs.repository/Remote")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Remote\"")
     }
     upstream_ref_name {
       number(16)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     delete_on_merge => number(17)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     phase {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     head_revision {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     head_message {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     head_author {
       number(55)
-      field_behavior(OUTPUT_ONLY)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     head_commit_time {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     ahead_count {
       number(57)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     behind_count {
       number(58)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     open_change_count {
       number(59)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     merged {
       number(60)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     stale {
       number(61)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
   Tag {
-    resource("unmango.vcs.branch/Tag", "tags/{tag}", "tag", "tags")
+    option("(google.api.resource)", "{ type: \"unmango.vcs.branch/Tag\" pattern: \"tags/{tag}\" singular: \"tag\" plural: \"tags\" }")
     name {
       number(1)
-      field_behavior(IDENTIFIER)
+      option("(google.api.field_behavior)", "IDENTIFIER")
     }
     uid {
       number(2)
-      field_behavior(OUTPUT_ONLY)
-      field_info(UUID4)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
     }
     display_name {
       number(3)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     labels => number(4)
     annotations => number(5)
     owner_refs => number(6)
     generation {
       number(7)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     create_time {
       number(8)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     update_time {
       number(9)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     delete_time {
       number(10)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     ref_name => number(11)
     target_revision {
       number(12)
-      field_behavior(IMMUTABLE)
+      option("(google.api.field_behavior)", "IMMUTABLE")
     }
     type => number(13)
     message {
       number(14)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     tagger {
       number(15)
-      field_behavior(OPTIONAL)
-      resource_reference("unmango.people.contact/Contact")
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
     }
     release => number(16)
     release_notes {
       number(17)
-      field_behavior(OPTIONAL)
+      option("(google.api.field_behavior)", "OPTIONAL")
     }
     prerelease => number(18)
     observed_generation {
       number(50)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     conditions {
       number(51)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     tagged_time {
       number(52)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     signature_verified {
       number(53)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     dangling {
       number(54)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     commits_since_previous {
       number(55)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
     previous_ref_name {
       number(56)
-      field_behavior(OUTPUT_ONLY)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
     }
   }
 }
