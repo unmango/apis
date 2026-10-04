@@ -28,10 +28,13 @@ enum AddressType { Hostname InternalIp ExternalIp WireguardIp }
 
 /// What the machine reports about itself.
 type SystemInfo {
-  os: string  // "linux", "darwin"
-  os_image: string  // "NixOS 25.05"
+  /// "linux", "darwin"
+  os: string
+  /// "NixOS 25.05"
+  os_image: string
   kernel_version: string
-  architecture: string  // "amd64", "arm64"
+  /// "amd64", "arm64"
+  architecture: string
   machine_id: string
   container_runtime_version: string
 }

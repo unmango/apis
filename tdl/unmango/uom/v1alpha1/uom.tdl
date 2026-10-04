@@ -1,6 +1,5 @@
 package unmango.uom.v1alpha1
 
-
 // Shared measurement vocabulary, so a value's unit is comparable across
 // domains instead of being a free-text string each package invents its own
 // convention for. Kept separate from unmango.ref: ref addresses relationships

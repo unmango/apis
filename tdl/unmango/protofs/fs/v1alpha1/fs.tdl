@@ -3,7 +3,6 @@ package unmango.protofs.fs.v1alpha1
 import "../../file/v1alpha1/file.tdl" as file
 import "../../../../shim/rpc.tdl" as _
 
-/// Deprecated: use unmango.protofs.fs.v1alpha2.FsService.
 deprecated("use unmango.protofs.fs.v1alpha2.FsService.")
 type FsService {
   Chmod: Fn<ChmodRequest, ChmodResponse>
@@ -24,7 +23,8 @@ type FsService {
 
 type ChmodRequest {
   name: string
-  mode: uint32  // bitmask; see file.v1alpha1.FileModeConst
+  /// bitmask; see file.v1alpha1.FileModeConst
+  mode: uint32
 }
 
 type ChmodResponse { }
@@ -55,14 +55,16 @@ type CreateResponse {
 
 type MkdirAllRequest {
   name: string
-  perm: uint32  // bitmask; see file.v1alpha1.FileModeConst
+  /// bitmask; see file.v1alpha1.FileModeConst
+  perm: uint32
 }
 
 type MkdirAllResponse { }
 
 type MkdirRequest {
   name: string
-  perm: uint32  // bitmask; see file.v1alpha1.FileModeConst
+  /// bitmask; see file.v1alpha1.FileModeConst
+  perm: uint32
 }
 
 type MkdirResponse { }
@@ -77,8 +79,10 @@ type OpenResponse {
 
 type OpenFileRequest {
   name: string
-  flag: int  // os.O_RDONLY, os.O_WRONLY, os.O_RDWR etc. (platform-specific)
-  perm: uint32  // bitmask; see file.v1alpha1.FileModeConst
+  /// os.O_RDONLY, os.O_WRONLY, os.O_RDWR etc. (platform-specific)
+  flag: int
+  /// bitmask; see file.v1alpha1.FileModeConst
+  perm: uint32
 }
 
 type OpenFileResponse {
@@ -126,8 +130,10 @@ type WriteRequest {
 
 // tdl-gap: oneof becomes a separate message
 enum WriteRequestPayload {
-  Name { name: string }  // first message only
-  Data { data: bytes }  // subsequent messages
+  /// first message only
+  Name { name: string }
+  /// subsequent messages
+  Data { data: bytes }
 }
 
 type WriteResponse {

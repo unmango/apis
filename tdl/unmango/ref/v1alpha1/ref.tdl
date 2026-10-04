@@ -17,31 +17,58 @@ type ObjectReference {
   kind: string
   /// The target's name field.
   name: string
-  /// Scopes the target within a multi-tenant deployment.
+  /// Scopes the target within a multi-tenant deployment. Unset means today's
+  /// single-tenant behavior: the name is unique across the whole graph.
   namespace: string
   /// Pins the target to a specific resourceVersion-like value, for optimistic
   /// concurrency. Unset means the current value.
+  ///
+  /// No kind publishes such a value yet: the only resource_version fields in
+  /// the repository are the watch-resume tokens on the read-only services.
+  /// The field stays unfillable until the deferred service layer gives each
+  /// resource a write-history version, and is kept reserved for that.
   resource_version: string
   /// The target's uid, pinning the reference to one specific instance rather
   /// than to whatever currently holds the name.
+  ///
+  /// A name is reusable: delete a Host called "shed", create another with the
+  /// same name, and a reference by name alone silently re-points at the new
+  /// one. metav1.OwnerReference carries uid for exactly this reason, and a
+  /// reference that reads identically to one at the point of use needs the
+  /// same guard. Unset resolves by name, which is the right default for a
+  /// reference authored against a resource that does not exist yet.
   uid: uuid
 }
 
 /// Names a parent that the referring resource attaches to, where the two were
-/// authored independently.
+/// authored independently. The parent decides whether to admit the attachment
+/// and reports the outcome as a Condition on the child.
+///
+/// This is the Gateway -> HTTPRoute relationship. It differs from ownership:
+/// nothing generated the child, and deleting the parent does not cascade.
 type ParentReference {
   ref: ObjectReference
-  /// Optional named part of the parent being attached to.
+  /// Optional named part of the parent being attached to, when the parent
+  /// exposes more than one attachment point.
   section: string
 }
 
-/// How a delete propagates along owner references.
+/// How a delete propagates along owner references. Mirrors the Kubernetes
+/// deletion propagation policies, and applies to any resource that owns
+/// children through metav1.OwnerReference.
+///
+/// Nothing references this yet, by design: it belongs on the DeleteFoo request
+/// of a service layer the life domains have deliberately deferred. It is
+/// defined ahead of that layer so the vocabulary is settled before the first
+/// Delete RPC has to invent one.
 enum DeletePropagation {
-  /// Delete children first, then the parent.
+  /// Delete children first, then the parent. The parent remains readable until
+  /// every child with block_owner_deletion set has gone.
   Foreground
   /// Delete the parent immediately and reap children asynchronously.
   Background
-  /// Delete the parent and leave children in place.
+  /// Delete the parent and leave children in place with their owner reference
+  /// dangling.
   Orphan
 }
 

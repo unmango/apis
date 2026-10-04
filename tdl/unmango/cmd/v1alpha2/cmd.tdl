@@ -4,22 +4,21 @@ import "../../../shim/protobuf.tdl" as _
 import "../../../shim/rpc.tdl" as _
 
 type BuilderService {
-  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  /// buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
   FromJson: Fn<FromJsonRequest, FromJsonResponse>
-  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  /// buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
   FromYaml: Fn<FromYamlRequest, FromYamlResponse>
-  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  /// buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
   FromProto: Fn<FromProtoRequest, FromProtoResponse>
 }
 
-/// Deprecated: use BuilderService. This was a naming error.
 deprecated("use BuilderService. This was a naming error.")
 type ConversionService {
-  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  /// buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
   FromJson: Fn<FromJsonRequest, FromJsonResponse>
-  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  /// buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
   FromYaml: Fn<FromYamlRequest, FromYamlResponse>
-  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  /// buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
   FromProto: Fn<FromProtoRequest, FromProtoResponse>
 }
 
@@ -69,10 +68,14 @@ type ExitResult {
 }
 
 type Process {
-  path: string  // executable path or name; resolved via $PATH if not absolute
-  args: [string]  // does not include argv[0]
-  env: [string]  // KEY=VALUE pairs
-  cwd: string  // working directory; empty = inherit from parent
+  /// executable path or name; resolved via $PATH if not absolute
+  path: string
+  /// does not include argv[0]
+  args: [string]
+  /// KEY=VALUE pairs
+  env: [string]
+  /// working directory; empty = inherit from parent
+  cwd: string
 }
 
 target protobuf for unmango.cmd.v1alpha2 {

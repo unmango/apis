@@ -94,9 +94,12 @@ type FlagAssignment {
 enum QuoteStyle { None Single Double }
 
 enum AssignmentStyle {
-  Inline  // --flag=value or -f=value
-  Space  // --flag value or -f value
-  Adjacent  // -fvalue (POSIX short-flag adjacent)
+  /// --flag=value or -f=value
+  Inline
+  /// --flag value or -f value
+  Space
+  /// -fvalue (POSIX short-flag adjacent)
+  Adjacent
 }
 
 // ---- from parser.proto ----
