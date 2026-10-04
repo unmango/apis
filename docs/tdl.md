@@ -1,111 +1,73 @@
 # tdl model
 
-[tdl](https://github.com/UnstoppableMango/tdl) is a type description language with a protobuf backend.
-`tdl/` models every `unmango.*` package in it, and `gen/tdl/` is the protobuf tdl emits from that model.
-`proto/` stays the source of truth; nothing builds from `gen/tdl/`.
-
-The model is written against tdl 0.2.9.
-It says everything `proto/` says, including field numbers, annotations, reserved numbers, and services.
-The protobuf backend does not yet emit most of it, and this file records what is missing and which tdl issue tracks each gap.
+`proto/unmango/**` is generated from the [tdl](https://github.com/UnstoppableMango/tdl) model in `tdl/`.
+Edit the `.tdl` files and regenerate; a hand edit to a generated `.proto` fails the `tdl-gen` flake check.
+`proto/dev/unmango/**` is deprecated, not modelled, and stays hand-written.
 
 ## Regenerating
 
 ```sh
-make tdl       # tdl gen over tdl/unmango into gen/tdl
-make tdl-diff  # fidelity report: gen/tdl against proto/unmango
+make tdl
 ```
 
-`tdl` is not in the Nix dev shell; `nix run github:UnstoppableMango/tdl` or the flake's overlay provides it.
-`make tdl-diff` builds `proto/` with `buf`, so it needs `third_party/k8s` from `make vendor`.
+It runs `tdl gen` over `tdl/unmango` from the repository root, because tdl resolves `out("proto")` against the working directory.
+`tdl` comes from the dev shell, pinned by the `tdl` flake input.
 
-tdl resolves `out("gen/tdl")` against the working directory rather than the file, so `tdl gen` runs from the repository root.
+`tdl gen` drops a `.tdl-output` marker claiming its output directory.
+`make tdl` deletes it and `.gitignore` lists it, because `proto/` also holds the hand-written `proto/dev`, and a marked directory makes `tdl gen --verify` report every file another `.tdl` file generated as stale ([tdl#918](https://github.com/UnstoppableMango/tdl/issues/918)).
+
+`nix flake check` runs `tdl-check`, `tdl-fmt`, and `tdl-gen` over `tdl/`.
+Format with `tdl fmt -w <file>`.
 
 ## Layout
 
 One `.tdl` file models one proto package, at the same path under `tdl/` that the package has under `proto/`.
-`unmango.cli.v1alpha1` and `unmango.discord.backup.*` span several `.proto` files and are one `.tdl` file each, with a section per original file.
-tdl reaches another file only through an import, and the backend treats an imported declaration as foreign, so a package split across files would not generate even the parts it could.
+`unmango.cli.v1alpha1` and `unmango.discord.backup.*` span several `.proto` files and are one `.tdl` file each, placing each declaration with `file(...)`.
 
-`tdl/shim/` holds stand-ins for what the model references and tdl cannot:
+`tdl/shim/` declares what the model references and another proto file defines:
 
 | Shim | Stands in for |
 |---|---|
 | `shim/k8s/meta.tdl` | `k8s.io.apimachinery.pkg.apis.meta.v1` `OwnerReference`, `Condition`, `LabelSelector` |
-| `shim/google/type.tdl` | `google.type` `Money`, `Date`, `Interval`, `TimeOfDay`, `LatLng`, `PostalAddress`, `PhoneNumber`, `DayOfWeek`, `CalendarPeriod` |
+| `shim/google/type.tdl` | `google.type` `Money`, `Date`, `Interval`, `TimeOfDay`, `LatLng`, `PostalAddress`, `PhoneNumber` (as `GooglePhoneNumber`), `DayOfWeek`, `CalendarPeriod` |
 | `shim/protobuf.tdl` | `google.protobuf.Any` and `Struct` |
-| `shim/scalar.tdl` | `int32`, `uint32`, `float`, `double` |
 | `shim/rpc.tdl` | `Fn` and `Stream`, the types of a service's methods |
 
-Every shim is imported as a foreign package, so a declaration reaching one is skipped today and generates once tdl can map it.
+A shim is imported `as _`, and each file using one of its types maps it in its own target block with `foreign(file, message)`, so the reference is written as the external message and its file imported.
+The mapping is repeated per file because tdl does not carry a dependency's declaration-level directives to its importers ([tdl#916](https://github.com/UnstoppableMango/tdl/issues/916)).
+`google.type.PhoneNumber` is `GooglePhoneNumber` in tdl because `unmango.people.contact.v1alpha1` declares its own `PhoneNumber`.
+For the same reason `unmango.cmd.v1alpha1` maps `cli.Utility` with `foreign` rather than importing it plainly: plain import would name `unmango/cli/v1alpha1/v1alpha1.proto` rather than `cli.proto`.
 
-## How the model maps to protobuf
+## How protobuf maps to tdl
 
 | protobuf | tdl |
 |---|---|
-| message with `google.api.resource` | `type X: Entity { ... }` plus `resource(type, pattern, singular, plural)` in the target block |
+| message with `google.api.resource` | `type X: Entity { ... }` plus `option("(google.api.resource)", "{ type: ... }")` on `X` in the target block |
 | other message | `type X { ... }` |
-| enum | `enum X { ... }`, variants without the prefix or the `_UNSPECIFIED` value, which the backend adds |
-| `oneof foo` in `M` | a field `foo: MFoo` and `enum MFoo { A { a: T } ... }` |
-| service | `type XService { Method: rpc.Fn<Req, Resp> }` plus `XService => service` |
-| server or client streaming | `rpc.Fn<Req, rpc.Stream<Resp>>`, `rpc.Fn<rpc.Stream<Req>, Resp>` |
-| `int64`, `string`, `bool`, `bytes` | `int`, `string`, `bool`, `bytes` |
+| enum | `enum X { ... }`, variants without the prefix or the `_UNSPECIFIED` value, which tdl adds |
+| `oneof foo` in `M` | a field `foo: MFoo`, `enum MFoo { A { a: T } ... }`, and `M { foo => oneof }` |
+| service | `type XService { Method: Fn<Req, Resp> }` plus `XService => service`, `Fn => rpc` |
+| server or client streaming | `Fn<Req, Stream<Resp>>`, `Fn<Stream<Req>, Resp>`, plus `Stream => stream` |
+| `int32`, `uint32`, `int64`, `float`, `double` | `int32`, `uint32`, `int`, `float32`, `float64` |
+| `string`, `bool`, `bytes` | `string`, `bool`, `bytes` |
 | `Timestamp`, `Duration` | `instant`, `duration` |
-| `string` with `field_info.format = UUID4` | `uuid` |
 | `repeated T`, `map<string, string>` | `[T]`, `{string -> string}` |
-| field number | `number(n)` on every field |
-| `(google.api.field_behavior) = X` | `field_behavior(X)` |
-| `(google.api.field_info).format = UUID4` | `field_info(UUID4)` |
-| `(google.api.resource_reference).type` | `resource_reference("type")` |
-| `reserved 2, 3;` | `reserved(2, 3)` |
+| field or enum value number | `number(n)` |
+| field option, such as `(google.api.field_behavior) = REQUIRED` | `option("(google.api.field_behavior)", "REQUIRED")`, once per value |
+| `import "google/api/...";` for an option | `import("google/api/...")` in the target block |
+| `reserved 2, 3;` | `reserved(2, 3)`, once per statement |
 | `edition = "2024";` | `edition("2024")` |
-| `deprecated` | `deprecated("reason")` on the declaration, or a bare `deprecated` in the target block for a file |
+| file name | `file("x.proto")` in the target block, or on a declaration to place it |
+| `option deprecated = true;` at file scope | `option("deprecated", "true")` in the target block |
+| `deprecated` on a declaration | `deprecated("reason")`, which also writes `Deprecated: reason` |
 
-Leading comments are `///` doc comments, which tdl carries into the model.
-File narratives, section banners, and trailing comments are `//` comments, which tdl drops, so the generated protobuf has none of them.
+A `///` doc comment becomes the element's leading comment in the generated proto.
+An ordinary `//` comment stays in the model only: section banners such as `// Desired state.`, file narratives, and the comments on `reserved` statements are read in `tdl/`, not in `proto/`.
 
-Every field is pinned with `number(n)`.
-tdl numbers an unpinned field by its position and does not skip numbers already pinned, so pinning some fields and not others collides.
-Pinning all of them also keeps the field bands in [README.md](../README.md) readable from the target block.
+## Open tdl issues
 
-## Fidelity
-
-`make tdl-diff` at the time of writing:
-
-| | Exact | Emitted | In `proto/` |
-|---|---|---|---|
-| Messages | 127 | 131 | 390 |
-| Enums | 143 | 143 | 143 |
-| Services | 0 | 0 | 14 (71 rpcs) |
-
-Every emitted enum and every emitted message outside a oneof matches `proto/` by name, number, label, and type.
-The four emitted messages that differ each hold a oneof, which tdl emits as a field of a separate message.
-Those separate messages are the five tdl emits that `proto/` does not have.
-
-The 259 messages not emitted are skipped for one reason: each reaches a foreign declaration, directly (238 warnings) or through a message that does (43 warnings).
-Nothing generated is annotated, reserved, or in an edition: the backend passes over the 2,320 directive uses it does not declare.
-
-## Gaps
-
-Each row is a construct the model expresses and the protobuf backend does not emit.
-
-| Gap | In `proto/` | tdl issue |
-|---|---|---|
-| Editions: the backend always writes `syntax = "proto3"` | 55 packages | [#861](https://github.com/UnstoppableMango/tdl/issues/861) |
-| `reserved`: no directive, and a second directive of one name in a scope is an error | 16 statements | [#862](https://github.com/UnstoppableMango/tdl/issues/862) |
-| Options: `field_behavior`, `field_info`, `resource`, `resource_reference` | 1,939 / 94 / 94 / 169 uses | [#863](https://github.com/UnstoppableMango/tdl/issues/863) |
-| A declaration reaching another tdl package is skipped, not imported | 39 packages import `unmango.ref` | [#864](https://github.com/UnstoppableMango/tdl/issues/864) |
-| No mapping from a tdl declaration to an external proto message | `k8s.io` 226 fields, `google.type` 143, `Any`/`Struct` 7 | [#865](https://github.com/UnstoppableMango/tdl/issues/865), [#812](https://github.com/UnstoppableMango/tdl/issues/812) |
-| No fixed-width numerics | `int32` 330, `uint32` 20, `double` 54, `float` 2 | [#866](https://github.com/UnstoppableMango/tdl/issues/866) |
-| Unpinned numbers collide with pinned ones | every message | [#867](https://github.com/UnstoppableMango/tdl/issues/867) |
-| A oneof is a separate message with a `oneof variant` | 13 oneofs | [#868](https://github.com/UnstoppableMango/tdl/issues/868) |
-| Output file is always `<last package segment>.proto` | every package | [#869](https://github.com/UnstoppableMango/tdl/issues/869) |
-| No services | 14 services, 71 rpcs | [#870](https://github.com/UnstoppableMango/tdl/issues/870) |
-| `import ... as _` does not bind a lower-case primitive | `shim/scalar.tdl` | [#871](https://github.com/UnstoppableMango/tdl/issues/871) |
-| A keyword cannot be a package segment | `google.type` | [#872](https://github.com/UnstoppableMango/tdl/issues/872) |
-| `tdl fmt` removes blank lines between comment groups | every file banner | [#873](https://github.com/UnstoppableMango/tdl/issues/873) |
-
-Related, already tracked: `tdl check` does not lower a file ([#821](https://github.com/UnstoppableMango/tdl/issues/821)), so the duplicate `reserved` error surfaces only in `tdl gen`.
-
-`google.type` is modelled as the package `google.gtype` because of the keyword gap.
-Its `DayOfWeek` and `CalendarPeriod` values are unprefixed in `google.type`, which tdl's enum naming cannot express without a `name` directive per value.
-Where two `reserved` statements share a message, the model merges them into one directive and keeps both reasons as comments.
+| Issue | Effect here |
+|---|---|
+| [#916](https://github.com/UnstoppableMango/tdl/issues/916) | `foreign` mappings repeat in every importing file |
+| [#918](https://github.com/UnstoppableMango/tdl/issues/918) | the `.tdl-output` marker is deleted after generating |
+| [#921](https://github.com/UnstoppableMango/tdl/issues/921) | the indented list in `Commit`'s doc loses its indentation |
