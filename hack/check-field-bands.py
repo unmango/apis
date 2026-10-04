@@ -38,7 +38,7 @@ FIELD = re.compile(
     r"^\s+(?:repeated |optional )?[\w.<>, ]*?\b(\w+) = (\d+)\b", re.M)
 RESERVED = re.compile(r"^\s*reserved ([^;]+);", re.M)
 REF_FIELD = re.compile(
-    r"^\s+(?:repeated )?ref\.v1alpha1\.(?:Object|Parent)Reference (\w+) = \d+([^;]*);",
+    r"^\s+(?:repeated )?(?:unmango\.)?ref\.v1alpha1\.(?:Object|Parent)Reference (\w+) = \d+([^;]*);",
     re.M)
 
 
@@ -109,12 +109,16 @@ def check_message(kind, body):
 
 
 def is_resource(body):
-    """A resource declares an identity at field 1 and a uid, or is content-addressed."""
+    """A resource declares an identity at field 1 and a uid, or is content-addressed.
+
+    A content-addressed resource holds an output-only digest at field 1 and
+    declares google.api.resource.
+    """
     if "string name = 1 [(google.api.field_behavior) = IDENTIFIER];" in body:
         return True
     return bool(
         re.search(r"^  string \w+ = 1 \[\(google\.api\.field_behavior\) = OUTPUT_ONLY\];", body, re.M)
-        and "// Content-addressed identity." in body
+        and "option (google.api.resource)" in body
     ) or "The identity." in body
 
 

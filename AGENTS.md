@@ -5,7 +5,10 @@ This file provides guidance to AI agents when working with code in this reposito
 ## Overview
 
 This is a Protocol Buffer API definition repository (`buf.build/unmango/apis`).
-It is language-agnostic: the proto definitions are the source of truth, and client/server code is generated from them.
+It is language-agnostic: client/server code is generated from the proto definitions.
+`proto/unmango/**` is itself generated from the [tdl](https://github.com/UnstoppableMango/tdl) model in `tdl/`, which is the source of truth; edit `tdl/` and run `make tdl`, never the generated `.proto` files.
+`proto/dev/unmango/**` is not modelled and stays hand-written.
+See [docs/tdl.md](./docs/tdl.md).
 
 `unmango.*` is the namespace. It holds two kinds of API:
 
@@ -28,7 +31,7 @@ Enter it via:
 nix develop   # or: direnv allow (if using direnv)
 ```
 
-Available tools in the dev shell: `api-linter`, `buf`, `gnumake`.
+Available tools in the dev shell: `api-linter`, `buf`, `gnumake`, `tdl`.
 
 ## Commands
 
@@ -43,7 +46,7 @@ Available tools in the dev shell: `api-linter`, `buf`, `gnumake`.
 | Check field bands | `make bands` |
 | Check breaking changes | `make breaking` (override the base ref with `make breaking AGAINST=<ref>`) |
 | Generate code | `buf generate` (only `proto/unmango/*`, see gotcha below) |
-| Regenerate the tdl model output | `make tdl`, then `make tdl-diff` for the fidelity report (see [docs/tdl.md](./docs/tdl.md)) |
+| Regenerate `proto/unmango` from `tdl/` | `make tdl` (see [docs/tdl.md](./docs/tdl.md)) |
 
 **Gotcha:** `buf generate` needs `protoc-gen-go` on `$PATH`, which `nix develop` does not currently provide in this environment.
 `make lint` is the practical check for schema changes instead.
@@ -100,12 +103,13 @@ That is deliberate now that every package there is deprecated and has a replacem
 
 **Gotcha:** no domain package may be named `ref` or `uom`.
 A package `unmango.<domain>.ref` (or `.uom`) would capture the relative name before it reached `unmango.ref.v1alpha1` (or `unmango.uom.v1alpha1`), silently breaking every reference in that domain.
-See the comment in `proto/unmango/vcs/branch/v1alpha1/branch.proto` for the full explanation.
+See the comment in `tdl/unmango/vcs/branch/v1alpha1/branch.tdl` for the full explanation.
 
 ### Version coexistence
 
 Several `dev.unmango.*` packages (`protofs/file`, `protofs/fs`, `cmd`, `discord/backup`) currently ship two `vN.alphaM` directories side by side.
 When a new version supersedes a prior one, mark the superseded package `option deprecated = true` (at file scope when the whole package is superseded wholesale, at service scope when only part of it is) plus a `// Deprecated: use vN.alphaM+1.` comment naming the replacement, rather than leaving the choice to git-history archaeology.
+In `tdl/`, file scope is `option("deprecated", "true")` in the target block, and a declaration takes `deprecated("use ...")`, which also writes the `Deprecated:` comment.
 Both versions stay checked in until a separate decision is made to delete the old one.
 
 ### Buf configuration
@@ -140,8 +144,12 @@ The builders come from [a2b](https://github.com/UnstoppableMango/a2b), reached t
 
 Generating from the workspace root covers the vendored modules too, so the `github.com/unmango/apis/go/google/type` and `.../k8s.io/...` imports that managed mode writes into the generated code resolve to generated packages.
 
+The `tdl` input's flake module adds three checks over `tdl/`: `tdl-check` parses every file, `tdl-fmt` holds them to canonical form, and `tdl-gen` runs `tdl gen --verify`, failing when `proto/unmango` differs from what the model generates.
+`proto/unmango/**` is excluded from treefmt, since `buf format` reflows tdl's output and `tdl-gen` would then report it as drift.
+The `tdl` input is tag-pinned like `apimachinery`; a bump is a regeneration and goes in its own commit.
+
 Bump the vendored googleapis with `make update` (`nix flake update`).
 The `apimachinery` input is pinned to a tag in its URL, so `make update` leaves it alone; bumping it means editing the URL in `flake.nix` and running `nix flake lock --update-input apimachinery`.
 
-When adding new proto files, place them under `proto/unmango/<domain>/<package>/<version>/` for a life domain or `proto/unmango/<package>/<version>/` for an infrastructure API, following the existing pattern.
+When adding a package, model it as `tdl/unmango/<domain>/<package>/<version>/<file>.tdl` for a life domain or `tdl/unmango/<package>/<version>/<file>.tdl` for an infrastructure API, following the existing pattern, and run `make tdl`.
 Never add to `proto/dev/unmango/`.

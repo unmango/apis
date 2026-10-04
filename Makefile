@@ -1,4 +1,4 @@
-.PHONY: aip bands build breaking check update format fmt clean lint tdl tdl-diff vendor
+.PHONY: aip bands build breaking check update format fmt clean lint tdl vendor
 
 AGAINST ?= main
 
@@ -43,12 +43,10 @@ breaking:
 		$$(nix build --no-link --print-out-paths .#unmangoApis.proto) \
 		--against $$(nix build --no-link --print-out-paths 'git+file://$(CURDIR)?ref=$(AGAINST)#unmangoApis.proto')
 
-# tdl/ models the unmango.* packages in tdl; gen/tdl is what tdl's protobuf
-# backend emits from it. See docs/tdl.md. tdl resolves out("gen/tdl") against
-# the working directory, so this runs from the repo root.
+# proto/unmango is generated from tdl/; see docs/tdl.md. tdl resolves
+# out("proto") against the working directory, so this runs from the repo root.
+# The ownership marker tdl drops would claim the hand-written proto/dev too
+# (UnstoppableMango/tdl#918), so it is removed.
 tdl:
-	rm -rf gen/tdl
 	tdl gen $$(find tdl/unmango -name '*.tdl' | sort)
-
-tdl-diff:
-	hack/tdl-diff.sh
+	rm -f proto/.tdl-output
