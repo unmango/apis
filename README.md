@@ -4,6 +4,7 @@
 [![Buf CI](https://github.com/unmango/apis/actions/workflows/buf.yml/badge.svg)](https://github.com/unmango/apis/actions/workflows/buf.yml)
 [![protobuf](https://img.shields.io/badge/protobuf-edition%202024-4285F4)](https://protobuf.dev)
 [![buf.build](https://img.shields.io/badge/buf.build-unmango%2Fapis-0C3CF5)](https://buf.build/unmango/apis)
+[![Hercules CI](https://hercules-ci.com/api/v1/site/github/account/unmango/project/apis/badge)](https://hercules-ci.com/github/unmango/apis)
 
 Public API definitions.
 Published at [`buf.build/unmango/apis`](https://buf.build/unmango/apis), though publishing is paused: the `k8s.io/apimachinery` imports have no BSR module behind them, and `buf push` rejects a module whose dependencies are not themselves named BSR modules.
