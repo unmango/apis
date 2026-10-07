@@ -43,10 +43,6 @@ breaking:
 		$$(nix build --no-link --print-out-paths .#unmangoApis.proto) \
 		--against $$(nix build --no-link --print-out-paths 'git+file://$(CURDIR)?ref=$(AGAINST)#unmangoApis.proto')
 
-# proto/unmango is generated from tdl/; see docs/tdl.md. tdl resolves
-# out("proto") against the working directory, so this runs from the repo root.
-# The ownership marker tdl drops would claim the hand-written proto/dev too
-# (UnstoppableMango/tdl#918), so it is removed.
+# proto/unmango is generated from tdl/; see docs/tdl.md.
 tdl:
 	tdl gen $$(find tdl/unmango -name '*.tdl' | sort)
-	rm -f proto/.tdl-output

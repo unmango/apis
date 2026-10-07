@@ -10,11 +10,14 @@ Edit the `.tdl` files and regenerate; a hand edit to a generated `.proto` fails 
 make tdl
 ```
 
-It runs `tdl gen` over `tdl/unmango` from the repository root, because tdl resolves `out("proto")` against the working directory.
+It runs `tdl gen` over every file in `tdl/unmango`.
 `tdl` comes from the dev shell, pinned by the `tdl` flake input.
 
-`tdl gen` drops a `.tdl-output` marker claiming its output directory.
-`make tdl` deletes it and `.gitignore` lists it, because `proto/` also holds the hand-written `proto/dev`, and a marked directory makes `tdl gen --verify` report every file another `.tdl` file generated as stale ([tdl#918](https://github.com/UnstoppableMango/tdl/issues/918)).
+Each target block's `out(...)` is relative to the `.tdl` file declaring it, so a file four directories below `tdl/` writes `out("../../../../../proto")`.
+
+`proto/.tdl-output` lists every file tdl wrote, and is committed.
+`tdl gen` overwrites and `tdl gen --clean` removes only the files it lists, so the hand-written `proto/dev` is left alone, and `tdl gen --verify` reports a listed file that no model generates any more.
+A new generated file is added to the list by the run that first writes it.
 
 `nix flake check` runs `tdl-check`, `tdl-fmt`, and `tdl-gen` over `tdl/`.
 Format with `tdl fmt -w <file>`.
@@ -69,5 +72,3 @@ An ordinary `//` comment stays in the model only: section banners such as `// De
 | Issue | Effect here |
 |---|---|
 | [#916](https://github.com/UnstoppableMango/tdl/issues/916) | `foreign` mappings repeat in every importing file |
-| [#918](https://github.com/UnstoppableMango/tdl/issues/918) | the `.tdl-output` marker is deleted after generating |
-| [#921](https://github.com/UnstoppableMango/tdl/issues/921) | the indented list in `Commit`'s doc loses its indentation |
