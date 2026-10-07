@@ -117,7 +117,7 @@ type ParseCommandResponse {
 }
 
 target protobuf for unmango.cli.v1alpha1 {
-  out("proto")
+  out("../../../../proto")
   ParseRequest => file("cli.proto")
   ParseResponse => file("cli.proto")
   Option => file("cli.proto")

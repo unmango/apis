@@ -179,7 +179,7 @@ type Goal: Entity {
 }
 
 target protobuf for unmango.health.measurement.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("measurement.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

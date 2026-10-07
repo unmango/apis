@@ -165,7 +165,7 @@ type Tag: Entity {
 }
 
 target protobuf for unmango.vcs.branch.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("branch.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

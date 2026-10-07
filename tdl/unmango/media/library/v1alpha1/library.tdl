@@ -233,7 +233,7 @@ type Collection: Entity {
 }
 
 target protobuf for unmango.media.library.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("library.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

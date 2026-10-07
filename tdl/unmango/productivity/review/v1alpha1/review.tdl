@@ -52,7 +52,7 @@ type Review: Entity {
 }
 
 target protobuf for unmango.productivity.review.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("review.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

@@ -43,7 +43,7 @@
     # a bump is a regeneration and belongs in its own commit. Its nixpkgs is
     # its own: tdl needs a newer Go than this flake's nixpkgs may carry.
     tdl = {
-      url = "github:UnstoppableMango/tdl/v0.2.14";
+      url = "github:UnstoppableMango/tdl/v0.3.4";
       inputs.systems.follows = "systems";
       inputs.flake-parts.follows = "flake-parts";
       inputs.treefmt-nix.follows = "treefmt-nix";
@@ -77,7 +77,7 @@
           inherit (lib.attrsets) recurseIntoAttrs;
 
           # tdl file names relative to the repo root, which is where the checks
-          # run: out("proto") and the shim imports resolve from there.
+          # run. out(...) and imports resolve against each file's directory.
           tdlFiles =
             dir:
             map (lib.removePrefix "${toString ./.}/") (

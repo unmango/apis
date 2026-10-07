@@ -100,7 +100,7 @@ type Entry: Entity {
 }
 
 target protobuf for unmango.journal.entry.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("entry.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

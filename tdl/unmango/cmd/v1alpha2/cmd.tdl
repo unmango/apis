@@ -79,7 +79,7 @@ type Process {
 }
 
 target protobuf for unmango.cmd.v1alpha2 {
-  out("proto")
+  out("../../../../proto")
   file("cmd.proto")
   Any => foreign("google/protobuf/any.proto", "google.protobuf.Any")
   Fn => rpc

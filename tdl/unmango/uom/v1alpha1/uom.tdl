@@ -64,7 +64,7 @@ type ResourceQuantity {
 }
 
 target protobuf for unmango.uom.v1alpha1 {
-  out("proto")
+  out("../../../../proto")
   file("uom.proto")
   import("google/api/field_behavior.proto")
   edition("2024")

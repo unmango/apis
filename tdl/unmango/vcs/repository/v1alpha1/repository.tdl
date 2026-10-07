@@ -297,7 +297,7 @@ enum CompositionPhase {
 }
 
 target protobuf for unmango.vcs.repository.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("repository.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

@@ -69,7 +69,7 @@ type Resource: Entity {
 }
 
 target protobuf for unmango.iac.resource.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("resource.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

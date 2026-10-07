@@ -171,7 +171,7 @@ type RecurringTask: Entity {
 }
 
 target protobuf for unmango.productivity.task.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("task.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

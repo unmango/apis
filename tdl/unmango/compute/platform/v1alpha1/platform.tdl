@@ -63,7 +63,7 @@ type Platform: Entity {
 }
 
 target protobuf for unmango.compute.platform.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("platform.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

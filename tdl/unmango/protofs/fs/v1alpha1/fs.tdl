@@ -141,7 +141,7 @@ type WriteResponse {
 }
 
 target protobuf for unmango.protofs.fs.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("fs.proto")
   Fn => rpc
   Stream => stream

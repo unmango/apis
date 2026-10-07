@@ -142,7 +142,7 @@ type PlayState: Entity {
 }
 
 target protobuf for unmango.media.playback.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("playback.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
