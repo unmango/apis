@@ -260,7 +260,7 @@ type MealPlan: Entity {
 }
 
 target protobuf for unmango.health.nutrition.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("nutrition.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

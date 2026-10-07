@@ -186,7 +186,7 @@ type TypeDef: Entity {
 }
 
 target protobuf for unmango.codegen.schema.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("schema.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

@@ -173,7 +173,7 @@ type RecurringTransaction: Entity {
 }
 
 target protobuf for unmango.finance.transaction.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("transaction.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

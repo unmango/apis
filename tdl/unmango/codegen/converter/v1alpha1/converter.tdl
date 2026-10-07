@@ -285,7 +285,7 @@ type ConverterRegistry: Entity {
 }
 
 target protobuf for unmango.codegen.converter.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("converter.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

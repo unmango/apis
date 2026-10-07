@@ -101,7 +101,7 @@ enum IssuerConfig {
 }
 
 target protobuf for unmango.pki.issuer.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("issuer.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

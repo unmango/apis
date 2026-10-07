@@ -110,7 +110,7 @@ type Institution: Entity {
 }
 
 target protobuf for unmango.finance.account.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("account.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

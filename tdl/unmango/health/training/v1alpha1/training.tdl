@@ -223,7 +223,7 @@ type TrainingPlan: Entity {
 }
 
 target protobuf for unmango.health.training.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("training.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

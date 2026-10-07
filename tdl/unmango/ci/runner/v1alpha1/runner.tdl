@@ -211,7 +211,7 @@ type RunnerPool: Entity {
 }
 
 target protobuf for unmango.ci.runner.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("runner.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

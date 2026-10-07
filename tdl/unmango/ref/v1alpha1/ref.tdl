@@ -73,7 +73,7 @@ enum DeletePropagation {
 }
 
 target protobuf for unmango.ref.v1alpha1 {
-  out("proto")
+  out("../../../../proto")
   file("ref.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

@@ -103,7 +103,7 @@ type WriteAtRequest {
 type WriteAtResponse { }
 
 target protobuf for unmango.protofs.file.v1alpha2 {
-  out("proto")
+  out("../../../../../proto")
   file("file.proto")
   import("google/api/field_behavior.proto")
   Any => foreign("google/protobuf/any.proto", "google.protobuf.Any")

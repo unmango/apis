@@ -213,7 +213,7 @@ type RecurringEvent: Entity {
 }
 
 target protobuf for unmango.calendar.event.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("event.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

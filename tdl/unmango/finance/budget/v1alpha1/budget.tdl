@@ -261,7 +261,7 @@ type BudgetRevision: Entity {
 }
 
 target protobuf for unmango.finance.budget.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("budget.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

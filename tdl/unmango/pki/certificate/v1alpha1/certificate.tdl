@@ -303,7 +303,7 @@ type WalkChainResponse {
 }
 
 target protobuf for unmango.pki.certificate.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("certificate.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
