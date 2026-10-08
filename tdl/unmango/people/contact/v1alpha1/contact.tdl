@@ -207,7 +207,7 @@ type Group: Entity {
 }
 
 target protobuf for unmango.people.contact.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("contact.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

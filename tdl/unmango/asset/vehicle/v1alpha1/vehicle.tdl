@@ -133,7 +133,7 @@ type Vehicle: Entity {
 }
 
 target protobuf for unmango.asset.vehicle.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("vehicle.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

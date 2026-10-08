@@ -579,7 +579,7 @@ type ThreadMetadata {
 }
 
 target protobuf for unmango.discord.backup.v1alpha2 {
-  out("proto")
+  out("../../../../../proto")
   PermissionOverwrite => file("types.proto")
   ForumTag => file("types.proto")
   DefaultReaction => file("types.proto")

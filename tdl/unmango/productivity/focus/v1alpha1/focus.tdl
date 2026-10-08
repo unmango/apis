@@ -132,7 +132,7 @@ type Interruption: Entity {
 }
 
 target protobuf for unmango.productivity.focus.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("focus.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

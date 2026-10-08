@@ -288,7 +288,7 @@ enum ChangeSetPhase {
 }
 
 target protobuf for unmango.vcs.change.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("change.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

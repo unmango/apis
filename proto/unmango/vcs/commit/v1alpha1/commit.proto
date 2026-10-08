@@ -52,12 +52,12 @@ enum CommitKind {
 // The identity band departs from the repository-wide preamble, and the
 // omissions are the point:
 //
-// no uid           the content hash already is a stable unique identifier
-// no display_name  a commit has a message, not a name someone chose
-// no owner_refs    parents are DAG edges, not ownership; nothing cascades
-// no generation    nothing about a commit is ever declared or reconciled
-// no update_time   a commit is never written twice
-// no delete_time   unreachable objects are garbage collected, not deleted
+//   no uid           the content hash already is a stable unique identifier
+//   no display_name  a commit has a message, not a name someone chose
+//   no owner_refs    parents are DAG edges, not ownership; nothing cascades
+//   no generation    nothing about a commit is ever declared or reconciled
+//   no update_time   a commit is never written twice
+//   no delete_time   unreachable objects are garbage collected, not deleted
 //
 // Each omission is a reserved number rather than a compacted band, so a field
 // number means the same thing here as it does on every other kind: 4 is

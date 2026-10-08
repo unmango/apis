@@ -122,7 +122,7 @@ enum QueueEntryPhase {
 }
 
 target protobuf for unmango.vcs.queue.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("queue.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

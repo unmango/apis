@@ -174,7 +174,7 @@ type Pipeline: Entity {
 }
 
 target protobuf for unmango.ci.job.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("job.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

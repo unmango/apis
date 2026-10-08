@@ -98,7 +98,7 @@ type HabitLog: Entity {
 }
 
 target protobuf for unmango.productivity.habit.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("habit.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

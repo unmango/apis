@@ -125,7 +125,7 @@ type Run: Entity {
 }
 
 target protobuf for unmango.iac.stack.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("stack.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

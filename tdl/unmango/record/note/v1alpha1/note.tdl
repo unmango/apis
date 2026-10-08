@@ -135,7 +135,7 @@ type Notebook: Entity {
 }
 
 target protobuf for unmango.record.note.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("note.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")

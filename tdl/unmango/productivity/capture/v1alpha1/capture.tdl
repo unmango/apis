@@ -79,7 +79,7 @@ type CaptureItem: Entity {
 }
 
 target protobuf for unmango.productivity.capture.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("capture.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
