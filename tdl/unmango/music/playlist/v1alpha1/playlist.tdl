@@ -1,0 +1,320 @@
+package unmango.music.playlist.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Tracks in a chosen order:
+//
+//   Playlist -> Playlist        (folders)
+//   Playlist -> PlaylistEntry   (entry names a media.title Title)
+//
+// media.library Collection already claims media.title Titles by label
+// selector, which is the whole of what a collection is. A playlist is the
+// ordered counterpart, and a selector cannot express order, so membership here
+// is ownership with an entry per track rather than selection.
+//
+// A Playlist may still carry a PlaylistSource, but the source generates
+// entries rather than being the membership. That keeps a rule-driven playlist
+// and a hand-built one the same kind, differing only in who wrote the entries,
+// the same argument media.library makes for Collection.
+//
+// An entry names a media.title Title rather than a media.library LibraryItem,
+// so a playlist survives re-ripping and stays meaningful for tracks not held.
+// prefer_edition is how an entry asks for a particular release without naming
+// the file that happens to hold it.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// How entries are presented. A category, not a named player's shuffle
+/// algorithm.
+enum OrderingStrategy {
+  /// The rank field decides. The only strategy under which rank is meaningful.
+  Manual
+  AddedTime
+  ReleaseDate
+  Title
+  /// Rolled up from media.playback.
+  PlayCount
+  Shuffle
+}
+
+/// Identifier in an external catalog, so a playlist can be reconciled against
+/// whatever service it was exported from. Declared here rather than imported,
+/// since a life-domain API imports no other domain.
+type ExternalId {
+  source: string
+  value: string
+}
+
+/// A rule that materializes entries. What makes a playlist rule-driven without
+/// making the rule the membership.
+type PlaylistSource {
+  /// Claims media.title Titles by label.
+  selector: LabelSelector
+  /// Stop generating past this many entries. Zero means no limit.
+  limit: int32
+  /// Labels applied to every generated PlaylistEntry, so generated and
+  /// hand-added entries stay distinguishable.
+  entry_labels: {string -> string}
+}
+
+// ---------------------------------------------------------------------------
+// PlaylistEntry
+// ---------------------------------------------------------------------------
+/// One track in one playlist. Owned by the Playlist and cascades with it.
+type PlaylistEntry: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The media.title Title, normally one of kind TRACK.
+  track: ref.ObjectReference
+  /// Sort key under ORDERING_STRATEGY_MANUAL. A string rather than an integer
+  /// position so that inserting a track rewrites one entry instead of every
+  /// entry after it: a caller picks any value ordering between its new
+  /// neighbors. Entries sort by byte comparison, ties broken by name.
+  rank: string
+  /// A specific media.title Edition to play, when the release matters. Unset
+  /// means any edition of the Title will do.
+  prefer_edition: ref.ObjectReference
+  /// Why this track is here.
+  note: string
+  added_time: instant
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  /// The referenced Title exists. False leaves the entry in place rather than
+  /// deleting it, so a playlist survives a catalog that has not caught up.
+  resolved: bool
+  /// Mirrored from the Title, or from prefer_edition when set.
+  runtime: duration
+  /// Position under the playlist's ordering strategy, counting from one.
+  /// Derived, since under every strategy but MANUAL nothing declares it.
+  position: int32
+}
+
+// ---------------------------------------------------------------------------
+// Playlist
+// ---------------------------------------------------------------------------
+/// An ordered set of tracks. Nests to form folders, and owns its entries.
+type Playlist: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The parent Playlist, for a playlist filed inside a folder. Absent at the
+  /// top level.
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  description: string
+  /// Generates entries. Unset means every entry was added by hand.
+  source: PlaylistSource
+  ordering: OrderingStrategy
+  /// Artwork. A plain string so it can address a dev.unmango.protofs path
+  /// without coupling the packages.
+  image_uri: string
+  /// Shared beyond its owner.
+  published: bool
+  external_ids: [ExternalId]
+  /// Which child Playlists this one claims as a folder.
+  selector: LabelSelector
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  entry_count: int32
+  /// Child Playlists.
+  child_count: int32
+  /// Summed over entries, counting only those that resolved.
+  total_runtime: duration
+  /// Entries whose track reference does not resolve.
+  unresolved_count: int32
+  /// Entries written by source rather than added by hand.
+  generated_count: int32
+}
+
+target protobuf for unmango.music.playlist.v1alpha1 {
+  out("proto")
+  file("playlist.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  edition("2024")
+  ExternalId {
+    source => number(1)
+    value => number(2)
+  }
+  PlaylistSource {
+    selector => number(1)
+    limit => number(2)
+    entry_labels => number(3)
+  }
+  PlaylistEntry {
+    option("(google.api.resource)", "{ type: \"unmango.music.playlist/PlaylistEntry\" pattern: \"playlistEntries/{playlist_entry}\" singular: \"playlistEntry\" plural: \"playlistEntries\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    track {
+      number(11)
+      option("(google.api.resource_reference).type", "\"unmango.media.title/Title\"")
+    }
+    rank => number(12)
+    prefer_edition {
+      number(13)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.media.title/Edition\"")
+    }
+    note {
+      number(14)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    added_time {
+      number(15)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    resolved {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    runtime {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    position {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  Playlist {
+    option("(google.api.resource)", "{ type: \"unmango.music.playlist/Playlist\" pattern: \"playlists/{playlist}\" singular: \"playlist\" plural: \"playlists\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    description {
+      number(11)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    source {
+      number(12)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    ordering => number(13)
+    image_uri {
+      number(14)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    published => number(15)
+    external_ids => number(16)
+    selector => number(17)
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    entry_count {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    child_count {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    total_runtime {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    unresolved_count {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    generated_count {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+}

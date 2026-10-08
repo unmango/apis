@@ -1,0 +1,161 @@
+package unmango.productivity.project.v1alpha1
+
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
+
+// What organizes many Tasks toward one outcome:
+//
+//   Project => Task,  Project -> Project
+//
+// A Project claims independently-existing Tasks by selector, the same
+// Notebook => Note relationship record.note already uses, rather than
+// owning them: a Task predates any Project it joins, and leaving a Project
+// deletes nothing. Sub-projects (a portfolio, a phase breakdown) nest
+// through owner_refs like every other ownership edge in the repository.
+//
+// Project carries no priority or due-time-of-day; those are Task-level
+// executive-function concerns productivity.task Task already owns. What a
+// Project adds is the rollup: how many claimed Tasks exist and how many are
+// done.
+//
+// task.Task carries no reverse claimed_by field the way record.note Note
+// does for Notebook, since adding one means editing task.proto. Reverse
+// lookup is a query for now: list Projects, filter by selector match.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum ProjectPhase { Planned Active OnHold Completed }
+
+// ---------------------------------------------------------------------------
+// Project
+// ---------------------------------------------------------------------------
+/// A grouping of Tasks toward one outcome.
+type Project: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// A parent Project, for a sub-project or phase.
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  summary: string
+  notes: string
+  /// Which Tasks belong. An empty selector claims nothing, never everything.
+  selector: LabelSelector
+  start_date: Date
+  /// Unset means open-ended.
+  target_date: Date
+  /// Paused organizationally. Does not affect the underlying Tasks.
+  on_hold: bool
+  // Observed state.
+  observed_generation: int
+  phase: ProjectPhase
+  conditions: [Condition]
+  task_count: int32
+  completed_task_count: int32
+  overdue_task_count: int32
+  /// completed_task_count / task_count.
+  completion_rate: float64
+  last_activity_time: instant
+}
+
+target protobuf for unmango.productivity.project.v1alpha1 {
+  out("proto")
+  file("project.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Date => foreign("google/type/date.proto", "google.type.Date")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  edition("2024")
+  Project {
+    option("(google.api.resource)", "{ type: \"unmango.productivity.project/Project\" pattern: \"projects/{project}\" singular: \"project\" plural: \"projects\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    summary => number(11)
+    notes {
+      number(12)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    selector => number(13)
+    start_date {
+      number(14)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    target_date {
+      number(15)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    on_hold => number(16)
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    phase {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    task_count {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    completed_task_count {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    overdue_task_count {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    completion_rate {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_activity_time {
+      number(57)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+}

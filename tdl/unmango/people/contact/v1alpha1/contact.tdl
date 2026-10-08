@@ -1,0 +1,494 @@
+package unmango.people.contact.v1alpha1
+
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// People, and how they relate:
+//
+//   Contact ~> Relationship ~> Contact
+//   Group   => Contact
+//
+// Contact is the kind the rest of the repository points at whenever a person
+// is involved: a calendar.event Attendance attendee, a ci.job actor, a
+// asset.maintenance assignee, a media.playback viewer.
+//
+// Relationship is its own kind attached to both ends rather than a repeated
+// field on Contact. That is what lets a relationship carry its own facts, an
+// anniversary, a start date, and be edited without touching either person.
+// It also keeps the two directions from drifting out of sync.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// Which context a piece of contact information belongs to.
+enum ContactLabel { Home Work Mobile Other }
+
+type EmailAddress {
+  value: string
+  label: ContactLabel
+  primary: bool
+}
+
+type PhoneNumber {
+  value: GooglePhoneNumber
+  label: ContactLabel
+  primary: bool
+}
+
+type Address {
+  value: PostalAddress
+  label: ContactLabel
+  primary: bool
+}
+
+/// A handle on a service outside this API.
+type OnlineProfile {
+  /// "github", "discord", "matrix", "signal".
+  service: string
+  handle: string
+  url: string
+}
+
+enum RelationType {
+  Spouse
+  Partner
+  Parent
+  Child
+  Sibling
+  Grandparent
+  Grandchild
+  Friend
+  Colleague
+  Manager
+  Report
+  Neighbor
+  /// A tradesperson, doctor, or other professional relationship. The
+  /// counterparty on an asset.maintenance ServiceRecord.
+  ServiceProvider
+}
+
+enum ContactKind {
+  Person
+  Organization
+  /// The account holder. At most one contact should set this.
+  Self
+}
+
+// ---------------------------------------------------------------------------
+// Relationship
+// ---------------------------------------------------------------------------
+/// A directed edge between two Contacts, carrying its own facts.
+type Relationship: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The Contact this relationship is asserted from. Attachment rather than
+  /// ownership: deleting a person should not silently rewrite the other party's
+  /// record of them.
+  parent_ref: ref.ParentReference
+  /// The Contact on the other end.
+  target: ref.ObjectReference
+  /// Read as "parent is the target's <type>": PARENT means the parent_ref
+  /// contact is the target's parent.
+  type: RelationType
+  /// Free-text override, for something the enum does not cover.
+  custom_type: string
+  since: Date
+  /// Set when the relationship has ended but is worth keeping.
+  until: Date
+  /// Recurs yearly, and is worth a reminder.
+  anniversary: Date
+  notes: string
+  // Observed state.
+  observed_generation: int
+  /// Reports whether the source Contact admitted the attachment.
+  conditions: [Condition]
+  /// The Relationship asserting the mirror of this edge, when one exists.
+  inverse: ref.ObjectReference
+  /// No inverse Relationship exists, so the graph is asserted one way only.
+  unreciprocated: bool
+  /// False once until has passed.
+  active: bool
+}
+
+// ---------------------------------------------------------------------------
+// Contact
+// ---------------------------------------------------------------------------
+/// A person or organization. The kind every other domain points at when a
+/// person is involved.
+type Contact: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  /// Also the surface a Group selector matches against.
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  kind: ContactKind
+  given_name: string
+  family_name: string
+  /// What they go by, when it differs from the given name.
+  nickname: string
+  emails: [EmailAddress]
+  phones: [PhoneNumber]
+  addresses: [Address]
+  profiles: [OnlineProfile]
+  birthday: Date
+  /// Employer, or the organization this person acts on behalf of.
+  organization: string
+  job_title: string
+  /// A plain string so it can address a dev.unmango.protofs path without
+  /// coupling the packages.
+  photo_uri: string
+  notes: string
+  /// Retained but out of the way. Distinct from deleted.
+  archived: bool
+  /// Where they live, when it is a modelled asset.property Property.
+  residence: ref.ObjectReference
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  /// Groups whose selectors currently claim this contact.
+  claimed_by: [ref.ObjectReference]
+  /// Relationships asserted from this contact.
+  relationship_count: int32
+  /// Relationships from other contacts pointing at this one.
+  inbound_relationship_count: int32
+  /// The next yearly occurrence of birthday, so upcoming dates are queryable
+  /// without recomputing the year.
+  next_birthday: Date
+  /// Last calendar.event Event this contact attended.
+  last_interaction_time: instant
+}
+
+// ---------------------------------------------------------------------------
+// Group
+// ---------------------------------------------------------------------------
+/// A named set of Contacts, claimed by selector.
+type Group: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Which Contacts belong. An empty selector claims nothing, never everything.
+  selector: LabelSelector
+  summary: string
+  /// Stamped onto contacts created through this group.
+  contact_labels: {string -> string}
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  member_count: int32
+  /// Members with a birthday in the next thirty days.
+  upcoming_birthday_count: int32
+}
+
+target protobuf for unmango.people.contact.v1alpha1 {
+  out("proto")
+  file("contact.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Date => foreign("google/type/date.proto", "google.type.Date")
+  GooglePhoneNumber => foreign("google/type/phone_number.proto", "google.type.PhoneNumber")
+  PostalAddress => foreign("google/type/postal_address.proto", "google.type.PostalAddress")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  edition("2024")
+  EmailAddress {
+    value => number(1)
+    label => number(2)
+    primary => number(3)
+  }
+  PhoneNumber {
+    value => number(1)
+    label => number(2)
+    primary => number(3)
+  }
+  Address {
+    value => number(1)
+    label => number(2)
+    primary => number(3)
+  }
+  OnlineProfile {
+    service => number(1)
+    handle => number(2)
+    url {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  Relationship {
+    option("(google.api.resource)", "{ type: \"unmango.people.contact/Relationship\" pattern: \"relationships/{relationship}\" singular: \"relationship\" plural: \"relationships\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    parent_ref {
+      number(11)
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
+    }
+    target {
+      number(12)
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
+    }
+    type => number(13)
+    custom_type {
+      number(14)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    since {
+      number(15)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    until {
+      number(16)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    anniversary {
+      number(17)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    notes {
+      number(18)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    inverse {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Relationship\"")
+    }
+    unreciprocated {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    active {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  Contact {
+    option("(google.api.resource)", "{ type: \"unmango.people.contact/Contact\" pattern: \"contacts/{contact}\" singular: \"contact\" plural: \"contacts\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    kind => number(11)
+    given_name {
+      number(12)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    family_name {
+      number(13)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    nickname {
+      number(14)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    emails => number(15)
+    phones => number(16)
+    addresses => number(17)
+    profiles => number(18)
+    birthday {
+      number(19)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    organization {
+      number(20)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    job_title {
+      number(21)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    photo_uri {
+      number(22)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    notes {
+      number(23)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    archived => number(24)
+    residence {
+      number(25)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.asset.property/Property\"")
+    }
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    claimed_by {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Group\"")
+    }
+    relationship_count {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    inbound_relationship_count {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    next_birthday {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_interaction_time {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  Group {
+    option("(google.api.resource)", "{ type: \"unmango.people.contact/Group\" pattern: \"groups/{group}\" singular: \"group\" plural: \"groups\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    selector => number(11)
+    summary {
+      number(12)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    contact_labels => number(13)
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    member_count {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    upcoming_birthday_count {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+}

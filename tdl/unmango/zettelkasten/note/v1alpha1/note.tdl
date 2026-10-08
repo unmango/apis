@@ -1,0 +1,311 @@
+package unmango.zettelkasten.note.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// A slip-box of atomic notes and the connections between them:
+//
+//   Note -> Link ~> Note
+//
+// The same raw material as record.note, in a different shape. A record Note is
+// generic written material: it nests into a document through owner references,
+// a Notebook claims it by selector, and its links are a value message on the
+// source side describing what a note is about. A zettelkasten Note is atomic
+// and flat, it carries a permanent address that outlives its title, and the
+// connection between two notes is the artifact the method is built on.
+//
+// So Link is a resource here rather than a value message. A Link is owned by
+// its source Note and cascades with it, which is the -> edge, and it names a
+// target it was authored independently of, which is the ~> edge: the target
+// admits or rejects the connection and the outcome lands as a Condition on the
+// Link. Promoting it buys three things a field could not: a link has its own
+// create_time, so the growth of the graph is a queryable history; it has its
+// own identity, so a reader can review the connections without opening either
+// note; and it has an admission state, which is where backlink reciprocity
+// lives.
+//
+// The source Note is carried by owner_refs alone. There is no second, typed
+// source field, the same way record.note's sub-note parent is only an owner
+// reference.
+//
+// LinkRelation is argumentative where record.note's is descriptive. A record
+// link says what a note is about; a zettelkasten link says how one idea bears
+// on another, which is the part a later reader cannot reconstruct.
+//
+// Note departs from the identity band the way journal.entry and
+// productivity.capture CaptureItem do: no owner_refs, no generation, no
+// observed_generation, no conditions. Zettel are flat, and nothing declares a
+// note and reconciles it toward that declaration. Link keeps the full band,
+// because something does reconcile a Link: the target decides.
+//
+// Tags are unmango.zettelkasten.tag Tag resources named by reference, not
+// strings and not a selector. See that package for why.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum ContentFormat { Markdown PlainText Html Org Asciidoc Typst }
+
+/// Where a note sits in the Luhmann lifecycle. A fleeting note is a capture
+/// that has not earned its place, a literature note restates a source in the
+/// reader's words, a permanent note makes one claim in full sentences, and a
+/// structure note is an index over other notes rather than a claim of its own.
+enum NoteType { Fleeting Literature Permanent Structure }
+
+/// How the source note's idea bears on the target's.
+///
+/// FOLLOWS is the Folgezettel continuation, the next note in a sequence.
+/// BRANCHES_FROM is the other half of that: a departure from the same parent
+/// into a different line of thought.
+enum LinkRelation {
+  Follows
+  BranchesFrom
+  Supports
+  Contradicts
+  Elaborates
+  References
+  Supersedes
+  Other
+}
+
+// ---------------------------------------------------------------------------
+// Note
+// ---------------------------------------------------------------------------
+/// One atomic note. Holds a single idea, and reaches the rest of the box only
+/// through Links.
+type Note: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The permanent address, in whatever scheme the box uses: a Folgezettel
+  /// branch like "21/3a4", a timestamp like "202609081412". Fixed at creation
+  /// and never reused, which is what lets a note be retitled, rewritten, or
+  /// reclassified without breaking a link authored years earlier.
+  zettel_id: string
+  title: string
+  /// The note's text, either inline or by reference. Inline is the normal case:
+  /// a zettel is short by construction. The reference exists for a note whose
+  /// content is a file already addressed elsewhere in the graph, a scanned
+  /// slip, a transcript, a media asset.
+  content: NoteContent
+  format: ContentFormat
+  note_type: NoteType
+  /// Controlled vocabulary this note is filed under.
+  tags: [ref.ObjectReference]
+  /// Where a literature note's material came from: a URL, a DOI, a citation
+  /// key. Free-form on purpose; there is no bibliography kind to point at.
+  source_uri: string
+  // Observed state.
+  /// Links this note owns.
+  outbound_link_count: int32
+  /// Links elsewhere in the box whose target is this note. A note with a high
+  /// backlink count and few outbound links is a hub the box grew on its own.
+  backlink_count: int32
+  /// Owned links whose target no longer resolves.
+  broken_link_count: int32
+  word_count: int32
+  last_edited_time: instant
+}
+
+// tdl-gap: oneof becomes a separate message
+enum NoteContent {
+  Body { body: string }
+  ContentRef { content_ref: ref.ObjectReference }
+}
+
+// ---------------------------------------------------------------------------
+// Link
+// ---------------------------------------------------------------------------
+/// A connection from one Note to anything else in the graph, carrying the
+/// reasoning behind it.
+type Link: Entity {
+  name: string
+  uid: uuid
+  /// Human-readable label for the connection, so it still reads as something
+  /// after its target is deleted.
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The source Note. A Link is meaningless without one and cascades with it.
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// What the source points at. Usually another Note, but wildcard on purpose:
+  /// a zettel that cites a media.title Title or a finance.transaction
+  /// Transaction is a link like any other, and none of those packages needs to
+  /// know the box exists. Repointing a link makes it a different link.
+  target: ref.ObjectReference
+  relation: LinkRelation
+  /// Set only when relation is LINK_RELATION_OTHER.
+  custom_relation: string
+  /// Why the connection was made, in the author's words. The part a reader
+  /// arriving later cannot reconstruct from the two notes alone, and the reason
+  /// a link is worth being a resource.
+  rationale: string
+  // Observed state.
+  observed_generation: int
+  /// Carries the Accepted condition: whether the target admits the connection.
+  conditions: [Condition]
+  /// Whether the target currently resolves to a live resource. False makes this
+  /// one of the source note's broken_link_count.
+  target_resolved: bool
+}
+
+target protobuf for unmango.zettelkasten.note.v1alpha1 {
+  out("proto")
+  file("note.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  edition("2024")
+  Note {
+    option("(google.api.resource)", "{ type: \"unmango.zettelkasten.note/Note\" pattern: \"notes/{note}\" singular: \"note\" plural: \"notes\" }")
+    // tdl-gap: one reserved directive per declaration; proto has two statements
+    // reserved 6, 7: owner_refs, generation: zettel are flat, and nothing reconciles one
+    // reserved 50, 51: observed_generation, conditions: nothing reconciles a note
+    reserved(6, 7, 50, 51)
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    zettel_id {
+      number(11)
+      option("(google.api.field_behavior)", "IMMUTABLE")
+    }
+    title => number(12)
+    content => oneof
+    format => number(15)
+    note_type => number(16)
+    tags {
+      number(17)
+      option("(google.api.resource_reference).type", "\"unmango.zettelkasten.tag/Tag\"")
+    }
+    source_uri {
+      number(18)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    outbound_link_count {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    backlink_count {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    broken_link_count {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    word_count {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_edited_time {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  NoteContent {
+    Body => number(13)
+    ContentRef {
+      number(14)
+      content_ref => option("(google.api.resource_reference).type", "\"*\"")
+    }
+  }
+  Link {
+    option("(google.api.resource)", "{ type: \"unmango.zettelkasten.note/Link\" pattern: \"links/{link}\" singular: \"link\" plural: \"links\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    target {
+      number(11)
+      option("(google.api.field_behavior)", "IMMUTABLE")
+      option("(google.api.resource_reference).type", "\"*\"")
+    }
+    relation => number(12)
+    custom_relation {
+      number(13)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    rationale {
+      number(14)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    target_resolved {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+}

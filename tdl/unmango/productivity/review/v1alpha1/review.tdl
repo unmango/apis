@@ -1,0 +1,120 @@
+package unmango.productivity.review.v1alpha1
+
+import "../../../../shim/google/type.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// A periodic personal retrospective:
+//
+//   Review
+//
+// Deliberately as small as journal.entry Entry: no template, no container,
+// one freeform record per period. Distinct from vcs.change.v1alpha1.Review,
+// a forge reviewer's verdict on a Change, the same English word for an
+// unrelated concept, disambiguated the same way task/note/goal already are by full
+// package path rather than by inventing a synonym.
+//
+// A Review is never owned and nothing reconciles it, the same identity-band
+// variant capture.CaptureItem uses: no owner_refs, no generation, no
+// observed_generation, no conditions. related_entry points at a same-day
+// journal.entry Entry rather than duplicating mood tracking here.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum ReviewCadence { Daily Weekly Monthly AdHoc }
+
+// ---------------------------------------------------------------------------
+// Review
+// ---------------------------------------------------------------------------
+/// A dated look back at a period: what happened, what to change.
+type Review: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  cadence: ReviewCadence
+  period_start: Date
+  period_end: Date
+  went_well: string
+  went_poorly: string
+  /// What to change next period.
+  adjustments: string
+  /// Tasks completed, FocusSessions had, Habits logged, or anything else
+  /// worth remembering from the period.
+  highlights: [ref.ObjectReference]
+  /// The same-day journal.entry Entry, if one exists.
+  related_entry: ref.ObjectReference
+}
+
+target protobuf for unmango.productivity.review.v1alpha1 {
+  out("proto")
+  file("review.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Date => foreign("google/type/date.proto", "google.type.Date")
+  edition("2024")
+  Review {
+    option("(google.api.resource)", "{ type: \"unmango.productivity.review/Review\" pattern: \"reviews/{review}\" singular: \"review\" plural: \"reviews\" }")
+    // tdl-gap: one reserved directive per declaration; proto has two statements
+    // reserved 6, 7: owner_refs, generation: nothing owns or reconciles a review
+    // reserved 50, 51: observed_generation, conditions: nothing reconciles a review
+    reserved(6, 7, 50, 51)
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    cadence => number(11)
+    period_start => number(12)
+    period_end => number(13)
+    went_well {
+      number(14)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    went_poorly {
+      number(15)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    adjustments {
+      number(16)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    highlights {
+      number(17)
+      option("(google.api.resource_reference).type", "\"*\"")
+    }
+    related_entry {
+      number(18)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.journal.entry/Entry\"")
+    }
+  }
+}

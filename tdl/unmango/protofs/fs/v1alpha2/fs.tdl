@@ -1,0 +1,223 @@
+package unmango.protofs.fs.v1alpha2
+
+import "../../file/v1alpha2/file.tdl" as file
+import "../../../../shim/rpc.tdl" as _
+
+type FsService {
+  Chmod: Fn<ChmodRequest, ChmodResponse>
+  Chown: Fn<ChownRequest, ChownResponse>
+  Chtimes: Fn<ChtimesRequest, ChtimesResponse>
+  Create: Fn<CreateRequest, CreateResponse>
+  Mkdir: Fn<MkdirRequest, MkdirResponse>
+  MkdirAll: Fn<MkdirAllRequest, MkdirAllResponse>
+  Open: Fn<OpenRequest, OpenResponse>
+  OpenFile: Fn<OpenFileRequest, OpenFileResponse>
+  Read: Fn<ReadRequest, Stream<ReadResponse>>
+  Remove: Fn<RemoveRequest, RemoveResponse>
+  RemoveAll: Fn<RemoveAllRequest, RemoveAllResponse>
+  Rename: Fn<RenameRequest, RenameResponse>
+  Stat: Fn<StatRequest, StatResponse>
+  Write: Fn<Stream<WriteRequest>, WriteResponse>
+}
+
+type ChmodRequest {
+  name: string
+  /// bitmask; see file.v1alpha2.FileModeConst
+  mode: uint32
+}
+
+type ChmodResponse { }
+
+type ChownRequest {
+  name: string
+  uid: uint32
+  gid: uint32
+}
+
+type ChownResponse { }
+
+type ChtimesRequest {
+  name: string
+  atime: instant
+  mtime: instant
+}
+
+type ChtimesResponse { }
+
+type CreateRequest {
+  name: string
+}
+
+type CreateResponse {
+  file: file.File
+}
+
+type MkdirAllRequest {
+  name: string
+  /// bitmask; see file.v1alpha2.FileModeConst
+  perm: uint32
+}
+
+type MkdirAllResponse { }
+
+type MkdirRequest {
+  name: string
+  /// bitmask; see file.v1alpha2.FileModeConst
+  perm: uint32
+}
+
+type MkdirResponse { }
+
+type OpenRequest {
+  name: string
+}
+
+type OpenResponse {
+  file: file.File
+}
+
+type OpenFileRequest {
+  name: string
+  /// os.O_RDONLY, os.O_WRONLY, os.O_RDWR etc. (platform-specific)
+  flag: int
+  /// bitmask; see file.v1alpha2.FileModeConst
+  perm: uint32
+}
+
+type OpenFileResponse {
+  file: file.File
+}
+
+type ReadRequest {
+  name: string
+}
+
+type ReadResponse {
+  data: bytes
+}
+
+type RemoveRequest {
+  name: string
+}
+
+type RemoveResponse { }
+
+type RemoveAllRequest {
+  name: string
+}
+
+type RemoveAllResponse { }
+
+type RenameRequest {
+  oldname: string
+  newname: string
+}
+
+type RenameResponse { }
+
+type StatRequest {
+  name: string
+}
+
+type StatResponse {
+  file_info: file.FileInfo
+}
+
+type WriteRequest {
+  payload: WriteRequestPayload
+}
+
+// tdl-gap: oneof becomes a separate message
+enum WriteRequestPayload {
+  /// first message only
+  Name { name: string }
+  /// subsequent messages
+  Data { data: bytes }
+}
+
+type WriteResponse {
+  bytes_written: int
+}
+
+target protobuf for unmango.protofs.fs.v1alpha2 {
+  out("proto")
+  file("fs.proto")
+  Fn => rpc
+  Stream => stream
+  edition("2024")
+  FsService => service
+  ChmodRequest {
+    name => number(1)
+    mode => number(2)
+  }
+  ChownRequest {
+    name => number(1)
+    uid => number(2)
+    gid => number(3)
+  }
+  ChtimesRequest {
+    name => number(1)
+    atime => number(2)
+    mtime => number(3)
+  }
+  CreateRequest {
+    name => number(1)
+  }
+  CreateResponse {
+    file => number(1)
+  }
+  MkdirAllRequest {
+    name => number(1)
+    perm => number(2)
+  }
+  MkdirRequest {
+    name => number(1)
+    perm => number(2)
+  }
+  OpenRequest {
+    name => number(1)
+  }
+  OpenResponse {
+    file => number(1)
+  }
+  OpenFileRequest {
+    name => number(1)
+    flag => number(2)
+    perm => number(3)
+  }
+  OpenFileResponse {
+    file => number(1)
+  }
+  ReadRequest {
+    name => number(1)
+  }
+  ReadResponse {
+    data => number(1)
+  }
+  RemoveRequest {
+    name => number(1)
+  }
+  RemoveAllRequest {
+    name => number(1)
+  }
+  RenameRequest {
+    oldname => number(1)
+    newname => number(2)
+  }
+  StatRequest {
+    name => number(1)
+  }
+  StatResponse {
+    file_info => number(1)
+  }
+  WriteRequest {
+    payload => oneof
+  }
+  WriteRequestPayload {
+    Name => number(1)
+    Data => number(2)
+  }
+  WriteResponse {
+    bytes_written => number(1)
+  }
+}

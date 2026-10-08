@@ -1,0 +1,247 @@
+package unmango.iac.module.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Runnable infrastructure-as-code definitions, and how they are grouped:
+//
+//   ModuleRegistry => Module
+//
+// A Module is one runnable unit of config-as-code: a Terraform module, a
+// Pulumi program, an Ansible playbook, a Helm chart, a plain set of
+// Kubernetes manifests. It declares where its source lives and which tool
+// reads it. It does not declare what to run it against, which is
+// iac.stack Stack's job.
+//
+// A ModuleRegistry claims Modules by label selector, the same
+// codegen.converter ConverterRegistry pattern: a module joins a registry by
+// being labelled, not by being moved, and discovery is how a Module gets
+// declared in the first place when it is not hand-authored.
+//
+// Module.tool points at a compute.platform Platform for the tool that reads
+// it: Terraform, Pulumi, Ansible, Helm, kubectl. The same argument
+// compute.platform Platform and codegen.converter Converter.platform already
+// make: a closed enum of tools would bake a fixed vendor list into the
+// schema and need extending every time a new one appeared.
+// ---------------------------------------------------------------------------
+// Module
+// ---------------------------------------------------------------------------
+/// One runnable config-as-code definition.
+type Module: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  /// Also the surface a ModuleRegistry selector matches against.
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The compute.platform Platform for the tool that reads this module:
+  /// Terraform, Pulumi, Ansible, Helm, kubectl.
+  tool: ref.ObjectReference
+  /// The vcs.repository Repository the module's source lives in.
+  repository: ref.ObjectReference
+  /// Subdirectory within the repository, when the module is not at its root.
+  path: string
+  /// Where the module lives for tools that resolve modules by address rather
+  /// than by repository checkout: a Terraform registry source, a Helm chart
+  /// reference, an OCI reference.
+  entrypoint: string
+  /// Pinned version of the tool this module is written against. Part of what
+  /// an iac.stack Run snapshots, so a stack can report itself stale when it
+  /// moves.
+  tool_version: string
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  /// Registries whose selectors currently claim this module.
+  claimed_by: [ref.ObjectReference]
+  /// iac.stack Stacks naming this module.
+  stack_count: int32
+}
+
+// ---------------------------------------------------------------------------
+// ModuleRegistry
+// ---------------------------------------------------------------------------
+/// A published collection of Modules, claimed by selector.
+type ModuleRegistry: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Which Modules belong. An empty selector claims nothing, never
+  /// everything.
+  selector: LabelSelector
+  summary: string
+  /// Stamped onto modules created through this registry, which is how a new
+  /// module ends up matching the selector.
+  module_labels: {string -> string}
+  /// The vcs.repository Repository scanned for Modules that have not been
+  /// declared yet. Unset discovers nothing, the same as an empty selector
+  /// claims nothing.
+  discovery_repository: ref.ObjectReference
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  module_count: int32
+  last_discovery_time: instant
+}
+
+target protobuf for unmango.iac.module.v1alpha1 {
+  out("proto")
+  file("module.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  edition("2024")
+  Module {
+    option("(google.api.resource)", "{ type: \"unmango.iac.module/Module\" pattern: \"modules/{module}\" singular: \"module\" plural: \"modules\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    tool {
+      number(11)
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
+    }
+    repository {
+      number(12)
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
+    }
+    path {
+      number(13)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    entrypoint {
+      number(14)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    tool_version {
+      number(15)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    claimed_by {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.iac.module/ModuleRegistry\"")
+    }
+    stack_count {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  ModuleRegistry {
+    option("(google.api.resource)", "{ type: \"unmango.iac.module/ModuleRegistry\" pattern: \"moduleRegistries/{module_registry}\" singular: \"moduleRegistry\" plural: \"moduleRegistries\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    selector => number(11)
+    summary {
+      number(12)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    module_labels => number(13)
+    discovery_repository {
+      number(14)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
+    }
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    module_count {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_discovery_time {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+}

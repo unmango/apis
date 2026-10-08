@@ -1,0 +1,153 @@
+package unmango.iac.resource.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../../shim/protobuf.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Provisioned infrastructure a Stack manages:
+//
+//   Stack -> Resource
+//
+// A Resource is one thing an iac.stack Run created or is managing: a VM, a
+// storage bucket, a DNS record, a Kubernetes object. It is owned by the
+// Stack whose Runs provision it, not by any single Run, since a resource
+// outlives any one plan or apply and a Stack applies many times against the
+// same resources.
+//
+// type and address are open strings rather than a closed vocabulary,
+// deliberately: a resource type is defined by whichever tool and provider
+// produced it, and this domain has no fixed catalog of either to enumerate.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// Whether a Resource's last-observed state still matches what its Stack
+/// declares.
+enum DriftState {
+  InSync
+  Drifted
+  /// Not checked since the last apply, or the tool cannot report drift.
+  Unknown
+}
+
+// ---------------------------------------------------------------------------
+// Resource
+// ---------------------------------------------------------------------------
+/// One provisioned thing a Stack manages.
+type Resource: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The Stack that provisions this resource.
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Tool- and provider-specific kind: "aws_instance",
+  /// "kubernetes_deployment", "google_storage_bucket".
+  type: string
+  /// The module-local identifier the tool addresses this resource by: a
+  /// Terraform resource address, a Pulumi URN.
+  address: string
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  /// The provider-assigned identifier, once created: an ARN, a resource ID,
+  /// a UID.
+  external_id: string
+  /// Last-known attributes as reported by the provider. Opaque: shape varies
+  /// by type and provider, so this domain does not model it further.
+  attributes: Struct
+  drift_state: DriftState
+  /// The iac.stack Run that last applied changes to this resource.
+  last_applied_run: ref.ObjectReference
+  last_observed_time: instant
+}
+
+target protobuf for unmango.iac.resource.v1alpha1 {
+  out("proto")
+  file("resource.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  Struct => foreign("google/protobuf/struct.proto", "google.protobuf.Struct")
+  edition("2024")
+  Resource {
+    option("(google.api.resource)", "{ type: \"unmango.iac.resource/Resource\" pattern: \"resources/{resource}\" singular: \"resource\" plural: \"resources\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    type {
+      number(11)
+      option("(google.api.field_behavior)", "IMMUTABLE")
+    }
+    address {
+      number(12)
+      option("(google.api.field_behavior)", "IMMUTABLE")
+    }
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    external_id {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    attributes {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    drift_state {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_applied_run {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.iac.stack/Run\"")
+    }
+    last_observed_time {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+}
