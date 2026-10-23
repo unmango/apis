@@ -27,6 +27,11 @@
       inputs.treefmt-nix.follows = "treefmt-nix";
     };
 
+    globset = {
+      url = "github:pdtpartners/globset";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
+
     googleapis = {
       url = "github:googleapis/googleapis";
       flake = false;
@@ -79,9 +84,9 @@
           # tdl file names relative to the repo root, which is where the checks
           # run. out(...) and imports resolve against each file's directory.
           tdlFiles =
-            dir:
-            map (lib.removePrefix "${toString ./.}/") (
-              lib.filter (lib.hasSuffix ".tdl") (map toString (lib.filesystem.listFilesRecursive dir))
+            patterns:
+            map (file: lib.removePrefix "./" (lib.path.removePrefix ./. file)) (
+              lib.fileset.toList (inputs.globset.lib.globs ./. patterns)
             );
           unmangoApis = pkgs.callPackage ./nix {
             bufLib = inputs'.a2b.legacyPackages.lib.buf;
@@ -126,8 +131,8 @@
                 ./proto
               ];
             };
-            files = tdlFiles ./tdl;
-            gen.files = tdlFiles ./tdl/unmango;
+            files = tdlFiles [ "tdl/**/*.tdl" ];
+            gen.files = tdlFiles [ "tdl/unmango/**/*.tdl" ];
           };
 
           devShells.default = pkgs.mkShellNoCC {
