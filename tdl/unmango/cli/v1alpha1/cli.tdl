@@ -19,7 +19,6 @@ type ParseRequest {
   convention: Convention
 }
 
-// tdl-gap: oneof becomes a separate message
 enum ParseRequestInput {
   Proto { proto: Any }
 }
@@ -53,7 +52,6 @@ type Token {
   kind: TokenKind
 }
 
-// tdl-gap: oneof becomes a separate message
 enum TokenKind {
   Word { word: Word }
   ShortFlag { short_flag: ShortFlag }
@@ -117,7 +115,7 @@ type ParseCommandResponse {
 }
 
 target protobuf for unmango.cli.v1alpha1 {
-  out("proto")
+  out("../../../../proto")
   ParseRequest => file("cli.proto")
   ParseResponse => file("cli.proto")
   Option => file("cli.proto")
@@ -136,7 +134,6 @@ target protobuf for unmango.cli.v1alpha1 {
   ParseCommandRequest => file("parser.proto")
   ParseCommandResponse => file("parser.proto")
   ParserService => file("parser.proto")
-  Any => foreign("google/protobuf/any.proto", "google.protobuf.Any")
   Fn => rpc
   edition("2024")
   AnalysisService => service

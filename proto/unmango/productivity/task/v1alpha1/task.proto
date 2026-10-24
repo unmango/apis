@@ -60,9 +60,17 @@ message RecurrenceRule {
 
 // One thing to be done. Nests to form subtasks.
 message Task {
-  option (google.api.resource) = { type: "unmango.productivity.task/Task" pattern: "tasks/{task}" singular: "task" plural: "tasks" };
+  option (google.api.resource) = {
+    type: "unmango.productivity.task/Task"
+    pattern: "tasks/{task}"
+    singular: "task"
+    plural: "tasks"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -81,7 +89,10 @@ message Task {
   // Tasks that must reach DONE before this one leaves BLOCKED.
   repeated unmango.ref.v1alpha1.ObjectReference depends_on = 15 [(google.api.resource_reference).type = "unmango.productivity.task/Task"];
   // The people.contact Contact responsible.
-  unmango.ref.v1alpha1.ObjectReference assignee = 16 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  unmango.ref.v1alpha1.ObjectReference assignee = 16 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
   // Which subtasks this Task claims.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 17;
   // How far ahead to notify.
@@ -94,7 +105,10 @@ message Task {
   // Earliest date this should surface. Hides work that cannot start yet.
   google.type.Date defer_until = 42 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The calendar.event Event booked to do this.
-  unmango.ref.v1alpha1.ObjectReference scheduled_event = 43 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.calendar.event/Event"];
+  unmango.ref.v1alpha1.ObjectReference scheduled_event = 43 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.calendar.event/Event"
+  ];
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   TaskState state = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -120,7 +134,10 @@ message TaskTemplate {
   TaskPriority priority = 12;
   google.protobuf.Duration estimated_effort = 13;
   repeated unmango.ref.v1alpha1.ObjectReference depends_on = 14 [(google.api.resource_reference).type = "unmango.productivity.task/Task"];
-  unmango.ref.v1alpha1.ObjectReference assignee = 15 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  unmango.ref.v1alpha1.ObjectReference assignee = 15 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
   // Which subtasks a generated Task claims.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 16;
   repeated google.protobuf.Duration reminders = 17;
@@ -129,9 +146,17 @@ message TaskTemplate {
 
 // A repeating chore, and the owner of every Task it materializes.
 message RecurringTask {
-  option (google.api.resource) = { type: "unmango.productivity.task/RecurringTask" pattern: "recurringTasks/{recurring_task}" singular: "recurringTask" plural: "recurringTasks" };
+  option (google.api.resource) = {
+    type: "unmango.productivity.task/RecurringTask"
+    pattern: "recurringTasks/{recurring_task}"
+    singular: "recurringTask"
+    plural: "recurringTasks"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

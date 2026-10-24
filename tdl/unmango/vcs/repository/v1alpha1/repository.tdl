@@ -297,14 +297,11 @@ enum CompositionPhase {
 }
 
 target protobuf for unmango.vcs.repository.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("repository.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
-  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
-  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Remote {
     option("(google.api.resource)", "{ type: \"unmango.vcs.repository/Remote\" pattern: \"remotes/{remote}\" singular: \"remote\" plural: \"remotes\" }")

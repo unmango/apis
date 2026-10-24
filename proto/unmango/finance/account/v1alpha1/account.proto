@@ -48,9 +48,17 @@ message SyncConfig {
 
 // A single balance held at an Institution.
 message Account {
-  option (google.api.resource) = { type: "unmango.finance.account/Account" pattern: "accounts/{account}" singular: "account" plural: "accounts" };
+  option (google.api.resource) = {
+    type: "unmango.finance.account/Account"
+    pattern: "accounts/{account}"
+    singular: "account"
+    plural: "accounts"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -88,9 +96,17 @@ message Account {
 
 // A counterparty holding one or more Accounts.
 message Institution {
-  option (google.api.resource) = { type: "unmango.finance.account/Institution" pattern: "institutions/{institution}" singular: "institution" plural: "institutions" };
+  option (google.api.resource) = {
+    type: "unmango.finance.account/Institution"
+    pattern: "institutions/{institution}"
+    singular: "institution"
+    plural: "institutions"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

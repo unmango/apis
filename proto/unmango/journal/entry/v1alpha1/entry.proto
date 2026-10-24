@@ -55,10 +55,19 @@ enum Visibility {
 
 // One dated log entry.
 message Entry {
-  reserved 6, 7, 50, 51;
-  option (google.api.resource) = { type: "unmango.journal.entry/Entry" pattern: "entries/{entry}" singular: "entry" plural: "entries" };
+  reserved 6, 7;
+  reserved 50, 51;
+  option (google.api.resource) = {
+    type: "unmango.journal.entry/Entry"
+    pattern: "entries/{entry}"
+    singular: "entry"
+    plural: "entries"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -83,10 +92,16 @@ message Entry {
   repeated string tags = 17;
   // Optional pointer at a people.contact Contact. Unset means single-user.
   // A plain reference, not a ~> attachment: nothing admits or rejects it.
-  unmango.ref.v1alpha1.ObjectReference author = 18 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  unmango.ref.v1alpha1.ObjectReference author = 18 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
   // Optional pointer at a health.measurement Measurement for a quantified
   // mood or anxiety reading behind the coarse mood scale.
-  unmango.ref.v1alpha1.ObjectReference mood_measurement = 19 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.health.measurement/Measurement"];
+  unmango.ref.v1alpha1.ObjectReference mood_measurement = 19 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.health.measurement/Measurement"
+  ];
   repeated Attachment attachments = 20;
   Visibility visibility = 21;
   int32 word_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];

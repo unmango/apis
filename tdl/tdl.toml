@@ -1,0 +1,14 @@
+# Silences tdl gen's loss warnings for the protobuf target. Each one says that
+# running `tdl import` on the generated protos would not get this detail of the
+# model back. This repository never imports its protos, so they don't matter
+# here. UnstoppableMango/tdl#1163 asks for them to be off by default.
+[lossy.protobuf]
+allow = [
+  "lossy.doc",
+  "lossy.name",
+  "lossy.number",
+  "lossy.order",
+  "lossy.primitive",
+  "lossy.struct-kind",
+  "lossy.unsupported",
+]

@@ -32,8 +32,7 @@ message ChmodRequest {
   uint32 mode = 2;
 }
 
-message ChmodResponse {
-}
+message ChmodResponse {}
 
 message ChownRequest {
   string name = 1;
@@ -41,8 +40,7 @@ message ChownRequest {
   uint32 gid = 3;
 }
 
-message ChownResponse {
-}
+message ChownResponse {}
 
 message ChtimesRequest {
   string name = 1;
@@ -50,8 +48,7 @@ message ChtimesRequest {
   google.protobuf.Timestamp mtime = 3;
 }
 
-message ChtimesResponse {
-}
+message ChtimesResponse {}
 
 message CreateRequest {
   string name = 1;
@@ -67,8 +64,7 @@ message MkdirAllRequest {
   uint32 perm = 2;
 }
 
-message MkdirAllResponse {
-}
+message MkdirAllResponse {}
 
 message MkdirRequest {
   string name = 1;
@@ -76,8 +72,7 @@ message MkdirRequest {
   uint32 perm = 2;
 }
 
-message MkdirResponse {
-}
+message MkdirResponse {}
 
 message OpenRequest {
   string name = 1;
@@ -111,23 +106,20 @@ message RemoveRequest {
   string name = 1;
 }
 
-message RemoveResponse {
-}
+message RemoveResponse {}
 
 message RemoveAllRequest {
   string name = 1;
 }
 
-message RemoveAllResponse {
-}
+message RemoveAllResponse {}
 
 message RenameRequest {
   string oldname = 1;
   string newname = 2;
 }
 
-message RenameResponse {
-}
+message RenameResponse {}
 
 message StatRequest {
   string name = 1;

@@ -51,9 +51,17 @@ enum VehicleState {
 
 // One observation of a Vehicle's accumulated distance. Append-only.
 message OdometerReading {
-  option (google.api.resource) = { type: "unmango.asset.vehicle/OdometerReading" pattern: "odometerReadings/{odometer_reading}" singular: "odometerReading" plural: "odometerReadings" };
+  option (google.api.resource) = {
+    type: "unmango.asset.vehicle/OdometerReading"
+    pattern: "odometerReadings/{odometer_reading}"
+    singular: "odometerReading"
+    plural: "odometerReadings"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -88,9 +96,17 @@ enum OdometerSource {
 // Something that moves under its own power or is towed. Owns its odometer
 // history and binds to the Space it is kept in.
 message Vehicle {
-  option (google.api.resource) = { type: "unmango.asset.vehicle/Vehicle" pattern: "vehicles/{vehicle}" singular: "vehicle" plural: "vehicles" };
+  option (google.api.resource) = {
+    type: "unmango.asset.vehicle/Vehicle"
+    pattern: "vehicles/{vehicle}"
+    singular: "vehicle"
+    plural: "vehicles"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -120,9 +136,15 @@ message Vehicle {
   google.type.Date registration_expiry = 24 [(google.api.field_behavior) = OPTIONAL];
   google.type.Date insurance_expiry = 25 [(google.api.field_behavior) = OPTIONAL];
   // The finance.account Account carrying its loan or lease.
-  unmango.ref.v1alpha1.ObjectReference finance_account = 26 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.finance.account/Account"];
+  unmango.ref.v1alpha1.ObjectReference finance_account = 26 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.finance.account/Account"
+  ];
   // The asset.property Space it is kept in. Unset means unassigned.
-  unmango.ref.v1alpha1.ObjectReference parked_at = 40 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.asset.property/Space"];
+  unmango.ref.v1alpha1.ObjectReference parked_at = 40 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.asset.property/Space"
+  ];
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   VehicleState state = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];

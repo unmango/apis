@@ -53,10 +53,19 @@ enum LinkRelation {
 // One atomic note. Holds a single idea, and reaches the rest of the box only
 // through Links.
 message Note {
-  reserved 6, 7, 50, 51;
-  option (google.api.resource) = { type: "unmango.zettelkasten.note/Note" pattern: "notes/{note}" singular: "note" plural: "notes" };
+  reserved 6, 7;
+  reserved 50, 51;
+  option (google.api.resource) = {
+    type: "unmango.zettelkasten.note/Note"
+    pattern: "notes/{note}"
+    singular: "note"
+    plural: "notes"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -99,9 +108,17 @@ message Note {
 // A connection from one Note to anything else in the graph, carrying the
 // reasoning behind it.
 message Link {
-  option (google.api.resource) = { type: "unmango.zettelkasten.note/Link" pattern: "links/{link}" singular: "link" plural: "links" };
+  option (google.api.resource) = {
+    type: "unmango.zettelkasten.note/Link"
+    pattern: "links/{link}"
+    singular: "link"
+    plural: "links"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   // Human-readable label for the connection, so it still reads as something
   // after its target is deleted.
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
@@ -118,7 +135,10 @@ message Link {
   // a zettel that cites a media.title Title or a finance.transaction
   // Transaction is a link like any other, and none of those packages needs to
   // know the box exists. Repointing a link makes it a different link.
-  unmango.ref.v1alpha1.ObjectReference target = 11 [(google.api.field_behavior) = IMMUTABLE, (google.api.resource_reference).type = "*"];
+  unmango.ref.v1alpha1.ObjectReference target = 11 [
+    (google.api.field_behavior) = IMMUTABLE,
+    (google.api.resource_reference).type = "*"
+  ];
   LinkRelation relation = 12;
   // Set only when relation is LINK_RELATION_OTHER.
   string custom_relation = 13 [(google.api.field_behavior) = OPTIONAL];

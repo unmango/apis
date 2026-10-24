@@ -198,15 +198,11 @@ type Artist: Entity {
 }
 
 target protobuf for unmango.music.artist.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("artist.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Date => foreign("google/type/date.proto", "google.type.Date")
-  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
-  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
-  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   ExternalId {
     source => number(1)

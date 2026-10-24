@@ -62,9 +62,17 @@ message Serving {
 // Referenced by FoodEntry rather than owned by it, so it can be corrected once
 // and take effect everywhere.
 message Food {
-  option (google.api.resource) = { type: "unmango.health.nutrition/Food" pattern: "foods/{food}" singular: "food" plural: "foods" };
+  option (google.api.resource) = {
+    type: "unmango.health.nutrition/Food"
+    pattern: "foods/{food}"
+    singular: "food"
+    plural: "foods"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -107,9 +115,17 @@ message Ingredient {
 // One portion of one Food within a Meal. Owned by the Meal, attached to the
 // Food.
 message FoodEntry {
-  option (google.api.resource) = { type: "unmango.health.nutrition/FoodEntry" pattern: "foodEntries/{food_entry}" singular: "foodEntry" plural: "foodEntries" };
+  option (google.api.resource) = {
+    type: "unmango.health.nutrition/FoodEntry"
+    pattern: "foodEntries/{food_entry}"
+    singular: "foodEntry"
+    plural: "foodEntries"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -150,9 +166,17 @@ message FoodEntryTemplate {
 
 // One sitting. Owns the FoodEntries that make it up.
 message Meal {
-  option (google.api.resource) = { type: "unmango.health.nutrition/Meal" pattern: "meals/{meal}" singular: "meal" plural: "meals" };
+  option (google.api.resource) = {
+    type: "unmango.health.nutrition/Meal"
+    pattern: "meals/{meal}"
+    singular: "meal"
+    plural: "meals"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -204,9 +228,17 @@ message MealTemplate {
 // A repeating cycle of meals. The kind a human edits, and the owner of every
 // Meal it materializes.
 message MealPlan {
-  option (google.api.resource) = { type: "unmango.health.nutrition/MealPlan" pattern: "mealPlans/{meal_plan}" singular: "mealPlan" plural: "mealPlans" };
+  option (google.api.resource) = {
+    type: "unmango.health.nutrition/MealPlan"
+    pattern: "mealPlans/{meal_plan}"
+    singular: "mealPlan"
+    plural: "mealPlans"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

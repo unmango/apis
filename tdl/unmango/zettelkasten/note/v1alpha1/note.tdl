@@ -113,7 +113,6 @@ type Note: Entity {
   last_edited_time: instant
 }
 
-// tdl-gap: oneof becomes a separate message
 enum NoteContent {
   Body { body: string }
   ContentRef { content_ref: ref.ObjectReference }
@@ -162,20 +161,18 @@ type Link: Entity {
 }
 
 target protobuf for unmango.zettelkasten.note.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("note.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
-  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Note {
     option("(google.api.resource)", "{ type: \"unmango.zettelkasten.note/Note\" pattern: \"notes/{note}\" singular: \"note\" plural: \"notes\" }")
-    // tdl-gap: one reserved directive per declaration; proto has two statements
-    // reserved 6, 7: owner_refs, generation: zettel are flat, and nothing reconciles one
-    // reserved 50, 51: observed_generation, conditions: nothing reconciles a note
-    reserved(6, 7, 50, 51)
+    // 6, 7: owner_refs, generation: zettel are flat, and nothing reconciles one
+    reserved(6, 7)
+    // 50, 51: observed_generation, conditions: nothing reconciles a note
+    reserved(50, 51)
     name {
       number(1)
       option("(google.api.field_behavior)", "IDENTIFIER")

@@ -41,9 +41,17 @@ enum RolloutStrategyType {
 // A single runner process registered with a CI platform, bound to one Host.
 // The Pod of this chain.
 message Runner {
-  option (google.api.resource) = { type: "unmango.ci.runner/Runner" pattern: "runners/{runner}" singular: "runner" plural: "runners" };
+  option (google.api.resource) = {
+    type: "unmango.ci.runner/Runner"
+    pattern: "runners/{runner}"
+    singular: "runner"
+    plural: "runners"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -66,12 +74,18 @@ message Runner {
   // Restricts which Hosts this Runner may be bound to.
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector host_selector = 18;
   // The Host this Runner is bound to. Unset means unscheduled.
-  unmango.ref.v1alpha1.ObjectReference host = 40 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.compute.host/Host"];
+  unmango.ref.v1alpha1.ObjectReference host = 40 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.compute.host/Host"
+  ];
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   RunnerPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The job currently executing, when phase is BUSY.
-  unmango.ref.v1alpha1.ObjectReference current_job = 53 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.ci.job/JobRun"];
+  unmango.ref.v1alpha1.ObjectReference current_job = 53 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.ci.job/JobRun"
+  ];
   google.protobuf.Timestamp bind_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp last_heartbeat_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
   int64 completed_job_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -116,9 +130,17 @@ message RunnerTemplate {
 // The ReplicaSet of this chain. Normally owned by a RunnerPool rather than
 // created directly.
 message RunnerSet {
-  option (google.api.resource) = { type: "unmango.ci.runner/RunnerSet" pattern: "runnerSets/{runner_set}" singular: "runnerSet" plural: "runnerSets" };
+  option (google.api.resource) = {
+    type: "unmango.ci.runner/RunnerSet"
+    pattern: "runnerSets/{runner_set}"
+    singular: "runnerSet"
+    plural: "runnerSets"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -150,9 +172,17 @@ message RunnerSet {
 // shifts replicas between them to roll a change out. The Deployment of this
 // chain, and the kind a human normally edits.
 message RunnerPool {
-  option (google.api.resource) = { type: "unmango.ci.runner/RunnerPool" pattern: "runnerPools/{runner_pool}" singular: "runnerPool" plural: "runnerPools" };
+  option (google.api.resource) = {
+    type: "unmango.ci.runner/RunnerPool"
+    pattern: "runnerPools/{runner_pool}"
+    singular: "runnerPool"
+    plural: "runnerPools"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

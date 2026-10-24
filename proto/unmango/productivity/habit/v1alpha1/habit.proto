@@ -24,9 +24,17 @@ enum HabitFrequency {
 // A behavior worth doing regularly, tracked by its log rather than by
 // materializing scheduled work.
 message Habit {
-  option (google.api.resource) = { type: "unmango.productivity.habit/Habit" pattern: "habits/{habit}" singular: "habit" plural: "habits" };
+  option (google.api.resource) = {
+    type: "unmango.productivity.habit/Habit"
+    pattern: "habits/{habit}"
+    singular: "habit"
+    plural: "habits"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -59,9 +67,17 @@ message Habit {
 
 // One occurrence of a Habit, logged when it happens.
 message HabitLog {
-  option (google.api.resource) = { type: "unmango.productivity.habit/HabitLog" pattern: "habitLogs/{habit_log}" singular: "habitLog" plural: "habitLogs" };
+  option (google.api.resource) = {
+    type: "unmango.productivity.habit/HabitLog"
+    pattern: "habitLogs/{habit_log}"
+    singular: "habitLog"
+    plural: "habitLogs"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

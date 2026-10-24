@@ -41,13 +41,21 @@ message ArtifactInput {
 // create_time here exactly as on every mutable kind.
 message Artifact {
   reserved 3, 6, 7, 9, 10;
-  option (google.api.resource) = { type: "unmango.codegen.artifact/Artifact" pattern: "artifacts/{artifact}" singular: "artifact" plural: "artifacts" };
+  option (google.api.resource) = {
+    type: "unmango.codegen.artifact/Artifact"
+    pattern: "artifacts/{artifact}"
+    singular: "artifact"
+    plural: "artifacts"
+  };
   // Hash over the content band, and the artifact's name: "sha256:...". There
   // is no separate name field, no display_name, no owner_refs, no generation,
   // and no delete_time. Nothing declares an Artifact, so there is nothing to
   // name it, own it, or revise it.
   string digest = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
   google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -72,7 +80,10 @@ message Artifact {
   // The codegen.conversion ConversionRuns that reached this digest. Repeated
   // and derived rather than content: the same inputs can be converted many
   // times, and which run got there first is not part of the identity.
-  repeated unmango.ref.v1alpha1.ObjectReference produced_by = 51 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.codegen.conversion/ConversionRun"];
+  repeated unmango.ref.v1alpha1.ObjectReference produced_by = 51 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.codegen.conversion/ConversionRun"
+  ];
   // Artifacts naming this one as an input.
   int32 consumer_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Where the bytes are published: an OCI reference, a Nix store path, a BSR
@@ -117,7 +128,10 @@ message ListArtifactsRequest {
   // Field 4 is `converter` rather than the `owner` this position holds on
   // every mutable kind. An artifact has no owner reference to list by; the
   // converter is provenance, not ownership.
-  unmango.ref.v1alpha1.ObjectReference converter = 4 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.codegen.converter/Converter"];
+  unmango.ref.v1alpha1.ObjectReference converter = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.codegen.converter/Converter"
+  ];
   // Restricts results to artifacts in this output format.
   string format = 5 [(google.api.field_behavior) = OPTIONAL];
   // Restricts results to artifacts first seen within this window.
@@ -136,7 +150,10 @@ message ListArtifactsResponse {
 
 message WatchArtifactsRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 1 [(google.api.field_behavior) = OPTIONAL];
-  unmango.ref.v1alpha1.ObjectReference converter = 2 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.codegen.converter/Converter"];
+  unmango.ref.v1alpha1.ObjectReference converter = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.codegen.converter/Converter"
+  ];
   // Resume from this point instead of the current state, so a client that
   // drops the stream does not have to replay from nothing. Unset starts
   // from now.
@@ -182,7 +199,10 @@ message WalkInputsRequest {
   // Emit only artifacts in one of these output formats. Empty emits all.
   repeated string formats = 5 [(google.api.field_behavior) = OPTIONAL];
   // Emit only artifacts produced by one of these Converters.
-  repeated unmango.ref.v1alpha1.ObjectReference converters = 6 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.codegen.converter/Converter"];
+  repeated unmango.ref.v1alpha1.ObjectReference converters = 6 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.codegen.converter/Converter"
+  ];
   // Emit the external sources at the edge of the closure as well, as inputs
   // with no artifact_digest. Off by default, since a closure is usually asked
   // for in terms of what was built.
@@ -207,7 +227,10 @@ message WalkConsumersRequest {
   // Sources to walk forward from, for the case that matters most: an upstream
   // codegen.schema Schema or vcs.commit Commit that just moved, which is not
   // itself an Artifact.
-  repeated unmango.ref.v1alpha1.ObjectReference start_sources = 2 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "*"];
+  repeated unmango.ref.v1alpha1.ObjectReference start_sources = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "*"
+  ];
   int32 max_depth = 3 [(google.api.field_behavior) = OPTIONAL];
   int32 limit = 4 [(google.api.field_behavior) = OPTIONAL];
   repeated string formats = 5 [(google.api.field_behavior) = OPTIONAL];

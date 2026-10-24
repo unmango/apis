@@ -40,7 +40,10 @@ message ExternalId {
 message Credit {
   // A people.contact Contact when the person is known personally,
   // otherwise unset and identified by name alone.
-  unmango.ref.v1alpha1.ObjectReference contact = 1 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  unmango.ref.v1alpha1.ObjectReference contact = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
   string person_name = 2;
   // "director", "author", "artist", "developer", "narrator".
   string role = 3;
@@ -68,9 +71,17 @@ enum ReleaseFormat {
 
 // A specific release of a Title. What a media.library LibraryItem binds to.
 message Edition {
-  option (google.api.resource) = { type: "unmango.media.title/Edition" pattern: "editions/{edition}" singular: "edition" plural: "editions" };
+  option (google.api.resource) = {
+    type: "unmango.media.title/Edition"
+    pattern: "editions/{edition}"
+    singular: "edition"
+    plural: "editions"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -104,9 +115,17 @@ message Edition {
 
 // A work. Nests to form series and seasons, and owns its Editions.
 message Title {
-  option (google.api.resource) = { type: "unmango.media.title/Title" pattern: "titles/{title}" singular: "title" plural: "titles" };
+  option (google.api.resource) = {
+    type: "unmango.media.title/Title"
+    pattern: "titles/{title}"
+    singular: "title"
+    plural: "titles"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

@@ -70,9 +70,17 @@ enum AreaUnit {
 
 // A room or defined area inside a Property. The unit other domains bind to.
 message Space {
-  option (google.api.resource) = { type: "unmango.asset.property/Space" pattern: "spaces/{space}" singular: "space" plural: "spaces" };
+  option (google.api.resource) = {
+    type: "unmango.asset.property/Space"
+    pattern: "spaces/{space}"
+    singular: "space"
+    plural: "spaces"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -110,9 +118,17 @@ message SpaceTemplate {
 
 // A property, and the owner of the Spaces inside it.
 message Property {
-  option (google.api.resource) = { type: "unmango.asset.property/Property" pattern: "properties/{property}" singular: "property" plural: "properties" };
+  option (google.api.resource) = {
+    type: "unmango.asset.property/Property"
+    pattern: "properties/{property}"
+    singular: "property"
+    plural: "properties"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -135,7 +151,10 @@ message Property {
   google.type.Date acquired_date = 19 [(google.api.field_behavior) = OPTIONAL];
   google.type.Money purchase_price = 20;
   // The finance.account Account holding the mortgage or paying the rent.
-  unmango.ref.v1alpha1.ObjectReference finance_account = 21 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.finance.account/Account"];
+  unmango.ref.v1alpha1.ObjectReference finance_account = 21 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.finance.account/Account"
+  ];
   // No longer held. Retained for history.
   bool disposed = 22;
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];

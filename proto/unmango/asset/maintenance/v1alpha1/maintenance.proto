@@ -60,9 +60,17 @@ message Task {
 // What was actually done, by whom, and what it cost. The durable artifact of
 // the chain: WorkOrders come and go on a schedule, service records accumulate.
 message ServiceRecord {
-  option (google.api.resource) = { type: "unmango.asset.maintenance/ServiceRecord" pattern: "serviceRecords/{service_record}" singular: "serviceRecord" plural: "serviceRecords" };
+  option (google.api.resource) = {
+    type: "unmango.asset.maintenance/ServiceRecord"
+    pattern: "serviceRecords/{service_record}"
+    singular: "serviceRecord"
+    plural: "serviceRecords"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -87,7 +95,10 @@ message ServiceRecord {
   // Work is guaranteed until this date.
   google.type.Date warranty_until = 19 [(google.api.field_behavior) = OPTIONAL];
   // The finance.transaction Transaction that paid for it.
-  unmango.ref.v1alpha1.ObjectReference transaction = 20 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.finance.transaction/Transaction"];
+  unmango.ref.v1alpha1.ObjectReference transaction = 20 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.finance.transaction/Transaction"
+  ];
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Cost plus the cost of every part.
@@ -107,9 +118,17 @@ message PartUsed {
 // One occurrence of scheduled work. Materialized by a MaintenancePlan, or
 // created directly for a one-off repair.
 message WorkOrder {
-  option (google.api.resource) = { type: "unmango.asset.maintenance/WorkOrder" pattern: "workOrders/{work_order}" singular: "workOrder" plural: "workOrders" };
+  option (google.api.resource) = {
+    type: "unmango.asset.maintenance/WorkOrder"
+    pattern: "workOrders/{work_order}"
+    singular: "workOrder"
+    plural: "workOrders"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -134,16 +153,25 @@ message WorkOrder {
   // Distance bound, when the subject tracks one.
   unmango.uom.v1alpha1.Quantity due_distance = 42 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The people.contact Contact responsible.
-  unmango.ref.v1alpha1.ObjectReference assigned_to = 43 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  unmango.ref.v1alpha1.ObjectReference assigned_to = 43 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
   // The calendar.event Event booked to do the work.
-  unmango.ref.v1alpha1.ObjectReference scheduled_event = 44 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.calendar.event/Event"];
+  unmango.ref.v1alpha1.ObjectReference scheduled_event = 44 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.calendar.event/Event"
+  ];
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   WorkOrderPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.type.Date started_date = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.type.Date completed_date = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The ServiceRecord this work order produced, once completed.
-  unmango.ref.v1alpha1.ObjectReference service_record = 55 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.asset.maintenance/ServiceRecord"];
+  unmango.ref.v1alpha1.ObjectReference service_record = 55 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.asset.maintenance/ServiceRecord"
+  ];
   google.type.Money actual_cost = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Days past due_date. Negative means not yet due.
   int32 days_overdue = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -168,9 +196,17 @@ message WorkOrderTemplate {
 // A standing schedule attached to something that needs upkeep. The kind a
 // human edits, and the owner of every WorkOrder it materializes.
 message MaintenancePlan {
-  option (google.api.resource) = { type: "unmango.asset.maintenance/MaintenancePlan" pattern: "maintenancePlans/{maintenance_plan}" singular: "maintenancePlan" plural: "maintenancePlans" };
+  option (google.api.resource) = {
+    type: "unmango.asset.maintenance/MaintenancePlan"
+    pattern: "maintenancePlans/{maintenance_plan}"
+    singular: "maintenancePlan"
+    plural: "maintenancePlans"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

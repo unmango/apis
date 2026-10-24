@@ -58,19 +58,18 @@ type Tag: Entity {
 }
 
 target protobuf for unmango.zettelkasten.tag.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("tag.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Tag {
     option("(google.api.resource)", "{ type: \"unmango.zettelkasten.tag/Tag\" pattern: \"tags/{tag}\" singular: \"tag\" plural: \"tags\" }")
-    // tdl-gap: one reserved directive per declaration; proto has two statements
-    // reserved 7: generation: the vocabulary is authored, not reconciled
-    // reserved 50, 51: observed_generation, conditions: nothing reconciles a tag
-    reserved(7, 50, 51)
+    // 7: generation: the vocabulary is authored, not reconciled
+    reserved(7)
+    // 50, 51: observed_generation, conditions: nothing reconciles a tag
+    reserved(50, 51)
     name {
       number(1)
       option("(google.api.field_behavior)", "IDENTIFIER")

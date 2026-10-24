@@ -40,9 +40,17 @@ message ExternalId {
 // One person's tenure in a group. Authored independently of both, and admitted
 // by the group.
 message Membership {
-  option (google.api.resource) = { type: "unmango.music.artist/Membership" pattern: "memberships/{membership}" singular: "membership" plural: "memberships" };
+  option (google.api.resource) = {
+    type: "unmango.music.artist/Membership"
+    pattern: "memberships/{membership}"
+    singular: "membership"
+    plural: "memberships"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -75,9 +83,17 @@ message Membership {
 // An Artist's credit on a media.title Title. Attaches to the Title; the Title
 // admits it and reports the outcome as a Condition.
 message ArtistCredit {
-  option (google.api.resource) = { type: "unmango.music.artist/ArtistCredit" pattern: "artistCredits/{artist_credit}" singular: "artistCredit" plural: "artistCredits" };
+  option (google.api.resource) = {
+    type: "unmango.music.artist/ArtistCredit"
+    pattern: "artistCredits/{artist_credit}"
+    singular: "artistCredit"
+    plural: "artistCredits"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -110,9 +126,17 @@ message ArtistCredit {
 // A performing entity. Nests to form aliases, and is what ArtistCredits and
 // Memberships point at.
 message Artist {
-  option (google.api.resource) = { type: "unmango.music.artist/Artist" pattern: "artists/{artist}" singular: "artist" plural: "artists" };
+  option (google.api.resource) = {
+    type: "unmango.music.artist/Artist"
+    pattern: "artists/{artist}"
+    singular: "artist"
+    plural: "artists"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -145,7 +169,10 @@ message Artist {
   repeated ExternalId external_ids = 20;
   // A people.contact Contact when the artist is someone known personally,
   // otherwise unset. The same escape hatch media.title Credit.contact offers.
-  unmango.ref.v1alpha1.ObjectReference contact = 21 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  unmango.ref.v1alpha1.ObjectReference contact = 21 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
   // Artwork. A plain string so it can address a dev.unmango.protofs path
   // without coupling the packages.
   string image_uri = 22 [(google.api.field_behavior) = OPTIONAL];

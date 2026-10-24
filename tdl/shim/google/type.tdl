@@ -1,22 +1,21 @@
 package google.type
 
-// tdl-gap: `type` is a keyword and cannot be a package segment, so this is
-// google.gtype rather than google.type.
-// Local stand-ins for the google.type messages the API uses.
-// tdl-gap: the protobuf backend cannot reference an external proto message,
-// so every importing package inlines its own copy of these.
+// Local stand-ins for the google.type messages the API uses, until tdl can
+// import the .proto files themselves (UnstoppableMango/tdl#1164). The target
+// block below maps each to the real message with foreign, and every importer
+// inherits the mapping, so only their names reach the generated protos.
 /// An amount of money with its currency type.
 type Money {
   currency_code: string
   units: int
-  nanos: int  // tdl-gap: int32
+  nanos: int32
 }
 
 /// A whole or partial calendar date.
 type Date {
-  year: int  // tdl-gap: int32
-  month: int  // tdl-gap: int32
-  day: int  // tdl-gap: int32
+  year: int32
+  month: int32
+  day: int32
 }
 
 /// A time interval, encoded as a start (inclusive) and end (exclusive).
@@ -27,21 +26,21 @@ type Interval {
 
 /// A time of day.
 type TimeOfDay {
-  hours: int  // tdl-gap: int32
-  minutes: int  // tdl-gap: int32
-  seconds: int  // tdl-gap: int32
-  nanos: int  // tdl-gap: int32
+  hours: int32
+  minutes: int32
+  seconds: int32
+  nanos: int32
 }
 
 /// A latitude/longitude pair in degrees.
 type LatLng {
-  latitude: decimal  // tdl-gap: double
-  longitude: decimal  // tdl-gap: double
+  latitude: float64
+  longitude: float64
 }
 
 /// A postal address.
 type PostalAddress {
-  revision: int  // tdl-gap: int32
+  revision: int32
   region_code: string
   language_code: string
   postal_code: string
@@ -60,15 +59,26 @@ type GooglePhoneNumber {
   extension: string
 }
 
-/// How a PhoneNumber is written. tdl-gap: google.type.PhoneNumber holds these
-/// in an inline oneof, not a separate message.
+/// How a PhoneNumber is written.
 enum PhoneNumberKind {
   E164 { number: string }
   ShortCode { region_code: string number: string }
 }
 
-/// A day of the week. tdl-gap: google.type values are unprefixed (MONDAY).
+/// A day of the week.
 enum DayOfWeek { Monday Tuesday Wednesday Thursday Friday Saturday Sunday }
 
-/// A calendar period. tdl-gap: google.type values are unprefixed (DAY).
+/// A calendar period.
 enum CalendarPeriod { Day Week Fortnight Month Quarter Half Year }
+
+target protobuf for google.type {
+  Money => foreign("google/type/money.proto", "google.type.Money")
+  Date => foreign("google/type/date.proto", "google.type.Date")
+  Interval => foreign("google/type/interval.proto", "google.type.Interval")
+  TimeOfDay => foreign("google/type/timeofday.proto", "google.type.TimeOfDay")
+  LatLng => foreign("google/type/latlng.proto", "google.type.LatLng")
+  PostalAddress => foreign("google/type/postal_address.proto", "google.type.PostalAddress")
+  GooglePhoneNumber => foreign("google/type/phone_number.proto", "google.type.PhoneNumber")
+  DayOfWeek => foreign("google/type/dayofweek.proto", "google.type.DayOfWeek")
+  CalendarPeriod => foreign("google/type/calendar_period.proto", "google.type.CalendarPeriod")
+}

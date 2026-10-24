@@ -80,7 +80,6 @@ type PlaySession: Entity {
   fraction_of_title: float64
 }
 
-// tdl-gap: oneof becomes a separate message
 enum PlaySessionPlayedOn {
   /// A compute.host Host.
   Device { device: ref.ObjectReference }
@@ -142,15 +141,11 @@ type PlayState: Entity {
 }
 
 target protobuf for unmango.media.playback.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("playback.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Interval => foreign("google/type/interval.proto", "google.type.Interval")
-  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
-  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
-  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   PlaySession {
     option("(google.api.resource)", "{ type: \"unmango.media.playback/PlaySession\" pattern: \"playSessions/{play_session}\" singular: \"playSession\" plural: \"playSessions\" }")

@@ -92,7 +92,6 @@ type Issuer: Entity {
   certificate_request_count: int32
 }
 
-// tdl-gap: oneof becomes a separate message
 enum IssuerConfig {
   SelfSigned { self_signed: SelfSignedConfig }
   Ca { ca: CaConfig }
@@ -101,13 +100,11 @@ enum IssuerConfig {
 }
 
 target protobuf for unmango.pki.issuer.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("issuer.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
-  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   CaConfig {
     issuer {

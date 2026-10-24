@@ -12,10 +12,19 @@ import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 
 // One term in the index. Nests to form a hierarchy of narrower terms.
 message Tag {
-  reserved 7, 50, 51;
-  option (google.api.resource) = { type: "unmango.zettelkasten.tag/Tag" pattern: "tags/{tag}" singular: "tag" plural: "tags" };
+  reserved 7;
+  reserved 50, 51;
+  option (google.api.resource) = {
+    type: "unmango.zettelkasten.tag/Tag"
+    pattern: "tags/{tag}"
+    singular: "tag"
+    plural: "tags"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

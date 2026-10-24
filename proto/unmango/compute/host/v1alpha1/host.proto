@@ -58,9 +58,17 @@ enum TaintEffect {
 
 // A machine that work is bound to.
 message Host {
-  option (google.api.resource) = { type: "unmango.compute.host/Host" pattern: "hosts/{host}" singular: "host" plural: "hosts" };
+  option (google.api.resource) = {
+    type: "unmango.compute.host/Host"
+    pattern: "hosts/{host}"
+    singular: "host"
+    plural: "hosts"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -81,7 +89,10 @@ message Host {
   // capacity to yield allocatable.
   unmango.uom.v1alpha1.ResourceQuantity reserved = 15;
   // The asset.property Space this machine physically sits in.
-  unmango.ref.v1alpha1.ObjectReference location = 16 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.asset.property/Space"];
+  unmango.ref.v1alpha1.ObjectReference location = 16 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.asset.property/Space"
+  ];
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   HostPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -114,9 +125,17 @@ enum HostPhase {
 // A named set of Hosts, claimed by label selector rather than by name. Adding
 // a matching label to a Host joins it; no edit to the Cluster is needed.
 message Cluster {
-  option (google.api.resource) = { type: "unmango.compute.host/Cluster" pattern: "clusters/{cluster}" singular: "cluster" plural: "clusters" };
+  option (google.api.resource) = {
+    type: "unmango.compute.host/Cluster"
+    pattern: "clusters/{cluster}"
+    singular: "cluster"
+    plural: "clusters"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

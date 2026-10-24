@@ -34,9 +34,17 @@ enum RunPhase {
 
 // A standing instruction to run one Module against one target.
 message Stack {
-  option (google.api.resource) = { type: "unmango.iac.stack/Stack" pattern: "stacks/{stack}" singular: "stack" plural: "stacks" };
+  option (google.api.resource) = {
+    type: "unmango.iac.stack/Stack"
+    pattern: "stacks/{stack}"
+    singular: "stack"
+    plural: "stacks"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -62,16 +70,27 @@ message Stack {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 resource_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 run_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
-  unmango.ref.v1alpha1.ObjectReference last_run = 54 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.iac.stack/Run"];
+  unmango.ref.v1alpha1.ObjectReference last_run = 54 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.iac.stack/Run"
+  ];
   RunPhase last_run_phase = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp last_apply_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // One execution of a Stack: a plan, an apply, or a destroy.
 message Run {
-  option (google.api.resource) = { type: "unmango.iac.stack/Run" pattern: "runs/{run}" singular: "run" plural: "runs" };
+  option (google.api.resource) = {
+    type: "unmango.iac.stack/Run"
+    pattern: "runs/{run}"
+    singular: "run"
+    plural: "runs"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -90,7 +109,10 @@ message Run {
   google.protobuf.Duration timeout = 16;
   // The ci.job JobRun executing this run. Unset while pending, exactly as an
   // unscheduled Pod has no node.
-  unmango.ref.v1alpha1.ObjectReference job_run = 40 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.ci.job/JobRun"];
+  unmango.ref.v1alpha1.ObjectReference job_run = 40 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.ci.job/JobRun"
+  ];
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   RunPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];

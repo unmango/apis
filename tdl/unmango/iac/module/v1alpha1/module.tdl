@@ -101,14 +101,11 @@ type ModuleRegistry: Entity {
 }
 
 target protobuf for unmango.iac.module.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("module.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
-  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
-  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Module {
     option("(google.api.resource)", "{ type: \"unmango.iac.module/Module\" pattern: \"modules/{module}\" singular: \"module\" plural: \"modules\" }")

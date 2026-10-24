@@ -13,9 +13,17 @@ import "unmango/ref/v1alpha1/ref.proto";
 
 // Serializes and speculatively batches Changes proposed against one Branch.
 message MergeQueue {
-  option (google.api.resource) = { type: "unmango.vcs.queue/MergeQueue" pattern: "mergeQueues/{merge_queue}" singular: "mergeQueue" plural: "mergeQueues" };
+  option (google.api.resource) = {
+    type: "unmango.vcs.queue/MergeQueue"
+    pattern: "mergeQueues/{merge_queue}"
+    singular: "mergeQueue"
+    plural: "mergeQueues"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -41,7 +49,10 @@ message MergeQueue {
   int32 pending_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 batched_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Entry at the front of the queue, mirroring vcs.change ChangeSet.next_change.
-  unmango.ref.v1alpha1.ObjectReference head_entry = 56 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.vcs.queue/QueueEntry"];
+  unmango.ref.v1alpha1.ObjectReference head_entry = 56 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.vcs.queue/QueueEntry"
+  ];
   google.protobuf.Timestamp last_merge_time = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
@@ -60,9 +71,17 @@ enum MergeQueuePhase {
 // One Change's position in a MergeQueue. Attaches to the queue it asks to
 // join; the queue admits or rejects it.
 message QueueEntry {
-  option (google.api.resource) = { type: "unmango.vcs.queue/QueueEntry" pattern: "queueEntries/{queue_entry}" singular: "queueEntry" plural: "queueEntries" };
+  option (google.api.resource) = {
+    type: "unmango.vcs.queue/QueueEntry"
+    pattern: "queueEntries/{queue_entry}"
+    singular: "queueEntry"
+    plural: "queueEntries"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

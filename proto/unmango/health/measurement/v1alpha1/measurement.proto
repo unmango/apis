@@ -69,9 +69,17 @@ enum GoalPhase {
 // One observation, at one moment. Append-only in practice: a wrong reading is
 // superseded rather than edited.
 message Measurement {
-  option (google.api.resource) = { type: "unmango.health.measurement/Measurement" pattern: "measurements/{measurement}" singular: "measurement" plural: "measurements" };
+  option (google.api.resource) = {
+    type: "unmango.health.measurement/Measurement"
+    pattern: "measurements/{measurement}"
+    singular: "measurement"
+    plural: "measurements"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   // Also the surface a Goal selector matches against.
   map<string, string> labels = 4;
@@ -88,7 +96,10 @@ message Measurement {
   repeated Component components = 13;
   // What took the reading: a scale, a wearable, a lab, or a person.
   string source = 14;
-  unmango.ref.v1alpha1.ObjectReference source_device = 15 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "*"];
+  unmango.ref.v1alpha1.ObjectReference source_device = 15 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "*"
+  ];
   string notes = 16 [(google.api.field_behavior) = OPTIONAL];
   // Conditions the reading was taken under, which determine whether two
   // readings are comparable: "fasted", "post-workout", "morning".
@@ -97,7 +108,10 @@ message Measurement {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Goals whose selectors currently claim this measurement. Makes the selector
   // edge navigable from the measurement side.
-  repeated unmango.ref.v1alpha1.ObjectReference claimed_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.health.measurement/Goal"];
+  repeated unmango.ref.v1alpha1.ObjectReference claimed_by = 52 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.health.measurement/Goal"
+  ];
   // Change from the previous comparable reading of the same type.
   repeated Component delta = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   // A component fell outside its reference range.
@@ -108,9 +122,17 @@ message Measurement {
 
 // A target set against a series of Measurements, claimed by selector.
 message Goal {
-  option (google.api.resource) = { type: "unmango.health.measurement/Goal" pattern: "goals/{goal}" singular: "goal" plural: "goals" };
+  option (google.api.resource) = {
+    type: "unmango.health.measurement/Goal"
+    pattern: "goals/{goal}"
+    singular: "goal"
+    plural: "goals"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

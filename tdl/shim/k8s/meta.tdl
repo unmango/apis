@@ -1,8 +1,9 @@
 package k8s.io.apimachinery.pkg.apis.meta.v1
 
 // Local stand-ins for the three k8s.io/apimachinery meta/v1 messages the API
-// uses. tdl-gap: the protobuf backend cannot reference an external proto
-// message, so every importing package inlines its own copy of these.
+// uses, until tdl can import the .proto file itself
+// (UnstoppableMango/tdl#1164). The target block below maps each to the real
+// message with foreign, and every importer inherits the mapping.
 /// Enough information to identify an owning object.
 type OwnerReference {
   api_version: string
@@ -34,4 +35,10 @@ type LabelSelectorRequirement {
   key: string
   operator: string
   values: [string]
+}
+
+target protobuf for k8s.io.apimachinery.pkg.apis.meta.v1 {
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
 }

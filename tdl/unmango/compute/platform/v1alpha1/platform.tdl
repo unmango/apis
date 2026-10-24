@@ -63,13 +63,11 @@ type Platform: Entity {
 }
 
 target protobuf for unmango.compute.platform.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("platform.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
-  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Platform {
     option("(google.api.resource)", "{ type: \"unmango.compute.platform/Platform\" pattern: \"platforms/{platform}\" singular: \"platform\" plural: \"platforms\" }")

@@ -48,9 +48,17 @@ message PlaylistSource {
 
 // One track in one playlist. Owned by the Playlist and cascades with it.
 message PlaylistEntry {
-  option (google.api.resource) = { type: "unmango.music.playlist/PlaylistEntry" pattern: "playlistEntries/{playlist_entry}" singular: "playlistEntry" plural: "playlistEntries" };
+  option (google.api.resource) = {
+    type: "unmango.music.playlist/PlaylistEntry"
+    pattern: "playlistEntries/{playlist_entry}"
+    singular: "playlistEntry"
+    plural: "playlistEntries"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -69,7 +77,10 @@ message PlaylistEntry {
   string rank = 12;
   // A specific media.title Edition to play, when the release matters. Unset
   // means any edition of the Title will do.
-  unmango.ref.v1alpha1.ObjectReference prefer_edition = 13 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.media.title/Edition"];
+  unmango.ref.v1alpha1.ObjectReference prefer_edition = 13 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.media.title/Edition"
+  ];
   // Why this track is here.
   string note = 14 [(google.api.field_behavior) = OPTIONAL];
   google.protobuf.Timestamp added_time = 15 [(google.api.field_behavior) = OPTIONAL];
@@ -87,9 +98,17 @@ message PlaylistEntry {
 
 // An ordered set of tracks. Nests to form folders, and owns its entries.
 message Playlist {
-  option (google.api.resource) = { type: "unmango.music.playlist/Playlist" pattern: "playlists/{playlist}" singular: "playlist" plural: "playlists" };
+  option (google.api.resource) = {
+    type: "unmango.music.playlist/Playlist"
+    pattern: "playlists/{playlist}"
+    singular: "playlist"
+    plural: "playlists"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

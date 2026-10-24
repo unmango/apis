@@ -45,9 +45,17 @@ enum TagType {
 
 // A moving pointer into a Repository's history.
 message Branch {
-  option (google.api.resource) = { type: "unmango.vcs.branch/Branch" pattern: "branches/{branch}" singular: "branch" plural: "branches" };
+  option (google.api.resource) = {
+    type: "unmango.vcs.branch/Branch"
+    pattern: "branches/{branch}"
+    singular: "branch"
+    plural: "branches"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -69,7 +77,10 @@ message Branch {
   // repository default.
   string base_ref_name = 14 [(google.api.field_behavior) = OPTIONAL];
   // Remote-tracking counterpart, when this branch tracks one.
-  unmango.ref.v1alpha1.ObjectReference upstream_remote = 15 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.vcs.repository/Remote"];
+  unmango.ref.v1alpha1.ObjectReference upstream_remote = 15 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Remote"
+  ];
   string upstream_ref_name = 16 [(google.api.field_behavior) = OPTIONAL];
   // Delete automatically once a change merges it.
   bool delete_on_merge = 17;
@@ -78,7 +89,10 @@ message Branch {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   string head_revision = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   string head_message = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
-  unmango.ref.v1alpha1.ObjectReference head_author = 55 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  unmango.ref.v1alpha1.ObjectReference head_author = 55 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
   google.protobuf.Timestamp head_commit_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Commits this branch has that its base does not, and the reverse.
   int32 ahead_count = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -106,9 +120,17 @@ enum BranchPhase {
 // A fixed pointer into a Repository's history. Unlike a Branch, its target is
 // declared rather than observed, since a tag that moves is a bug.
 message Tag {
-  option (google.api.resource) = { type: "unmango.vcs.branch/Tag" pattern: "tags/{tag}" singular: "tag" plural: "tags" };
+  option (google.api.resource) = {
+    type: "unmango.vcs.branch/Tag"
+    pattern: "tags/{tag}"
+    singular: "tag"
+    plural: "tags"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -126,7 +148,10 @@ message Tag {
   TagType type = 13;
   string message = 14 [(google.api.field_behavior) = OPTIONAL];
   // people.contact Contact who created it.
-  unmango.ref.v1alpha1.ObjectReference tagger = 15 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  unmango.ref.v1alpha1.ObjectReference tagger = 15 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
   // Marks a published release rather than an internal marker.
   bool release = 16;
   string release_notes = 17 [(google.api.field_behavior) = OPTIONAL];

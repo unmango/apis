@@ -65,9 +65,17 @@ message Step {
 
 // One execution of a Pipeline.
 message JobRun {
-  option (google.api.resource) = { type: "unmango.ci.job/JobRun" pattern: "jobRuns/{job_run}" singular: "jobRun" plural: "jobRuns" };
+  option (google.api.resource) = {
+    type: "unmango.ci.job/JobRun"
+    pattern: "jobRuns/{job_run}"
+    singular: "jobRun"
+    plural: "jobRuns"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -86,7 +94,10 @@ message JobRun {
   // JobRuns that must succeed before this one may bind.
   repeated unmango.ref.v1alpha1.ObjectReference depends_on = 16 [(google.api.resource_reference).type = "unmango.ci.job/JobRun"];
   // The Runner executing this. Unset means queued.
-  unmango.ref.v1alpha1.ObjectReference runner = 40 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.ci.runner/Runner"];
+  unmango.ref.v1alpha1.ObjectReference runner = 40 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.ci.runner/Runner"
+  ];
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   JobPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -119,9 +130,17 @@ message JobTemplate {
 
 // Durable definition of a job, and the owner of every JobRun it produces.
 message Pipeline {
-  option (google.api.resource) = { type: "unmango.ci.job/Pipeline" pattern: "pipelines/{pipeline}" singular: "pipeline" plural: "pipelines" };
+  option (google.api.resource) = {
+    type: "unmango.ci.job/Pipeline"
+    pattern: "pipelines/{pipeline}"
+    singular: "pipeline"
+    plural: "pipelines"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -138,7 +157,10 @@ message Pipeline {
   // Cron expression, when TRIGGER_KIND_SCHEDULE is enabled.
   string schedule = 13 [(google.api.field_behavior) = OPTIONAL];
   // The vcs.repository Repository this pipeline belongs to.
-  unmango.ref.v1alpha1.ObjectReference repository = 14 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+  unmango.ref.v1alpha1.ObjectReference repository = 14 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
   // Stop producing new JobRuns without deleting the definition.
   bool suspended = 15;
   // Completed JobRuns to retain. Zero retains all.
@@ -151,7 +173,10 @@ message Pipeline {
   int64 total_run_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   int64 succeeded_run_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   int64 failed_run_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
-  unmango.ref.v1alpha1.ObjectReference last_run = 56 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.ci.job/JobRun"];
+  unmango.ref.v1alpha1.ObjectReference last_run = 56 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.ci.job/JobRun"
+  ];
   JobPhase last_run_phase = 57 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp last_run_time = 58 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp next_schedule_time = 59 [(google.api.field_behavior) = OUTPUT_ONLY];

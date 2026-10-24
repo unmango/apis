@@ -88,8 +88,7 @@ message TruncateRequest {
   int64 size = 2;
 }
 
-message TruncateResponse {
-}
+message TruncateResponse {}
 
 message WriteRequest {
   File file = 1;
@@ -106,5 +105,4 @@ message WriteAtRequest {
   int64 offset = 3;
 }
 
-message WriteAtResponse {
-}
+message WriteAtResponse {}

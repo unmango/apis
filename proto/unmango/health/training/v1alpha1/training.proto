@@ -74,9 +74,17 @@ message Targets {
 // A session that was actually performed. The leaf of the chain, and the only
 // kind here that records fact rather than intent.
 message Activity {
-  option (google.api.resource) = { type: "unmango.health.training/Activity" pattern: "activities/{activity}" singular: "activity" plural: "activities" };
+  option (google.api.resource) = {
+    type: "unmango.health.training/Activity"
+    pattern: "activities/{activity}"
+    singular: "activity"
+    plural: "activities"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -119,9 +127,17 @@ message Activity {
 // One planned session, materialized onto a date. Owns the Activity that
 // fulfils it.
 message Workout {
-  option (google.api.resource) = { type: "unmango.health.training/Workout" pattern: "workouts/{workout}" singular: "workout" plural: "workouts" };
+  option (google.api.resource) = {
+    type: "unmango.health.training/Workout"
+    pattern: "workouts/{workout}"
+    singular: "workout"
+    plural: "workouts"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -143,12 +159,18 @@ message Workout {
   // Position within the plan's cycle, so a week's shape is recoverable.
   int32 cycle_index = 41 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The calendar.event Event booked for it.
-  unmango.ref.v1alpha1.ObjectReference scheduled_event = 42 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.calendar.event/Event"];
+  unmango.ref.v1alpha1.ObjectReference scheduled_event = 42 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.calendar.event/Event"
+  ];
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   WorkoutPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The Activity that fulfilled this, once performed.
-  unmango.ref.v1alpha1.ObjectReference activity = 53 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.health.training/Activity"];
+  unmango.ref.v1alpha1.ObjectReference activity = 53 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.health.training/Activity"
+  ];
   google.type.Date completed_date = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Achieved divided by targeted, across whichever targets were set.
   double target_attainment = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -175,9 +197,17 @@ message WorkoutTemplate {
 // A repeating cycle of sessions. The kind a human edits, and the owner of
 // every Workout it materializes.
 message TrainingPlan {
-  option (google.api.resource) = { type: "unmango.health.training/TrainingPlan" pattern: "trainingPlans/{training_plan}" singular: "trainingPlan" plural: "trainingPlans" };
+  option (google.api.resource) = {
+    type: "unmango.health.training/TrainingPlan"
+    pattern: "trainingPlans/{training_plan}"
+    singular: "trainingPlan"
+    plural: "trainingPlans"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

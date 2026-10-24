@@ -13,9 +13,17 @@ import "unmango/ref/v1alpha1/ref.proto";
 
 // One runnable config-as-code definition.
 message Module {
-  option (google.api.resource) = { type: "unmango.iac.module/Module" pattern: "modules/{module}" singular: "module" plural: "modules" };
+  option (google.api.resource) = {
+    type: "unmango.iac.module/Module"
+    pattern: "modules/{module}"
+    singular: "module"
+    plural: "modules"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   // Also the surface a ModuleRegistry selector matches against.
   map<string, string> labels = 4;
@@ -44,16 +52,27 @@ message Module {
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Registries whose selectors currently claim this module.
-  repeated unmango.ref.v1alpha1.ObjectReference claimed_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.iac.module/ModuleRegistry"];
+  repeated unmango.ref.v1alpha1.ObjectReference claimed_by = 52 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.iac.module/ModuleRegistry"
+  ];
   // iac.stack Stacks naming this module.
   int32 stack_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // A published collection of Modules, claimed by selector.
 message ModuleRegistry {
-  option (google.api.resource) = { type: "unmango.iac.module/ModuleRegistry" pattern: "moduleRegistries/{module_registry}" singular: "moduleRegistry" plural: "moduleRegistries" };
+  option (google.api.resource) = {
+    type: "unmango.iac.module/ModuleRegistry"
+    pattern: "moduleRegistries/{module_registry}"
+    singular: "moduleRegistry"
+    plural: "moduleRegistries"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -73,7 +92,10 @@ message ModuleRegistry {
   // The vcs.repository Repository scanned for Modules that have not been
   // declared yet. Unset discovers nothing, the same as an empty selector
   // claims nothing.
-  unmango.ref.v1alpha1.ObjectReference discovery_repository = 14 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+  unmango.ref.v1alpha1.ObjectReference discovery_repository = 14 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 module_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];

@@ -125,14 +125,11 @@ type Run: Entity {
 }
 
 target protobuf for unmango.iac.stack.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("stack.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
-  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
-  Struct => foreign("google/protobuf/struct.proto", "google.protobuf.Struct")
   edition("2024")
   Stack {
     option("(google.api.resource)", "{ type: \"unmango.iac.stack/Stack\" pattern: \"stacks/{stack}\" singular: \"stack\" plural: \"stacks\" }")

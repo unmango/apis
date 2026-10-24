@@ -98,13 +98,11 @@ type HabitLog: Entity {
 }
 
 target protobuf for unmango.productivity.habit.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("habit.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
-  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   Habit {
     option("(google.api.resource)", "{ type: \"unmango.productivity.habit/Habit\" pattern: \"habits/{habit}\" singular: \"habit\" plural: \"habits\" }")

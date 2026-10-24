@@ -10,13 +10,18 @@ Edit the `.tdl` files and regenerate; a hand edit to a generated `.proto` fails 
 make tdl
 ```
 
-It runs `tdl gen` over `tdl/unmango` from the repository root, because tdl resolves `out("proto")` against the working directory.
+It runs `tdl gen` over every file in `tdl/unmango`.
 `tdl` comes from the dev shell, pinned by the `tdl` flake input.
 
-`tdl gen` drops a `.tdl-output` marker claiming its output directory.
-`make tdl` deletes it and `.gitignore` lists it, because `proto/` also holds the hand-written `proto/dev`, and a marked directory makes `tdl gen --verify` report every file another `.tdl` file generated as stale ([tdl#918](https://github.com/UnstoppableMango/tdl/issues/918)).
+Each target block's `out(...)` is relative to the `.tdl` file declaring it, so a file four directories below `tdl/` writes `out("../../../../../proto")`.
+
+`proto/.tdl-output` lists every file tdl wrote, and is committed.
+`tdl gen` overwrites and `tdl gen --clean` removes only the files it lists, so the hand-written `proto/dev` is left alone, and `tdl gen --verify` reports a listed file that no model generates any more.
+A new generated file is added to the list by the run that first writes it.
 
 `nix flake check` runs `tdl-check`, `tdl-fmt`, and `tdl-gen` over `tdl/`.
+`tdl/tdl.toml` silences the loss warnings `tdl gen` prints for the `protobuf` target.
+Each names something importing the protos back into tdl would not recover, and nothing here imports.
 Format with `tdl fmt -w <file>`.
 
 ## Layout
@@ -33,10 +38,9 @@ One `.tdl` file models one proto package, at the same path under `tdl/` that the
 | `shim/protobuf.tdl` | `google.protobuf.Any` and `Struct` |
 | `shim/rpc.tdl` | `Fn` and `Stream`, the types of a service's methods |
 
-A shim is imported `as _`, and each file using one of its types maps it in its own target block with `foreign(file, message)`, so the reference is written as the external message and its file imported.
-The mapping is repeated per file because tdl does not carry a dependency's declaration-level directives to its importers ([tdl#916](https://github.com/UnstoppableMango/tdl/issues/916)).
+A shim is imported `as _`, and its own target block maps each type with `foreign(file, message)`, so an importer writes the reference as the external message and imports its file.
+The fields a shim declares never reach the output; they go once tdl can import a `.proto` file directly ([tdl#1164](https://github.com/UnstoppableMango/tdl/issues/1164)).
 `google.type.PhoneNumber` is `GooglePhoneNumber` in tdl because `unmango.people.contact.v1alpha1` declares its own `PhoneNumber`.
-For the same reason `unmango.cmd.v1alpha1` maps `cli.Utility` with `foreign` rather than importing it plainly: plain import would name `unmango/cli/v1alpha1/v1alpha1.proto` rather than `cli.proto`.
 
 ## How protobuf maps to tdl
 
@@ -68,6 +72,5 @@ An ordinary `//` comment stays in the model only: section banners such as `// De
 
 | Issue | Effect here |
 |---|---|
-| [#916](https://github.com/UnstoppableMango/tdl/issues/916) | `foreign` mappings repeat in every importing file |
-| [#918](https://github.com/UnstoppableMango/tdl/issues/918) | the `.tdl-output` marker is deleted after generating |
-| [#921](https://github.com/UnstoppableMango/tdl/issues/921) | the indented list in `Commit`'s doc loses its indentation |
+| [#1163](https://github.com/UnstoppableMango/tdl/issues/1163) | `tdl gen` prints a loss warning per fact import would not recover; `tdl/tdl.toml` allows the codes |
+| [#1164](https://github.com/UnstoppableMango/tdl/issues/1164) | `tdl/shim/` re-declares the external messages the model references |

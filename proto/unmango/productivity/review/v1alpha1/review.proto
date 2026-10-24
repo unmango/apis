@@ -21,10 +21,19 @@ enum ReviewCadence {
 
 // A dated look back at a period: what happened, what to change.
 message Review {
-  reserved 6, 7, 50, 51;
-  option (google.api.resource) = { type: "unmango.productivity.review/Review" pattern: "reviews/{review}" singular: "review" plural: "reviews" };
+  reserved 6, 7;
+  reserved 50, 51;
+  option (google.api.resource) = {
+    type: "unmango.productivity.review/Review"
+    pattern: "reviews/{review}"
+    singular: "review"
+    plural: "reviews"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -43,5 +52,8 @@ message Review {
   // worth remembering from the period.
   repeated unmango.ref.v1alpha1.ObjectReference highlights = 17 [(google.api.resource_reference).type = "*"];
   // The same-day journal.entry Entry, if one exists.
-  unmango.ref.v1alpha1.ObjectReference related_entry = 18 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.journal.entry/Entry"];
+  unmango.ref.v1alpha1.ObjectReference related_entry = 18 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.journal.entry/Entry"
+  ];
 }

@@ -52,19 +52,18 @@ type Review: Entity {
 }
 
 target protobuf for unmango.productivity.review.v1alpha1 {
-  out("proto")
+  out("../../../../../proto")
   file("review.proto")
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Date => foreign("google/type/date.proto", "google.type.Date")
   edition("2024")
   Review {
     option("(google.api.resource)", "{ type: \"unmango.productivity.review/Review\" pattern: \"reviews/{review}\" singular: \"review\" plural: \"reviews\" }")
-    // tdl-gap: one reserved directive per declaration; proto has two statements
-    // reserved 6, 7: owner_refs, generation: nothing owns or reconciles a review
-    // reserved 50, 51: observed_generation, conditions: nothing reconciles a review
-    reserved(6, 7, 50, 51)
+    // 6, 7: owner_refs, generation: nothing owns or reconciles a review
+    reserved(6, 7)
+    // 50, 51: observed_generation, conditions: nothing reconciles a review
+    reserved(50, 51)
     name {
       number(1)
       option("(google.api.field_behavior)", "IDENTIFIER")

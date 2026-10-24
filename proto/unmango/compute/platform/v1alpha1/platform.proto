@@ -23,9 +23,17 @@ enum PlatformKind {
 
 // An external system or tool that other resources point at by reference.
 message Platform {
-  option (google.api.resource) = { type: "unmango.compute.platform/Platform" pattern: "platforms/{platform}" singular: "platform" plural: "platforms" };
+  option (google.api.resource) = {
+    type: "unmango.compute.platform/Platform"
+    pattern: "platforms/{platform}"
+    singular: "platform"
+    plural: "platforms"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
