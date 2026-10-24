@@ -214,7 +214,6 @@ type DiscoverySource {
   kind: DiscoverySourceKind
 }
 
-// tdl-gap: oneof becomes a separate message
 enum DiscoverySourceKind {
   Directory { directory: DirectorySource }
   ReleaseArtifact { release_artifact: ReleaseArtifactSource }
@@ -229,7 +228,6 @@ type DirectorySource {
   name_pattern: string
 }
 
-// tdl-gap: oneof becomes a separate message
 enum DirectorySourceRoot {
   /// Directories listed in this environment variable's value, split on the
   /// host's list separator: "PATH".

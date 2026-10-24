@@ -80,7 +80,6 @@ type PlaySession: Entity {
   fraction_of_title: float64
 }
 
-// tdl-gap: oneof becomes a separate message
 enum PlaySessionPlayedOn {
   /// A compute.host Host.
   Device { device: ref.ObjectReference }

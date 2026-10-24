@@ -40,7 +40,6 @@ type Trigger {
   actor: TriggerActor
 }
 
-// tdl-gap: oneof becomes a separate message
 enum TriggerActor {
   /// A people.contact Contact for a human.
   Contact { contact: ref.ObjectReference }

@@ -2,7 +2,6 @@ package google.protobuf
 
 // Local stand-ins for the google.protobuf well-known types the prelude does
 // not map. instant and duration already map to Timestamp and Duration.
-// tdl-gap: the protobuf backend cannot reference an external proto message.
 /// A serialized message with a URL describing its type.
 type Any {
   type_url: string

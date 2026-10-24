@@ -53,7 +53,8 @@ message Attachment {
 
 // One piece of written material. Nests to form sub-notes.
 message Note {
-  reserved 7, 50, 51;
+  reserved 7;
+  reserved 50, 51;
   option (google.api.resource) = { type: "unmango.record.note/Note" pattern: "notes/{note}" singular: "note" plural: "notes" };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];

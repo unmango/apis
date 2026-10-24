@@ -128,7 +128,6 @@ type WriteRequest {
   payload: WriteRequestPayload
 }
 
-// tdl-gap: oneof becomes a separate message
 enum WriteRequestPayload {
   /// first message only
   Name { name: string }

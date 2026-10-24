@@ -67,10 +67,10 @@ target protobuf for unmango.zettelkasten.tag.v1alpha1 {
   edition("2024")
   Tag {
     option("(google.api.resource)", "{ type: \"unmango.zettelkasten.tag/Tag\" pattern: \"tags/{tag}\" singular: \"tag\" plural: \"tags\" }")
-    // tdl-gap: one reserved directive per declaration; proto has two statements
-    // reserved 7: generation: the vocabulary is authored, not reconciled
-    // reserved 50, 51: observed_generation, conditions: nothing reconciles a tag
-    reserved(7, 50, 51)
+    // 7: generation: the vocabulary is authored, not reconciled
+    reserved(7)
+    // 50, 51: observed_generation, conditions: nothing reconciles a tag
+    reserved(50, 51)
     name {
       number(1)
       option("(google.api.field_behavior)", "IDENTIFIER")

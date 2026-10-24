@@ -1,8 +1,7 @@
 package k8s.io.apimachinery.pkg.apis.meta.v1
 
 // Local stand-ins for the three k8s.io/apimachinery meta/v1 messages the API
-// uses. tdl-gap: the protobuf backend cannot reference an external proto
-// message, so every importing package inlines its own copy of these.
+// uses. Each importing file maps them to the real messages with foreign.
 /// Enough information to identify an owning object.
 type OwnerReference {
   api_version: string

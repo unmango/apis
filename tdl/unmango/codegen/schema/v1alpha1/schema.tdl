@@ -53,7 +53,6 @@ type TypeRef {
   type_arguments: [TypeRef]
 }
 
-// tdl-gap: oneof becomes a separate message
 enum TypeRefName {
   /// Name of the TypeDef within its schema, fully qualified in whatever way
   /// the format qualifies names: "unmango.ref.v1alpha1.ObjectReference".

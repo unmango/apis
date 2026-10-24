@@ -92,7 +92,6 @@ type Issuer: Entity {
   certificate_request_count: int32
 }
 
-// tdl-gap: oneof becomes a separate message
 enum IssuerConfig {
   SelfSigned { self_signed: SelfSignedConfig }
   Ca { ca: CaConfig }

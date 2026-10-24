@@ -21,7 +21,8 @@ enum ReviewCadence {
 
 // A dated look back at a period: what happened, what to change.
 message Review {
-  reserved 6, 7, 50, 51;
+  reserved 6, 7;
+  reserved 50, 51;
   option (google.api.resource) = { type: "unmango.productivity.review/Review" pattern: "reviews/{review}" singular: "review" plural: "reviews" };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];

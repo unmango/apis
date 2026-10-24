@@ -19,7 +19,6 @@ type ParseRequest {
   convention: Convention
 }
 
-// tdl-gap: oneof becomes a separate message
 enum ParseRequestInput {
   Proto { proto: Any }
 }
@@ -53,7 +52,6 @@ type Token {
   kind: TokenKind
 }
 
-// tdl-gap: oneof becomes a separate message
 enum TokenKind {
   Word { word: Word }
   ShortFlag { short_flag: ShortFlag }

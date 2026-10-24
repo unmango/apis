@@ -22,7 +22,8 @@ enum CaptureState {
 
 // One unstructured thought, captured before it is lost.
 message CaptureItem {
-  reserved 6, 7, 50, 51;
+  reserved 6, 7;
+  reserved 50, 51;
   option (google.api.resource) = { type: "unmango.productivity.capture/CaptureItem" pattern: "captureItems/{capture_item}" singular: "captureItem" plural: "captureItems" };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
   string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
