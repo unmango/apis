@@ -34,7 +34,7 @@ format fmt:
 	nix fmt
 
 clean:
-	rm -rf result *.binpb third_party
+	rm -rf result *.binpb third_party bin/tdlfiles.so bin/tdlfiles.h
 
 # k8s.io imports resolve only inside the nix workspace, so both sides of the
 # comparison are images built from it rather than from proto/ alone.
@@ -45,4 +45,18 @@ breaking:
 
 # proto/unmango is generated from tdl/; see docs/tdl.md.
 tdl:
-	tdl gen $$(find tdl/unmango -name '*.tdl' | sort)
+	tdl gen $(TDL_FILES)
+
+# hack/tdlfiles is a loadable object defining $(tdl-files dir...), which lists
+# the .tdl files under each dir relative to this Makefile. make builds it before
+# reading further, so it is only loaded for `make tdl`. Without Go, or when the
+# build fails, nothing is loaded, the call expands to nothing, and find takes
+# over.
+ifneq ($(and $(filter tdl,$(MAKECMDGOALS)),$(shell command -v go)),)
+-load bin/tdlfiles.so
+
+bin/tdlfiles.so: hack/tdlfiles/main.go hack/tdlfiles/go.mod hack/tdlfiles/go.sum
+	-cd hack/tdlfiles && go build -tags makeplugin -buildmode=c-shared -o $(CURDIR)/$@ .
+endif
+
+TDL_FILES = $(or $(tdl-files tdl/unmango),$(shell find tdl/unmango -name '*.tdl' | sort))
