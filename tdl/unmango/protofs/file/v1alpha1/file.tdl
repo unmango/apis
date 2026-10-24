@@ -107,7 +107,6 @@ target protobuf for unmango.protofs.file.v1alpha1 {
   out("../../../../../proto")
   file("file.proto")
   import("google/api/field_behavior.proto")
-  Any => foreign("google/protobuf/any.proto", "google.protobuf.Any")
   Fn => rpc
   Stream => stream
   edition("2023")

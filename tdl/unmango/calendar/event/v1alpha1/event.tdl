@@ -218,12 +218,6 @@ target protobuf for unmango.calendar.event.v1alpha1 {
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Date => foreign("google/type/date.proto", "google.type.Date")
-  DayOfWeek => foreign("google/type/dayofweek.proto", "google.type.DayOfWeek")
-  Interval => foreign("google/type/interval.proto", "google.type.Interval")
-  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
-  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
-  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
   edition("2024")
   RecurrenceRule {
     frequency => number(1)

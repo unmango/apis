@@ -38,10 +38,9 @@ One `.tdl` file models one proto package, at the same path under `tdl/` that the
 | `shim/protobuf.tdl` | `google.protobuf.Any` and `Struct` |
 | `shim/rpc.tdl` | `Fn` and `Stream`, the types of a service's methods |
 
-A shim is imported `as _`, and each file using one of its types maps it in its own target block with `foreign(file, message)`, so the reference is written as the external message and its file imported.
-The mapping is repeated per file because tdl does not carry a dependency's declaration-level directives to its importers ([tdl#916](https://github.com/UnstoppableMango/tdl/issues/916)).
+A shim is imported `as _`, and its own target block maps each type with `foreign(file, message)`, so an importer writes the reference as the external message and imports its file.
+The fields a shim declares never reach the output; they go once tdl can import a `.proto` file directly ([tdl#1164](https://github.com/UnstoppableMango/tdl/issues/1164)).
 `google.type.PhoneNumber` is `GooglePhoneNumber` in tdl because `unmango.people.contact.v1alpha1` declares its own `PhoneNumber`.
-For the same reason `unmango.cmd.v1alpha1` maps `cli.Utility` with `foreign` rather than importing it plainly: plain import would name `unmango/cli/v1alpha1/v1alpha1.proto` rather than `cli.proto`.
 
 ## How protobuf maps to tdl
 
@@ -73,4 +72,5 @@ An ordinary `//` comment stays in the model only: section banners such as `// De
 
 | Issue | Effect here |
 |---|---|
-| [#916](https://github.com/UnstoppableMango/tdl/issues/916) | `foreign` mappings repeat in every importing file |
+| [#1163](https://github.com/UnstoppableMango/tdl/issues/1163) | `tdl gen` prints a loss warning per fact import would not recover; `tdl/tdl.toml` allows the codes |
+| [#1164](https://github.com/UnstoppableMango/tdl/issues/1164) | `tdl/shim/` re-declares the external messages the model references |

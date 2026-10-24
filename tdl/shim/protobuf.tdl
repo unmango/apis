@@ -1,7 +1,9 @@
 package google.protobuf
 
 // Local stand-ins for the google.protobuf well-known types the prelude does
-// not map. instant and duration already map to Timestamp and Duration.
+// not map, until tdl can import the .proto files themselves
+// (UnstoppableMango/tdl#1164). instant and duration already map to Timestamp
+// and Duration. The target block below maps the rest with foreign.
 /// A serialized message with a URL describing its type.
 type Any {
   type_url: string
@@ -21,4 +23,9 @@ enum Value {
   Bool { value: bool }
   Struct { value: Struct }
   List { values: [Value] }
+}
+
+target protobuf for google.protobuf {
+  Any => foreign("google/protobuf/any.proto", "google.protobuf.Any")
+  Struct => foreign("google/protobuf/struct.proto", "google.protobuf.Struct")
 }

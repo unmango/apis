@@ -324,9 +324,6 @@ target protobuf for unmango.vcs.commit.v1alpha1 {
   file("commit.proto")
   import("google/api/field_behavior.proto")
   import("google/api/resource.proto")
-  Interval => foreign("google/type/interval.proto", "google.type.Interval")
-  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
-  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
   Fn => rpc
   Stream => stream
   edition("2024")

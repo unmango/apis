@@ -74,9 +74,6 @@ target protobuf for unmango.iac.resource.v1alpha1 {
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
-  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
-  Struct => foreign("google/protobuf/struct.proto", "google.protobuf.Struct")
   edition("2024")
   Resource {
     option("(google.api.resource)", "{ type: \"unmango.iac.resource/Resource\" pattern: \"resources/{resource}\" singular: \"resource\" plural: \"resources\" }")

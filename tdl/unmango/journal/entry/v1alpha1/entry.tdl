@@ -105,7 +105,6 @@ target protobuf for unmango.journal.entry.v1alpha1 {
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Date => foreign("google/type/date.proto", "google.type.Date")
   edition("2024")
   Attachment {
     uri => number(1)

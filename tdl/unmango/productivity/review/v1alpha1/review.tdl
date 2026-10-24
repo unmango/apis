@@ -57,7 +57,6 @@ target protobuf for unmango.productivity.review.v1alpha1 {
   import("google/api/field_behavior.proto")
   import("google/api/field_info.proto")
   import("google/api/resource.proto")
-  Date => foreign("google/type/date.proto", "google.type.Date")
   edition("2024")
   Review {
     option("(google.api.resource)", "{ type: \"unmango.productivity.review/Review\" pattern: \"reviews/{review}\" singular: \"review\" plural: \"reviews\" }")

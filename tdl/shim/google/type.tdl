@@ -1,8 +1,9 @@
 package google.type
 
-// Local stand-ins for the google.type messages the API uses. Each importing
-// file maps them to the real messages with foreign, so only their names reach
-// the generated protos.
+// Local stand-ins for the google.type messages the API uses, until tdl can
+// import the .proto files themselves (UnstoppableMango/tdl#1164). The target
+// block below maps each to the real message with foreign, and every importer
+// inherits the mapping, so only their names reach the generated protos.
 /// An amount of money with its currency type.
 type Money {
   currency_code: string
@@ -69,3 +70,15 @@ enum DayOfWeek { Monday Tuesday Wednesday Thursday Friday Saturday Sunday }
 
 /// A calendar period.
 enum CalendarPeriod { Day Week Fortnight Month Quarter Half Year }
+
+target protobuf for google.type {
+  Money => foreign("google/type/money.proto", "google.type.Money")
+  Date => foreign("google/type/date.proto", "google.type.Date")
+  Interval => foreign("google/type/interval.proto", "google.type.Interval")
+  TimeOfDay => foreign("google/type/timeofday.proto", "google.type.TimeOfDay")
+  LatLng => foreign("google/type/latlng.proto", "google.type.LatLng")
+  PostalAddress => foreign("google/type/postal_address.proto", "google.type.PostalAddress")
+  GooglePhoneNumber => foreign("google/type/phone_number.proto", "google.type.PhoneNumber")
+  DayOfWeek => foreign("google/type/dayofweek.proto", "google.type.DayOfWeek")
+  CalendarPeriod => foreign("google/type/calendar_period.proto", "google.type.CalendarPeriod")
+}

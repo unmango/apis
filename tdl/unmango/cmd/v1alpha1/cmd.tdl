@@ -28,7 +28,6 @@ type ExitResult {
 target protobuf for unmango.cmd.v1alpha1 {
   out("../../../../proto")
   file("cmd.proto")
-  Utility => foreign("unmango/cli/v1alpha1/cli.proto", "unmango.cli.v1alpha1.Utility")
   Fn => rpc
   edition("2024")
   option("deprecated", "true")
