@@ -21,9 +21,17 @@ enum Visibility {
 
 // A named endpoint a Repository exchanges objects with.
 message Remote {
-  option (google.api.resource) = { type: "unmango.vcs.repository/Remote" pattern: "remotes/{remote}" singular: "remote" plural: "remotes" };
+  option (google.api.resource) = {
+    type: "unmango.vcs.repository/Remote"
+    pattern: "remotes/{remote}"
+    singular: "remote"
+    plural: "remotes"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -69,9 +77,17 @@ enum AuthMethod {
 // A single body of versioned history. Owns its Remotes, and the vcs.branch
 // Branches and Tags that point into it.
 message Repository {
-  option (google.api.resource) = { type: "unmango.vcs.repository/Repository" pattern: "repositories/{repository}" singular: "repository" plural: "repositories" };
+  option (google.api.resource) = {
+    type: "unmango.vcs.repository/Repository"
+    pattern: "repositories/{repository}"
+    singular: "repository"
+    plural: "repositories"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   // Also the surface a RepositoryGroup selector matches against.
   map<string, string> labels = 4;
@@ -87,7 +103,10 @@ message Repository {
   unmango.ref.v1alpha1.ObjectReference vcs = 11 [(google.api.resource_reference).type = "unmango.compute.platform/Platform"];
   // The compute.platform Platform hosting this repository. Unset means
   // a bare repository with no forge in front of it.
-  unmango.ref.v1alpha1.ObjectReference forge = 12 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.compute.platform/Platform"];
+  unmango.ref.v1alpha1.ObjectReference forge = 12 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.compute.platform/Platform"
+  ];
   // Namespace on the forge: an organization or a user.
   string owner = 13;
   // Repository name within that namespace.
@@ -106,12 +125,18 @@ message Repository {
   k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 21;
   // The repository this one was forked from. Attachment rather than
   // ownership: an upstream has no say in its forks and outlives them.
-  unmango.ref.v1alpha1.ObjectReference upstream = 22 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+  unmango.ref.v1alpha1.ObjectReference upstream = 22 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
   // Tracks its upstream automatically rather than diverging.
   bool mirror = 23;
   // The compute.host Host serving this repository, when it is self-hosted.
   // Unset means the forge hosts it.
-  unmango.ref.v1alpha1.ObjectReference host = 40 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.compute.host/Host"];
+  unmango.ref.v1alpha1.ObjectReference host = 40 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.compute.host/Host"
+  ];
   // Working copy on disk. A plain string so it can address a
   // dev.unmango.protofs path without coupling the packages.
   string working_copy_uri = 41 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -120,7 +145,10 @@ message Repository {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   // RepositoryGroups whose selectors currently claim this repository. Makes
   // the selector edge navigable from the repository side.
-  repeated unmango.ref.v1alpha1.ObjectReference claimed_by = 53 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.vcs.repository/RepositoryGroup"];
+  repeated unmango.ref.v1alpha1.ObjectReference claimed_by = 53 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.vcs.repository/RepositoryGroup"
+  ];
   int32 remote_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 branch_count = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 tag_count = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -153,9 +181,17 @@ enum RepositoryPhase {
 // monorepo constellation, or a vcs.change ChangeSet target list is expressed
 // as.
 message RepositoryGroup {
-  option (google.api.resource) = { type: "unmango.vcs.repository/RepositoryGroup" pattern: "repositoryGroups/{repository_group}" singular: "repositoryGroup" plural: "repositoryGroups" };
+  option (google.api.resource) = {
+    type: "unmango.vcs.repository/RepositoryGroup"
+    pattern: "repositoryGroups/{repository_group}"
+    singular: "repositoryGroup"
+    plural: "repositoryGroups"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -191,9 +227,17 @@ message RepositoryGroup {
 // at whichever it applies to, the same kind-polymorphism owner_refs already
 // carries everywhere else.
 message Grant {
-  option (google.api.resource) = { type: "unmango.vcs.repository/Grant" pattern: "grants/{grant}" singular: "grant" plural: "grants" };
+  option (google.api.resource) = {
+    type: "unmango.vcs.repository/Grant"
+    pattern: "grants/{grant}"
+    singular: "grant"
+    plural: "grants"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -217,7 +261,10 @@ message Grant {
   GrantPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Contact who issued this grant, when known.
-  unmango.ref.v1alpha1.ObjectReference granted_by = 53 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  unmango.ref.v1alpha1.ObjectReference granted_by = 53 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
   google.protobuf.Timestamp granted_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp revoked_time = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
@@ -236,9 +283,17 @@ enum GrantPhase {
 // pinned_revision here changes only when this Composition is explicitly
 // updated -- never by activity in the nested repository.
 message Composition {
-  option (google.api.resource) = { type: "unmango.vcs.repository/Composition" pattern: "compositions/{composition}" singular: "composition" plural: "compositions" };
+  option (google.api.resource) = {
+    type: "unmango.vcs.repository/Composition"
+    pattern: "compositions/{composition}"
+    singular: "composition"
+    plural: "compositions"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

@@ -91,9 +91,17 @@ message SubtitleTrack {
 
 // One held copy of something. Binds to the Edition it is a copy of.
 message LibraryItem {
-  option (google.api.resource) = { type: "unmango.media.library/LibraryItem" pattern: "libraryItems/{library_item}" singular: "libraryItem" plural: "libraryItems" };
+  option (google.api.resource) = {
+    type: "unmango.media.library/LibraryItem"
+    pattern: "libraryItems/{library_item}"
+    singular: "libraryItem"
+    plural: "libraryItems"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   // Also the surface Library and Collection selectors match against.
   map<string, string> labels = 4;
@@ -110,7 +118,10 @@ message LibraryItem {
   repeated MediaFile files = 12;
   // Where a physical copy sits: an asset.property Space, with the shelf
   // within it, if any, as the ParentReference section.
-  unmango.ref.v1alpha1.ParentReference location = 13 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.asset.property/Space"];
+  unmango.ref.v1alpha1.ParentReference location = 13 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.asset.property/Space"
+  ];
   // Where a digital copy came from: a service name, a rip, a purchase.
   string source = 14 [(google.api.field_behavior) = OPTIONAL];
   google.type.Date acquired_date = 15 [(google.api.field_behavior) = OPTIONAL];
@@ -118,19 +129,31 @@ message LibraryItem {
   // When a rental or loan is due back.
   google.type.Date due_date = 17 [(google.api.field_behavior) = OPTIONAL];
   // The people.contact Contact currently holding it, when lent out.
-  unmango.ref.v1alpha1.ObjectReference lent_to = 18 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.people.contact/Contact"];
+  unmango.ref.v1alpha1.ObjectReference lent_to = 18 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.people.contact/Contact"
+  ];
   string notes = 19 [(google.api.field_behavior) = OPTIONAL];
   // The media.title Edition this is a copy of. Unset means unmatched.
-  unmango.ref.v1alpha1.ObjectReference edition = 40 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.media.title/Edition"];
+  unmango.ref.v1alpha1.ObjectReference edition = 40 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.media.title/Edition"
+  ];
   // The media.title Title, denormalized from the Edition so a Collection can
   // select on it without a join.
-  unmango.ref.v1alpha1.ObjectReference title = 41 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.media.title/Title"];
+  unmango.ref.v1alpha1.ObjectReference title = 41 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.media.title/Title"
+  ];
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   ItemPhase phase = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 52 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Libraries whose selectors currently claim this item. Makes the selector
   // edge navigable from the item side.
-  repeated unmango.ref.v1alpha1.ObjectReference claimed_by = 53 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.media.library/Library"];
+  repeated unmango.ref.v1alpha1.ObjectReference claimed_by = 53 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.media.library/Library"
+  ];
   int32 file_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   int64 total_size_bytes = 55 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Best video height across the files, so quality is sortable.
@@ -143,9 +166,17 @@ message LibraryItem {
 // A managed set of LibraryItems, claimed by selector. The thing a scanner
 // populates and a player browses.
 message Library {
-  option (google.api.resource) = { type: "unmango.media.library/Library" pattern: "libraries/{library}" singular: "library" plural: "libraries" };
+  option (google.api.resource) = {
+    type: "unmango.media.library/Library"
+    pattern: "libraries/{library}"
+    singular: "library"
+    plural: "libraries"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -183,9 +214,17 @@ message Library {
 // automatic one are the same kind: the difference is only how specific the
 // selector is.
 message Collection {
-  option (google.api.resource) = { type: "unmango.media.library/Collection" pattern: "collections/{collection}" singular: "collection" plural: "collections" };
+  option (google.api.resource) = {
+    type: "unmango.media.library/Collection"
+    pattern: "collections/{collection}"
+    singular: "collection"
+    plural: "collections"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

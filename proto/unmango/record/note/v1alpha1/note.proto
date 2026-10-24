@@ -55,9 +55,17 @@ message Attachment {
 message Note {
   reserved 7;
   reserved 50, 51;
-  option (google.api.resource) = { type: "unmango.record.note/Note" pattern: "notes/{note}" singular: "note" plural: "notes" };
+  option (google.api.resource) = {
+    type: "unmango.record.note/Note"
+    pattern: "notes/{note}"
+    singular: "note"
+    plural: "notes"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   // Also the surface a Notebook selector matches against.
   map<string, string> labels = 4;
@@ -87,7 +95,10 @@ message Note {
   int32 sequence_number = 20;
   // Notebooks whose selectors currently claim this note. Makes the selector
   // edge navigable from the note side.
-  repeated unmango.ref.v1alpha1.ObjectReference claimed_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.record.note/Notebook"];
+  repeated unmango.ref.v1alpha1.ObjectReference claimed_by = 52 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.record.note/Notebook"
+  ];
   int32 child_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 link_count = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Other Notes whose links point at this one.
@@ -100,9 +111,17 @@ message Note {
 
 // A grouping of Notes, claimed by selector.
 message Notebook {
-  option (google.api.resource) = { type: "unmango.record.note/Notebook" pattern: "notebooks/{notebook}" singular: "notebook" plural: "notebooks" };
+  option (google.api.resource) = {
+    type: "unmango.record.note/Notebook"
+    pattern: "notebooks/{notebook}"
+    singular: "notebook"
+    plural: "notebooks"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -121,7 +140,10 @@ message Notebook {
   ContentFormat default_format = 14;
   // The domain this notebook documents, when it is scoped to one: a Vehicle, a
   // Pipeline, a Property.
-  unmango.ref.v1alpha1.ObjectReference subject = 15 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "*"];
+  unmango.ref.v1alpha1.ObjectReference subject = 15 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "*"
+  ];
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   int32 note_count = 52 [(google.api.field_behavior) = OUTPUT_ONLY];

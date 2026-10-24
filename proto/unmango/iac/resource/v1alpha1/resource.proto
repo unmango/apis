@@ -24,9 +24,17 @@ enum DriftState {
 
 // One provisioned thing a Stack manages.
 message Resource {
-  option (google.api.resource) = { type: "unmango.iac.resource/Resource" pattern: "resources/{resource}" singular: "resource" plural: "resources" };
+  option (google.api.resource) = {
+    type: "unmango.iac.resource/Resource"
+    pattern: "resources/{resource}"
+    singular: "resource"
+    plural: "resources"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -53,6 +61,9 @@ message Resource {
   google.protobuf.Struct attributes = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   DriftState drift_state = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The iac.stack Run that last applied changes to this resource.
-  unmango.ref.v1alpha1.ObjectReference last_applied_run = 55 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.iac.stack/Run"];
+  unmango.ref.v1alpha1.ObjectReference last_applied_run = 55 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.iac.stack/Run"
+  ];
   google.protobuf.Timestamp last_observed_time = 56 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

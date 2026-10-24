@@ -75,9 +75,17 @@ message RpcInvocation {
 
 // One transformation from a set of inputs to a set of outputs.
 message Converter {
-  option (google.api.resource) = { type: "unmango.codegen.converter/Converter" pattern: "converters/{converter}" singular: "converter" plural: "converters" };
+  option (google.api.resource) = {
+    type: "unmango.codegen.converter/Converter"
+    pattern: "converters/{converter}"
+    singular: "converter"
+    plural: "converters"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   // Also the surface a ConverterRegistry selector matches against.
   map<string, string> labels = 4;
@@ -93,7 +101,10 @@ message Converter {
   repeated Port outputs = 13;
   // The compute.platform Platform for the tool this wraps. Absent for a
   // converter that is its own tool.
-  unmango.ref.v1alpha1.ObjectReference platform = 14 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.compute.platform/Platform"];
+  unmango.ref.v1alpha1.ObjectReference platform = 14 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.compute.platform/Platform"
+  ];
   // How the converter is invoked. A plain string so it can address a
   // dev.unmango.protofs path, an OCI reference, or a flake output without
   // coupling the packages: "github:UnstoppableMango/a2b#lib.buf.generate".
@@ -109,7 +120,10 @@ message Converter {
   // iteration order, which is what makes its artifacts uncacheable.
   bool deterministic = 18;
   // The vcs.repository Repository the converter's own source lives in.
-  unmango.ref.v1alpha1.ObjectReference repository = 19 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.vcs.repository/Repository"];
+  unmango.ref.v1alpha1.ObjectReference repository = 19 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.vcs.repository/Repository"
+  ];
   // The calling convention at entrypoint.
   InvocationKind invocation_kind = 20;
   // Set only when invocation_kind is RPC.
@@ -118,7 +132,10 @@ message Converter {
   repeated k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 51 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Registries whose selectors currently claim this converter. Makes the
   // selector edge navigable from the converter side.
-  repeated unmango.ref.v1alpha1.ObjectReference claimed_by = 52 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.resource_reference).type = "unmango.codegen.converter/ConverterRegistry"];
+  repeated unmango.ref.v1alpha1.ObjectReference claimed_by = 52 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference).type = "unmango.codegen.converter/ConverterRegistry"
+  ];
   // codegen.conversion Conversions naming this converter.
   int32 conversion_count = 53 [(google.api.field_behavior) = OUTPUT_ONLY];
   google.protobuf.Timestamp last_run_time = 54 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -185,9 +202,17 @@ message ReleaseArtifactSource {
 
 // A published collection of Converters, claimed by selector.
 message ConverterRegistry {
-  option (google.api.resource) = { type: "unmango.codegen.converter/ConverterRegistry" pattern: "converterRegistries/{converter_registry}" singular: "converterRegistry" plural: "converterRegistries" };
+  option (google.api.resource) = {
+    type: "unmango.codegen.converter/ConverterRegistry"
+    pattern: "converterRegistries/{converter_registry}"
+    singular: "converterRegistry"
+    plural: "converterRegistries"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

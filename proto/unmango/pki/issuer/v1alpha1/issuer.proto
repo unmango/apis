@@ -13,8 +13,7 @@ import "unmango/ref/v1alpha1/ref.proto";
 
 // Signs its own certificate. No fields: there is nothing to configure beyond
 // choosing this mechanism.
-message SelfSignedConfig {
-}
+message SelfSignedConfig {}
 
 // Signs through another Issuer's chain, making this one an intermediate CA.
 message CaConfig {
@@ -34,7 +33,10 @@ enum AcmeChallengeKind {
 message AcmeConfig {
   // The compute.platform Platform for the ACME server: Let's Encrypt,
   // ZeroSSL, Google Trust Services.
-  unmango.ref.v1alpha1.ObjectReference platform = 1 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.compute.platform/Platform"];
+  unmango.ref.v1alpha1.ObjectReference platform = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.compute.platform/Platform"
+  ];
   // Directory URL, when platform is absent or does not resolve to one.
   string directory_url = 2 [(google.api.field_behavior) = OPTIONAL];
   string account_email = 3;
@@ -42,7 +44,10 @@ message AcmeConfig {
   // The compute.platform Platform solving challenge_kind: a DNS provider for
   // DNS-01. Absent for HTTP-01, solved by whatever already serves the
   // requested domain.
-  unmango.ref.v1alpha1.ObjectReference challenge_solver = 5 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.compute.platform/Platform"];
+  unmango.ref.v1alpha1.ObjectReference challenge_solver = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.compute.platform/Platform"
+  ];
 }
 
 message VaultConfig {
@@ -55,9 +60,17 @@ message VaultConfig {
 
 // A signing mechanism certificates are requested from.
 message Issuer {
-  option (google.api.resource) = { type: "unmango.pki.issuer/Issuer" pattern: "issuers/{issuer}" singular: "issuer" plural: "issuers" };
+  option (google.api.resource) = {
+    type: "unmango.pki.issuer/Issuer"
+    pattern: "issuers/{issuer}"
+    singular: "issuer"
+    plural: "issuers"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;

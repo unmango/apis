@@ -38,7 +38,10 @@ message ObjectReference {
   // reference that reads identically to one at the point of use needs the
   // same guard. Unset resolves by name, which is the right default for a
   // reference authored against a resource that does not exist yet.
-  string uid = 6 [(google.api.field_behavior) = OPTIONAL, (google.api.field_info).format = UUID4];
+  string uid = 6 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_info).format = UUID4
+  ];
 }
 
 // Names a parent that the referring resource attaches to, where the two were

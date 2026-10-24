@@ -1,0 +1,12 @@
+# Loss codes name what importing the generated protos back into tdl would not
+# recover. Nothing here imports, so none of them is a defect in the model.
+[lossy.protobuf]
+allow = [
+  "lossy.doc",
+  "lossy.name",
+  "lossy.number",
+  "lossy.order",
+  "lossy.primitive",
+  "lossy.struct-kind",
+  "lossy.unsupported",
+]

@@ -20,6 +20,8 @@ Each target block's `out(...)` is relative to the `.tdl` file declaring it, so a
 A new generated file is added to the list by the run that first writes it.
 
 `nix flake check` runs `tdl-check`, `tdl-fmt`, and `tdl-gen` over `tdl/`.
+`tdl/tdl.toml` silences the loss warnings `tdl gen` prints for the `protobuf` target.
+Each names something importing the protos back into tdl would not recover, and nothing here imports.
 Format with `tdl fmt -w <file>`.
 
 ## Layout

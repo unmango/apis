@@ -37,9 +37,17 @@ enum SessionOutcome {
 
 // One sitting. Append-only history behind a PlayState.
 message PlaySession {
-  option (google.api.resource) = { type: "unmango.media.playback/PlaySession" pattern: "playSessions/{play_session}" singular: "playSession" plural: "playSessions" };
+  option (google.api.resource) = {
+    type: "unmango.media.playback/PlaySession"
+    pattern: "playSessions/{play_session}"
+    singular: "playSession"
+    plural: "playSessions"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
@@ -64,7 +72,10 @@ message PlaySession {
     string external_device_name = 17;
   }
   // The media.library LibraryItem the bytes came from, when played locally.
-  unmango.ref.v1alpha1.ObjectReference library_item = 18 [(google.api.field_behavior) = OPTIONAL, (google.api.resource_reference).type = "unmango.media.library/LibraryItem"];
+  unmango.ref.v1alpha1.ObjectReference library_item = 18 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference).type = "unmango.media.library/LibraryItem"
+  ];
   // Playback speed. 1.0 is normal; audiobooks and podcasts often are not.
   double speed = 19;
   int64 observed_generation = 50 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -79,9 +90,17 @@ message PlaySession {
 // One person's progress through one Title. Attached to the Title, owner of the
 // sessions that produced it.
 message PlayState {
-  option (google.api.resource) = { type: "unmango.media.playback/PlayState" pattern: "playStates/{play_state}" singular: "playState" plural: "playStates" };
+  option (google.api.resource) = {
+    type: "unmango.media.playback/PlayState"
+    pattern: "playStates/{play_state}"
+    singular: "playState"
+    plural: "playStates"
+  };
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY, (google.api.field_info).format = UUID4];
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4
+  ];
   string display_name = 3 [(google.api.field_behavior) = OPTIONAL];
   map<string, string> labels = 4;
   map<string, string> annotations = 5;
