@@ -145,7 +145,7 @@ The builders come from [a2b](https://github.com/UnstoppableMango/a2b), reached t
 Generating from the workspace root covers the vendored modules too, so the `github.com/unmango/apis/go/google/type` and `.../k8s.io/...` imports that managed mode writes into the generated code resolve to generated packages.
 
 The `tdl` input's flake module adds three checks over `tdl/`: `tdl-check` parses every file, `tdl-fmt` holds them to canonical form, and `tdl-gen` runs `tdl gen --verify`, failing when `proto/unmango` differs from what the model generates.
-`proto/unmango/**` is excluded from treefmt, since `buf format` reflows tdl's output and `tdl-gen` would then report it as drift.
+tdl writes protos in `buf format`'s layout, so treefmt's `buf` formatter checks `proto/unmango/**` like any other proto and finds nothing to change.
 The `tdl` input is tag-pinned like `apimachinery`; a bump is a regeneration and goes in its own commit.
 
 Bump the vendored googleapis with `make update` (`nix flake update`).
