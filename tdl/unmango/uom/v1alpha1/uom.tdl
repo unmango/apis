@@ -1,0 +1,106 @@
+package unmango.uom.v1alpha1
+
+// Shared measurement vocabulary, so a value's unit is comparable across
+// domains instead of being a free-text string each package invents its own
+// convention for. Kept separate from unmango.ref: ref addresses relationships
+// between resources, uom carries the values attached to them, and the two
+// vocabularies grow independently.
+//
+// Two shapes live here. Quantity carries its unit, for a value whose unit is
+// a choice the caller makes. ResourceQuantity fixes its units in the field
+// names, for the one value whose four components are always the same four
+// components.
+/// UNIT_CUSTOM pairs with a sibling custom_unit string on the message carrying
+/// the Quantity, for a portion size no fixed unit covers: "medium", "slice".
+enum Unit {
+  Custom
+  // Mass.
+  Kilogram
+  Gram
+  Pound
+  Ounce
+  // Volume.
+  Liter
+  Milliliter
+  Cup
+  Tablespoon
+  Teaspoon
+  FluidOunce
+  // Distance.
+  Kilometer
+  Mile
+  Meter
+  /// Engine hours, for equipment with no odometer. Not a distance, but shares
+  /// the same "how much has this been used" role.
+  EngineHour
+  // Other.
+  Percent
+  MilligramsPerDeciliter
+  MillimetersOfMercury
+  Minute
+}
+
+/// A value paired with its unit.
+type Quantity {
+  value: float64
+  unit: Unit
+  /// Set only when unit is UNIT_CUSTOM.
+  custom_unit: string
+}
+
+/// Compute available on, or requested from, a capacity provider. Shared by
+/// compute.host Host and ci.runner Runner rather than each declaring its own
+/// copy, since the two describe the same four numbers.
+///
+/// Its units are fixed in the field names rather than carried as a Unit,
+/// because nobody asks for memory in pounds: the shape is closed and the four
+/// components are always present together, which is what separates it from
+/// Quantity.
+type ResourceQuantity {
+  cpu_millicores: int
+  memory_bytes: int
+  storage_bytes: int
+  gpu_count: int32
+}
+
+target protobuf for unmango.uom.v1alpha1 {
+  out("proto")
+  file("uom.proto")
+  import("google/api/field_behavior.proto")
+  edition("2024")
+  Unit {
+    Custom => number(1)
+    Kilogram => number(10)
+    Gram => number(11)
+    Pound => number(12)
+    Ounce => number(13)
+    Liter => number(20)
+    Milliliter => number(21)
+    Cup => number(22)
+    Tablespoon => number(23)
+    Teaspoon => number(24)
+    FluidOunce => number(25)
+    Kilometer => number(30)
+    Mile => number(31)
+    Meter => number(32)
+    EngineHour => number(33)
+    Percent => number(40)
+    MilligramsPerDeciliter => number(41)
+    MillimetersOfMercury => number(42)
+    Minute => number(43)
+  }
+  Quantity {
+    value => number(1)
+    unit => number(2)
+    custom_unit {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  ResourceQuantity {
+    cpu_millicores => number(1)
+    memory_bytes => number(2)
+    storage_bytes => number(3)
+    gpu_count => number(4)
+  }
+}

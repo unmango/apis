@@ -1,0 +1,332 @@
+package unmango.compute.host.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+import "../../../uom/v1alpha1/uom.tdl" as uom
+
+// Machines that run work, and the groupings that claim them:
+//
+//   Cluster => Host
+//
+// A Host is the capacity provider that ci.runner Runners and
+// ci.job JobRuns bind to, the Node of this design. A Cluster claims Hosts
+// by label selector rather than naming them, so membership follows labels the
+// way a Kubernetes Service follows Pods.
+//
+// A Host may also carry an asset.maintenance MaintenancePlan, since physical
+// machines need servicing on the same terms as vehicles and properties.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// A reachable endpoint for a Host.
+type Address {
+  type: AddressType
+  value: string
+}
+
+enum AddressType { Hostname InternalIp ExternalIp WireguardIp }
+
+/// What the machine reports about itself.
+type SystemInfo {
+  /// "linux", "darwin"
+  os: string
+  /// "NixOS 25.05"
+  os_image: string
+  kernel_version: string
+  /// "amd64", "arm64"
+  architecture: string
+  machine_id: string
+  container_runtime_version: string
+}
+
+/// Repels work that does not explicitly tolerate it.
+type Taint {
+  key: string
+  value: string
+  effect: TaintEffect
+}
+
+enum TaintEffect {
+  /// Refuse to bind new work that does not tolerate this taint.
+  NoSchedule
+  /// Bind new work only as a last resort.
+  PreferNoSchedule
+  /// Refuse new work and drain what is already bound.
+  NoExecute
+}
+
+// ---------------------------------------------------------------------------
+// Host
+// ---------------------------------------------------------------------------
+/// A machine that work is bound to.
+type Host: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  hostname: string
+  /// The compute.platform Platform this machine physically runs on or
+  /// was provisioned from.
+  provider: ref.ObjectReference
+  /// Cordon. Existing work keeps running, nothing new binds.
+  unschedulable: bool
+  taints: [Taint]
+  /// Capacity held back for the operating system, subtracted from observed
+  /// capacity to yield allocatable.
+  reserved: uom.ResourceQuantity
+  /// The asset.property Space this machine physically sits in.
+  location: ref.ObjectReference
+  // Observed state.
+  observed_generation: int
+  phase: HostPhase
+  conditions: [Condition]
+  addresses: [Address]
+  system_info: SystemInfo
+  /// Total compute the machine reports.
+  capacity: uom.ResourceQuantity
+  /// Capacity minus reserved. What work can actually be bound against.
+  allocatable: uom.ResourceQuantity
+  /// Sum of the requests of everything currently bound here.
+  allocated: uom.ResourceQuantity
+  boot_time: instant
+  last_heartbeat_time: instant
+}
+
+enum HostPhase {
+  /// Registered but not yet reporting.
+  Pending
+  /// Healthy and accepting work.
+  Ready
+  /// Reporting, but failing a health condition.
+  NotReady
+  /// Deliberately drained for servicing.
+  Maintenance
+  /// Heartbeat lost.
+  Unreachable
+}
+
+// ---------------------------------------------------------------------------
+// Cluster
+// ---------------------------------------------------------------------------
+/// A named set of Hosts, claimed by label selector rather than by name. Adding
+/// a matching label to a Host joins it; no edit to the Cluster is needed.
+type Cluster: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Which Hosts belong. An empty selector claims nothing, never everything.
+  selector: LabelSelector
+  /// Applied to every member, so a whole cluster can be drained at once.
+  unschedulable: bool
+  // Observed state.
+  observed_generation: int
+  member_count: int32
+  ready_member_count: int32
+  /// Summed across members.
+  capacity: uom.ResourceQuantity
+  allocatable: uom.ResourceQuantity
+  allocated: uom.ResourceQuantity
+  conditions: [Condition]
+}
+
+target protobuf for unmango.compute.host.v1alpha1 {
+  out("proto")
+  file("host.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  edition("2024")
+  Address {
+    type => number(1)
+    value => number(2)
+  }
+  SystemInfo {
+    os => number(1)
+    os_image => number(2)
+    kernel_version => number(3)
+    architecture => number(4)
+    machine_id => number(5)
+    container_runtime_version => number(6)
+  }
+  Taint {
+    key => number(1)
+    value {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    effect => number(3)
+  }
+  Host {
+    option("(google.api.resource)", "{ type: \"unmango.compute.host/Host\" pattern: \"hosts/{host}\" singular: \"host\" plural: \"hosts\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    hostname => number(11)
+    provider {
+      number(12)
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
+    }
+    unschedulable => number(13)
+    taints => number(14)
+    reserved => number(15)
+    location {
+      number(16)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.asset.property/Space\"")
+    }
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    phase {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    addresses {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    system_info {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    capacity {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    allocatable {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    allocated {
+      number(57)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    boot_time {
+      number(58)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_heartbeat_time {
+      number(59)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  Cluster {
+    option("(google.api.resource)", "{ type: \"unmango.compute.host/Cluster\" pattern: \"clusters/{cluster}\" singular: \"cluster\" plural: \"clusters\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    selector => number(11)
+    unschedulable => number(12)
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    member_count {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    ready_member_count {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    capacity {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    allocatable {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    allocated {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+}

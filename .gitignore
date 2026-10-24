@@ -7,3 +7,5 @@ bin/
 .vscode/*
 !.vscode/extensions.json
 /third_party/
+# tdl gen marks proto/ as its own; proto/dev is hand-written (UnstoppableMango/tdl#918).
+/proto/.tdl-output

@@ -1,0 +1,185 @@
+package unmango.protofs.file.v1alpha1
+
+import "../../../../shim/protobuf.tdl" as _
+import "../../../../shim/rpc.tdl" as _
+
+type File {
+  /// server-issued handle, set by Open/Create responses
+  id: string
+  name: string
+  flag: int
+  /// bitmask
+  perm: uint32
+}
+
+type FileInfo {
+  name: string
+  size: int
+  /// bitmask
+  mode: uint32
+  mod_time: instant
+  is_dir: bool
+  /// platform-specific underlying data; type URL must be agreed out-of-band
+  sys: Any
+}
+
+deprecated("use unmango.protofs.file.v1alpha2.FileService.")
+type FileService {
+  Read: Fn<ReadRequest, ReadResponse>
+  ReadAt: Fn<ReadAtRequest, ReadAtResponse>
+  Readdir: Fn<ReaddirRequest, Stream<ReaddirResponse>>
+  ReaddirNames: Fn<ReaddirNamesRequest, Stream<ReaddirNamesResponse>>
+  Stat: Fn<StatRequest, StatResponse>
+  Truncate: Fn<TruncateRequest, TruncateResponse>
+  Write: Fn<WriteRequest, WriteResponse>
+  WriteAt: Fn<WriteAtRequest, WriteAtResponse>
+}
+
+type ReaddirRequest {
+  file: File
+  count: int32
+}
+
+type ReaddirResponse {
+  file_infos: [FileInfo]
+}
+
+type ReaddirNamesRequest {
+  file: File
+  count: int32
+}
+
+type ReaddirNamesResponse {
+  names: [string]
+}
+
+type ReadAtRequest {
+  file: File
+  offset: int
+  length: int
+}
+
+type ReadAtResponse {
+  data: bytes
+}
+
+type ReadRequest {
+  file: File
+}
+
+type ReadResponse {
+  data: bytes
+}
+
+type StatRequest {
+  file: File
+}
+
+type StatResponse {
+  file_info: FileInfo
+}
+
+type TruncateRequest {
+  file: File
+  size: int
+}
+
+type TruncateResponse { }
+
+type WriteRequest {
+  file: File
+  data: bytes
+}
+
+type WriteResponse {
+  bytes_written: int
+}
+
+type WriteAtRequest {
+  file: File
+  data: bytes
+  offset: int
+}
+
+type WriteAtResponse { }
+
+target protobuf for unmango.protofs.file.v1alpha1 {
+  out("proto")
+  file("file.proto")
+  import("google/api/field_behavior.proto")
+  Any => foreign("google/protobuf/any.proto", "google.protobuf.Any")
+  Fn => rpc
+  Stream => stream
+  edition("2023")
+  File {
+    id => number(1)
+    name => number(2)
+    flag {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    perm {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  FileInfo {
+    name => number(1)
+    size => number(2)
+    mode => number(3)
+    mod_time => number(4)
+    is_dir => number(5)
+    sys => number(6)
+  }
+  FileService => service
+  ReaddirRequest {
+    file => number(1)
+    count => number(2)
+  }
+  ReaddirResponse {
+    file_infos => number(1)
+  }
+  ReaddirNamesRequest {
+    file => number(1)
+    count => number(2)
+  }
+  ReaddirNamesResponse {
+    names => number(1)
+  }
+  ReadAtRequest {
+    file => number(1)
+    offset => number(2)
+    length => number(3)
+  }
+  ReadAtResponse {
+    data => number(1)
+  }
+  ReadRequest {
+    file => number(1)
+  }
+  ReadResponse {
+    data => number(1)
+  }
+  StatRequest {
+    file => number(1)
+  }
+  StatResponse {
+    file_info => number(1)
+  }
+  TruncateRequest {
+    file => number(1)
+    size => number(2)
+  }
+  WriteRequest {
+    file => number(1)
+    data => number(2)
+  }
+  WriteResponse {
+    bytes_written => number(1)
+  }
+  WriteAtRequest {
+    file => number(1)
+    data => number(2)
+    offset => number(3)
+  }
+}

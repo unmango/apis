@@ -1,0 +1,712 @@
+package unmango.vcs.repository.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Where code lives:
+//
+//   Repository -> Remote
+//   RepositoryGroup => Repository
+//   Repository @ compute.host Host
+//
+// A Repository owns its Remotes, since a remote has no meaning apart from the
+// repository that configured it. A RepositoryGroup claims repositories by
+// label rather than naming them, so a repository joins an org-wide grouping by
+// being labelled.
+//
+// Commits live in vcs.commit, which models history as a graph. A Repository
+// refers to them by sha rather than embedding them, since the same commit can
+// be observed in a fork and is not owned by either repository.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum Visibility {
+  Public
+  Private
+  /// Visible within an organization but not publicly.
+  Internal
+}
+
+// ---------------------------------------------------------------------------
+// Remote
+// ---------------------------------------------------------------------------
+/// A named endpoint a Repository exchanges objects with.
+type Remote: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  url: string
+  direction: RemoteDirection
+  auth: AuthMethod
+  /// The remote a bare `push` or `fetch` uses. At most one per Repository.
+  is_default: bool
+  /// Ref patterns this remote fetches, in the underlying VCS's own syntax.
+  /// Empty means the forge default.
+  fetch_refs: [string]
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  reachable: bool
+  last_contact_time: instant
+  last_fetch_time: instant
+  last_push_time: instant
+}
+
+enum RemoteDirection { Fetch Push Both }
+
+enum AuthMethod {
+  None
+  SshKey
+  HttpsToken
+  HttpsBasic
+  /// Credentials supplied by an external helper rather than stored.
+  CredentialHelper
+}
+
+// ---------------------------------------------------------------------------
+// Repository
+// ---------------------------------------------------------------------------
+/// A single body of versioned history. Owns its Remotes, and the vcs.branch
+/// Branches and Tags that point into it.
+type Repository: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  /// Also the surface a RepositoryGroup selector matches against.
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The compute.platform Platform whose version control system this
+  /// repository uses.
+  vcs: ref.ObjectReference
+  /// The compute.platform Platform hosting this repository. Unset means
+  /// a bare repository with no forge in front of it.
+  forge: ref.ObjectReference
+  /// Namespace on the forge: an organization or a user.
+  owner: string
+  /// Repository name within that namespace.
+  slug: string
+  visibility: Visibility
+  /// Branch a fresh clone checks out, and the default target for a
+  /// vcs.change Change.
+  default_branch: string
+  description: string
+  topics: [string]
+  /// SPDX identifier.
+  license: string
+  /// Read-only. History is retained but nothing new is accepted.
+  archived: bool
+  /// Which Remotes and vcs.branch Branches this Repository claims.
+  selector: LabelSelector
+  /// The repository this one was forked from. Attachment rather than
+  /// ownership: an upstream has no say in its forks and outlives them.
+  upstream: ref.ObjectReference
+  /// Tracks its upstream automatically rather than diverging.
+  mirror: bool
+  // Assigned desired state.
+  /// The compute.host Host serving this repository, when it is self-hosted.
+  /// Unset means the forge hosts it.
+  host: ref.ObjectReference
+  /// Working copy on disk. A plain string so it can address a
+  /// dev.unmango.protofs path without coupling the packages.
+  working_copy_uri: string
+  // Observed state.
+  observed_generation: int
+  phase: RepositoryPhase
+  conditions: [Condition]
+  /// RepositoryGroups whose selectors currently claim this repository. Makes
+  /// the selector edge navigable from the repository side.
+  claimed_by: [ref.ObjectReference]
+  remote_count: int32
+  branch_count: int32
+  tag_count: int32
+  /// Open vcs.change Changes targeting this repository.
+  open_change_count: int32
+  size_bytes: int
+  commit_count: int
+  primary_language: string
+  /// Tip of default_branch, as a node in the vcs.commit graph.
+  head_revision: string
+  last_pushed_time: instant
+  last_fetched_time: instant
+  /// Commits behind its upstream, for a fork or mirror.
+  behind_upstream: int32
+}
+
+enum RepositoryPhase {
+  /// Declared but not yet cloned or created on the forge.
+  Pending
+  Active
+  /// Exchanging objects with a remote.
+  Syncing
+  Archived
+  /// No remote could be contacted.
+  Unreachable
+}
+
+// ---------------------------------------------------------------------------
+// RepositoryGroup
+// ---------------------------------------------------------------------------
+/// A named set of Repositories, claimed by selector. What an organization, a
+/// monorepo constellation, or a vcs.change ChangeSet target list is expressed
+/// as.
+type RepositoryGroup: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Which Repositories belong. An empty selector claims nothing, never
+  /// everything.
+  selector: LabelSelector
+  summary: string
+  /// Stamped onto repositories created through this group, which is how a new
+  /// repository ends up matching the selector.
+  repository_labels: {string -> string}
+  /// Settings every member should converge on. A member diverging from these
+  /// reports a Condition rather than being silently corrected.
+  required_visibility: Visibility
+  required_default_branch: string
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  member_count: int32
+  /// Members whose settings differ from the required values above.
+  divergent_member_count: int32
+  /// Summed across members.
+  open_change_count: int32
+  total_size_bytes: int
+  last_pushed_time: instant
+}
+
+// ---------------------------------------------------------------------------
+// Grant
+// ---------------------------------------------------------------------------
+/// One subject's access to a Repository or RepositoryGroup. owner_refs points
+/// at whichever it applies to, the same kind-polymorphism owner_refs already
+/// carries everywhere else.
+type Grant: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The vcs.repository Repository or RepositoryGroup this grant applies to.
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The people.contact Contact or Group receiving access.
+  subject: ref.ObjectReference
+  /// Access role as the forge names it: GitHub's read/triage/write/maintain/
+  /// admin, GitLab's guest/reporter/developer/maintainer/owner, or a Gerrit
+  /// ACL group. Open rather than a closed enum for the same reason
+  /// codegen.schema Schema.format is: every forge names its own tiers, and
+  /// this repository does not execute permission logic against the value,
+  /// only records and syncs it.
+  role: string
+  // Observed state.
+  observed_generation: int
+  phase: GrantPhase
+  conditions: [Condition]
+  /// Contact who issued this grant, when known.
+  granted_by: ref.ObjectReference
+  granted_time: instant
+  revoked_time: instant
+}
+
+enum GrantPhase {
+  /// Invitation sent, not yet accepted.
+  Pending
+  Active
+  /// Access removed but the record retained for audit history.
+  Revoked
+}
+
+// ---------------------------------------------------------------------------
+// Composition
+// ---------------------------------------------------------------------------
+/// Another vcs.repository Repository nested at a path, pinned to a fixed
+/// revision. Unlike Repository.upstream, which tracks a live head, the
+/// pinned_revision here changes only when this Composition is explicitly
+/// updated -- never by activity in the nested repository.
+type Composition: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The vcs.repository Repository this nested reference lives in.
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Path within the parent repository's tree where the nested repository is
+  /// mounted.
+  path: string
+  /// The vcs.repository Repository nested at path.
+  repository: ref.ObjectReference
+  /// Declared commit revision to check out.
+  pinned_revision: string
+  // Observed state.
+  observed_generation: int
+  phase: CompositionPhase
+  conditions: [Condition]
+  /// What is actually checked out on disk right now. Lags pinned_revision
+  /// until the next sync.
+  resolved_revision: string
+  /// resolved_revision equals pinned_revision.
+  up_to_date: bool
+  last_synced_time: instant
+}
+
+enum CompositionPhase {
+  Pending
+  Synced
+  /// resolved_revision no longer matches pinned_revision.
+  Diverged
+  Unreachable
+}
+
+target protobuf for unmango.vcs.repository.v1alpha1 {
+  out("proto")
+  file("repository.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  edition("2024")
+  Remote {
+    option("(google.api.resource)", "{ type: \"unmango.vcs.repository/Remote\" pattern: \"remotes/{remote}\" singular: \"remote\" plural: \"remotes\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    url => number(11)
+    direction => number(12)
+    auth => number(13)
+    is_default => number(14)
+    fetch_refs => number(15)
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    reachable {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_contact_time {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_fetch_time {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_push_time {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  Repository {
+    option("(google.api.resource)", "{ type: \"unmango.vcs.repository/Repository\" pattern: \"repositories/{repository}\" singular: \"repository\" plural: \"repositories\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    vcs {
+      number(11)
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
+    }
+    forge {
+      number(12)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
+    }
+    owner => number(13)
+    slug => number(14)
+    visibility => number(15)
+    default_branch => number(16)
+    description {
+      number(17)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    topics => number(18)
+    license {
+      number(19)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    archived => number(20)
+    selector => number(21)
+    upstream {
+      number(22)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
+    }
+    mirror => number(23)
+    host {
+      number(40)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.compute.host/Host\"")
+    }
+    working_copy_uri {
+      number(41)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    phase {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    claimed_by {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/RepositoryGroup\"")
+    }
+    remote_count {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    branch_count {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    tag_count {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    open_change_count {
+      number(57)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    size_bytes {
+      number(58)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    commit_count {
+      number(59)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    primary_language {
+      number(60)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    head_revision {
+      number(61)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_pushed_time {
+      number(62)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_fetched_time {
+      number(63)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    behind_upstream {
+      number(64)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  RepositoryGroup {
+    option("(google.api.resource)", "{ type: \"unmango.vcs.repository/RepositoryGroup\" pattern: \"repositoryGroups/{repository_group}\" singular: \"repositoryGroup\" plural: \"repositoryGroups\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    selector => number(11)
+    summary {
+      number(12)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    repository_labels => number(13)
+    required_visibility => number(14)
+    required_default_branch {
+      number(15)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    member_count {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    divergent_member_count {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    open_change_count {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    total_size_bytes {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_pushed_time {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  Grant {
+    option("(google.api.resource)", "{ type: \"unmango.vcs.repository/Grant\" pattern: \"grants/{grant}\" singular: \"grant\" plural: \"grants\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    subject {
+      number(11)
+      option("(google.api.resource_reference).type", "\"*\"")
+    }
+    role => number(12)
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    phase {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    granted_by {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
+    }
+    granted_time {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    revoked_time {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  Composition {
+    option("(google.api.resource)", "{ type: \"unmango.vcs.repository/Composition\" pattern: \"compositions/{composition}\" singular: \"composition\" plural: \"compositions\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    path => number(11)
+    repository {
+      number(12)
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Repository\"")
+    }
+    pinned_revision => number(13)
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    phase {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    resolved_revision {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    up_to_date {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_synced_time {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+}

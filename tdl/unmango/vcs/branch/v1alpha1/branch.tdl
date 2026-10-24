@@ -1,0 +1,379 @@
+package unmango.vcs.branch.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Named pointers into history:
+//
+//   vcs.repository Repository -> Branch
+//   vcs.repository Repository -> Tag
+//
+// Both are owned by the Repository they live in, so deleting a repository
+// cascades to them.
+//
+// The split between desired and observed state is unusually clean here, and
+// worth stating: a Branch's protection rules are desired, its head commit is
+// observed. Nobody declares where a branch points; they push, and the pointer
+// moves. A Tag inverts this, since the whole purpose of a tag is that its
+// target is declared once and never moves.
+//
+// This group avoids the names `ref` and `uom` on purpose. A package
+// `unmango.vcs.ref` would capture the relative name `ref.v1alpha1` before it
+// reached `unmango.ref.v1alpha1`, silently breaking every reference in the
+// domain. `uom` carries the same trap.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// Rules a Branch enforces against incoming changes. A vcs.change Change
+/// targeting this branch is admitted or rejected on these terms.
+type Protection {
+  /// Approving reviews required before a change may merge.
+  required_approvals: int32
+  /// ci.job Pipeline names that must succeed.
+  required_checks: [string]
+  /// Reject merge commits, forcing rebase or squash.
+  require_linear_history: bool
+  require_signed_commits: bool
+  /// Approvals are withdrawn when new commits arrive.
+  dismiss_stale_approvals: bool
+  /// Require review from an owner of the touched paths.
+  require_owner_review: bool
+  allow_force_push: bool
+  allow_deletion: bool
+  /// Rules apply to repository administrators too.
+  enforce_for_admins: bool
+  /// people.contact Contacts permitted to push directly, bypassing changes.
+  push_allowlist: [ref.ObjectReference]
+}
+
+enum TagType {
+  /// A bare pointer with no object of its own.
+  Lightweight
+  /// Carries a message, tagger, and timestamp.
+  Annotated
+  /// Annotated and cryptographically signed.
+  Signed
+}
+
+// ---------------------------------------------------------------------------
+// Branch
+// ---------------------------------------------------------------------------
+/// A moving pointer into a Repository's history.
+type Branch: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The vcs.repository Repository this branch lives in.
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Ref name as the underlying VCS spells it: "main", "feat/life-domain-apis".
+  ref_name: string
+  /// The repository's default branch. At most one per Repository.
+  is_default: bool
+  /// Rules enforced against changes targeting this branch. Unset means
+  /// unprotected.
+  protection: Protection
+  /// Branch this one is compared and merged against. Unset means the
+  /// repository default.
+  base_ref_name: string
+  /// Remote-tracking counterpart, when this branch tracks one.
+  upstream_remote: ref.ObjectReference
+  upstream_ref_name: string
+  /// Delete automatically once a change merges it.
+  delete_on_merge: bool
+  // Observed state. Where the pointer actually is, which nobody declares.
+  // head_revision names a node in the vcs.commit graph.
+  observed_generation: int
+  phase: BranchPhase
+  conditions: [Condition]
+  head_revision: string
+  head_message: string
+  head_author: ref.ObjectReference
+  head_commit_time: instant
+  /// Commits this branch has that its base does not, and the reverse.
+  ahead_count: int32
+  behind_count: int32
+  /// Open vcs.change Changes with this branch as their source.
+  open_change_count: int32
+  /// Merged into its base and safe to delete.
+  merged: bool
+  /// No commits for long enough to be a candidate for cleanup.
+  stale: bool
+}
+
+enum BranchPhase {
+  /// Receiving commits.
+  Active
+  /// Merged into its base, retained but finished.
+  Merged
+  /// Quiet long enough to be a cleanup candidate.
+  Stale
+  /// Diverged from its base in a way that cannot fast-forward.
+  Diverged
+}
+
+// ---------------------------------------------------------------------------
+// Tag
+// ---------------------------------------------------------------------------
+/// A fixed pointer into a Repository's history. Unlike a Branch, its target is
+/// declared rather than observed, since a tag that moves is a bug.
+type Tag: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Ref name as the underlying VCS spells it: "v0.36.4".
+  ref_name: string
+  /// The vcs.commit Commit this tag names. Declared, and never expected to
+  /// change.
+  target_revision: string
+  type: TagType
+  message: string
+  /// people.contact Contact who created it.
+  tagger: ref.ObjectReference
+  /// Marks a published release rather than an internal marker.
+  release: bool
+  release_notes: string
+  /// Not yet ready for general use.
+  prerelease: bool
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  tagged_time: instant
+  signature_verified: bool
+  /// The declared target no longer resolves, or resolves to a different commit
+  /// than when the tag was recorded.
+  dangling: bool
+  /// Commits between this tag and the previous one, so release size is visible.
+  commits_since_previous: int32
+  previous_ref_name: string
+}
+
+target protobuf for unmango.vcs.branch.v1alpha1 {
+  out("proto")
+  file("branch.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  edition("2024")
+  Protection {
+    required_approvals => number(1)
+    required_checks => number(2)
+    require_linear_history => number(3)
+    require_signed_commits => number(4)
+    dismiss_stale_approvals => number(5)
+    require_owner_review => number(6)
+    allow_force_push => number(7)
+    allow_deletion => number(8)
+    enforce_for_admins => number(9)
+    push_allowlist {
+      number(10)
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
+    }
+  }
+  Branch {
+    option("(google.api.resource)", "{ type: \"unmango.vcs.branch/Branch\" pattern: \"branches/{branch}\" singular: \"branch\" plural: \"branches\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    ref_name => number(11)
+    is_default => number(12)
+    protection {
+      number(13)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    base_ref_name {
+      number(14)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    upstream_remote {
+      number(15)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.repository/Remote\"")
+    }
+    upstream_ref_name {
+      number(16)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    delete_on_merge => number(17)
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    phase {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    head_revision {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    head_message {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    head_author {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
+    }
+    head_commit_time {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    ahead_count {
+      number(57)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    behind_count {
+      number(58)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    open_change_count {
+      number(59)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    merged {
+      number(60)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    stale {
+      number(61)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  Tag {
+    option("(google.api.resource)", "{ type: \"unmango.vcs.branch/Tag\" pattern: \"tags/{tag}\" singular: \"tag\" plural: \"tags\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    ref_name => number(11)
+    target_revision {
+      number(12)
+      option("(google.api.field_behavior)", "IMMUTABLE")
+    }
+    type => number(13)
+    message {
+      number(14)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    tagger {
+      number(15)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.people.contact/Contact\"")
+    }
+    release => number(16)
+    release_notes {
+      number(17)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    prerelease => number(18)
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    tagged_time {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    signature_verified {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    dangling {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    commits_since_previous {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    previous_ref_name {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+}

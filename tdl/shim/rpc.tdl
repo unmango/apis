@@ -1,0 +1,10 @@
+package shim.rpc
+
+// Stand-ins for protobuf service constructs. A field typed Fn<Req, Resp> is an
+// rpc member of a type tagged `service` in its protobuf target block.
+// tdl-gap: the protobuf backend has no service directive and skips Fn fields.
+/// A function from a request type to a response type.
+primitive Fn: type -> type -> type
+
+/// A stream of messages, as the request or response of an Fn.
+primitive Stream: type -> type

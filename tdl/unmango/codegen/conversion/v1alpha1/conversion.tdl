@@ -1,0 +1,394 @@
+package unmango.codegen.conversion.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Standing instructions to convert something, and their executions:
+//
+//   Conversion -> ConversionRun @ ci.job JobRun
+//
+// A Conversion is the durable definition: this converter, over these inputs,
+// with these options, producing output here. A ConversionRun is one
+// execution of it, owned by the Conversion that produced it.
+//
+// A ConversionRun binds to a ci.job JobRun rather than to a ci.runner Runner
+// directly. ci already models a unit of work, its execution, and its
+// placement on capacity, and duplicating that here would fork it. The
+// binding chain runs ConversionRun -> JobRun -> Runner -> Host, and this
+// domain only owns the first hop. It is the same delegation vcs.change
+// Change makes for its checks.
+//
+// There is no run template, which will surprise a reader coming from ci.job.
+// A ci.job Pipeline exists only to stamp JobRuns, so it carries a JobTemplate
+// and nothing else. A Conversion carries the real specification, so a
+// ConversionRun snapshots it at creation instead. That snapshot is what keeps
+// a finished run reproducible after its Conversion is edited: the run records
+// the converter version, the resolved input digests, and the options it
+// actually used, not the ones in force today.
+//
+// Inputs are pinned by digest or followed. A ConversionInput with no digest
+// tracks whatever its source currently holds, which is what lets a Conversion
+// report itself stale when an upstream schema moves. Once a run is created,
+// its digests are always resolved.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// Lifecycle of a ConversionRun.
+enum ConversionPhase {
+  /// Created, no ci.job JobRun bound yet.
+  Pending
+  Running
+  Succeeded
+  Failed
+  Cancelled
+  /// The run's input_digest already had artifacts, so nothing executed.
+  Cached
+}
+
+/// What causes a Conversion to materialize a new ConversionRun.
+enum ConversionTriggerKind {
+  /// A source's digest moved past what the last run consumed.
+  InputChanged
+  /// The Converter's tool_version was bumped.
+  ConverterUpdated
+  Schedule
+  Manual
+}
+
+type ConversionTrigger {
+  kind: ConversionTriggerKind
+  /// Set only when kind is CONVERSION_TRIGGER_KIND_SCHEDULE.
+  schedule: string
+}
+
+/// One thing fed to a Converter, bound to one of its input Ports.
+type ConversionInput {
+  /// Matches a Port.format on the Converter's inputs.
+  port: string
+  /// Where the bytes come from: a codegen.schema Schema, a vcs.repository
+  /// Repository, a vcs.commit Commit.
+  source: ref.ObjectReference
+  /// Pins the input to one revision. Unset follows the source's current
+  /// digest, which is what makes a Conversion go stale rather than diverge
+  /// silently. Always set on a ConversionRun.
+  digest: string
+  /// Narrows the input to part of its source: a subdirectory, a single file.
+  subpath: string
+}
+
+// ---------------------------------------------------------------------------
+// Conversion
+// ---------------------------------------------------------------------------
+/// A standing instruction to run one Converter over one set of inputs.
+type Conversion: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// The codegen.converter Converter to run.
+  converter: ref.ObjectReference
+  inputs: [ConversionInput]
+  /// Merged over the Converter's default_options.
+  options: {string -> string}
+  /// Where output lands. A plain string so it can address a
+  /// dev.unmango.protofs path or a repository subdirectory.
+  output_uri: string
+  /// When to materialize a new run. Empty means only on explicit request.
+  triggers: [ConversionTrigger]
+  /// Propose the output as a vcs.change Change against this vcs.branch Branch
+  /// instead of writing it in place, which is how a generated SDK gets
+  /// reviewed before it lands.
+  change_target: ref.ObjectReference
+  timeout: duration
+  max_retries: int32
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  latest_run: ref.ObjectReference
+  /// Digest of the primary codegen.artifact Artifact the latest successful run
+  /// produced.
+  latest_artifact_digest: string
+  run_count: int32
+  last_success_time: instant
+  /// An unpinned input's digest has moved past what latest_run consumed, or
+  /// the Converter's tool_version has. The output on disk no longer follows
+  /// from the inputs that are declared.
+  stale: bool
+}
+
+// ---------------------------------------------------------------------------
+// ConversionRun
+// ---------------------------------------------------------------------------
+/// One execution of a Conversion.
+type ConversionRun: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// The Conversion that materialized this run.
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state, snapshotted from the Conversion at creation so the run
+  // stays reproducible after the Conversion is edited.
+  converter: ref.ObjectReference
+  converter_tool_version: string
+  /// Digests are always resolved here, never left to follow.
+  inputs: [ConversionInput]
+  options: {string -> string}
+  output_uri: string
+  timeout: duration
+  max_retries: int32
+  // Assigned desired state.
+  /// The ci.job JobRun executing this run. Unset while pending, exactly as an
+  /// unscheduled Pod has no node.
+  job_run: ref.ObjectReference
+  // Observed state.
+  observed_generation: int
+  phase: ConversionPhase
+  conditions: [Condition]
+  trigger: ConversionTrigger
+  start_time: instant
+  completion_time: instant
+  /// The codegen.artifact Artifacts this run produced, in the order the
+  /// Converter declares its output Ports.
+  artifacts: [ref.ObjectReference]
+  /// Hash of the resolved inputs, the options, and the converter version
+  /// together. Two runs sharing an input_digest should produce identical
+  /// artifacts, so the second can resolve the first's output and skip
+  /// execution.
+  input_digest: string
+  /// Set when input_digest already had artifacts and nothing executed.
+  cache_hit: bool
+  attempt: int32
+  logs_uri: string
+  output_file_count: int32
+  output_bytes: int
+}
+
+target protobuf for unmango.codegen.conversion.v1alpha1 {
+  out("proto")
+  file("conversion.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  edition("2024")
+  ConversionTrigger {
+    kind => number(1)
+    schedule {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  ConversionInput {
+    port => number(1)
+    source {
+      number(2)
+      option("(google.api.resource_reference).type", "\"*\"")
+    }
+    digest {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    subpath {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  Conversion {
+    option("(google.api.resource)", "{ type: \"unmango.codegen.conversion/Conversion\" pattern: \"conversions/{conversion}\" singular: \"conversion\" plural: \"conversions\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    converter {
+      number(11)
+      option("(google.api.resource_reference).type", "\"unmango.codegen.converter/Converter\"")
+    }
+    inputs => number(12)
+    options => number(13)
+    output_uri => number(14)
+    triggers => number(15)
+    change_target {
+      number(16)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.vcs.branch/Branch\"")
+    }
+    timeout => number(17)
+    max_retries => number(18)
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    latest_run {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.conversion/ConversionRun\"")
+    }
+    latest_artifact_digest {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    run_count {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_success_time {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    stale {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  ConversionRun {
+    option("(google.api.resource)", "{ type: \"unmango.codegen.conversion/ConversionRun\" pattern: \"conversionRuns/{conversion_run}\" singular: \"conversionRun\" plural: \"conversionRuns\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    converter {
+      number(11)
+      option("(google.api.resource_reference).type", "\"unmango.codegen.converter/Converter\"")
+    }
+    converter_tool_version => number(12)
+    inputs => number(13)
+    options => number(14)
+    output_uri => number(15)
+    timeout => number(16)
+    max_retries => number(17)
+    job_run {
+      number(40)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.ci.job/JobRun\"")
+    }
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    phase {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    trigger {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    start_time {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    completion_time {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    artifacts {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.codegen.artifact/Artifact\"")
+    }
+    input_digest {
+      number(57)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    cache_hit {
+      number(58)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    attempt {
+      number(59)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    logs_uri {
+      number(60)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    output_file_count {
+      number(61)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    output_bytes {
+      number(62)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+}

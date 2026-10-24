@@ -1,0 +1,1306 @@
+package unmango.discord.backup.v1alpha2
+
+// ---- from backup.proto ----
+/// BackupMetadata holds information about a backup snapshot itself.
+type BackupMetadata {
+  backup_id: string
+  created_at: instant
+  guild_id: string
+  schema_version: string
+  tool_version: string
+}
+
+/// ServerBackup is a complete snapshot of a Discord guild.
+type ServerBackup {
+  metadata: BackupMetadata
+  guild: Guild
+  channels: [Channel]
+  roles: [Role]
+  members: [Member]
+  /// deduplicated roster; all other messages reference by user_id
+  users: [User]
+  emojis: [Emoji]
+  stickers: [Sticker]
+  webhooks: [Webhook]
+  scheduled_events: [ScheduledEvent]
+  auto_mod_rules: [AutoModRule]
+  invites: [Invite]
+  channel_messages: [ChannelMessages]
+}
+
+// ---- from guild.proto ----
+/// Guild represents a Discord guild (server) and its configuration.
+type Guild {
+  id: string
+  name: string
+  description: string
+  icon_url: string
+  banner_url: string
+  splash_url: string
+  discovery_splash_url: string
+  /// deprecated but may still appear in backups
+  region: string
+  features: [string]
+  verification_level: VerificationLevel
+  explicit_content_filter: ExplicitContentFilter
+  default_message_notifications: DefaultMessageNotifications
+  /// bitmask
+  system_channel_flags: int
+  preferred_locale: string
+  nsfw_level: NsfwLevel
+  premium_tier: PremiumTier
+  premium_subscription_count: int32
+  vanity_url_code: string
+  owner_id: string
+  afk_channel_id: string
+  /// seconds
+  afk_timeout: int32
+  system_channel_id: string
+  rules_channel_id: string
+  public_updates_channel_id: string
+  safety_alerts_channel_id: string
+  max_members: int32
+  max_presences: int32
+  max_video_channel_users: int32
+  widget_enabled: bool
+  widget_channel_id: string
+  approximate_member_count: int32
+  approximate_presence_count: int32
+  joined_at: instant
+}
+
+/// Channel represents a Discord channel of any type.
+type Channel {
+  id: string
+  type: ChannelType
+  name: string
+  position: int32
+  topic: string
+  nsfw: bool
+  parent_id: string
+  bitrate: int32
+  user_limit: int32
+  rate_limit_per_user: int32
+  permission_overwrites: [PermissionOverwrite]
+  /// minutes
+  default_auto_archive_duration: int32
+  /// bitmask
+  flags: int
+  default_forum_layout: ForumLayout
+  default_sort_order: SortOrder
+  available_tags: [ForumTag]
+  default_reaction_emoji: DefaultReaction
+  video_quality_mode: VideoQualityMode
+  default_thread_rate_limit_per_user: int32
+  thread_metadata: ThreadMetadata
+}
+
+/// Role represents a Discord role within a guild.
+type Role {
+  id: string
+  name: string
+  /// RGB color value in low 24 bits
+  color: uint32
+  hoist: bool
+  icon_url: string
+  unicode_emoji: string
+  position: int32
+  /// bitmask; use int64 for bit 48+
+  permissions: int
+  managed: bool
+  mentionable: bool
+  tags: RoleTag
+  /// bitmask
+  flags: int
+}
+
+/// User represents a Discord user account.
+type User {
+  id: string
+  username: string
+  /// legacy four-digit tag; "0" for new usernames
+  discriminator: string
+  global_name: string
+  avatar_url: string
+  bot: bool
+  system: bool
+}
+
+/// Member represents a guild member (user + guild-specific metadata).
+type Member {
+  user_id: string
+  nickname: string
+  guild_avatar_url: string
+  role_ids: [string]
+  joined_at: instant
+  premium_since: instant
+  deaf: bool
+  mute: bool
+  pending: bool
+  /// bitmask
+  flags: int
+  communication_disabled_until: instant
+}
+
+/// Emoji represents a custom guild emoji.
+type Emoji {
+  id: string
+  name: string
+  role_ids: [string]
+  user_id: string
+  require_colons: bool
+  managed: bool
+  animated: bool
+  available: bool
+}
+
+/// Sticker represents a guild sticker.
+type Sticker {
+  id: string
+  pack_id: string
+  name: string
+  description: string
+  /// comma-separated list of tags
+  tags: string
+  format_type: StickerFormatType
+  available: bool
+  guild_id: string
+  user_id: string
+  sort_value: int32
+}
+
+/// Webhook represents a Discord webhook.
+type Webhook {
+  id: string
+  type: WebhookType
+  guild_id: string
+  channel_id: string
+  user_id: string
+  name: string
+  avatar_url: string
+  /// WARNING: This field contains a webhook credential. Backups with this field
+  /// populated must be treated as sensitive and stored encrypted.
+  token: string
+  application_id: string
+  url: string
+  source_guild_id: string
+  source_channel_id: string
+}
+
+/// ScheduledEventEntityMetadata holds location data for external scheduled events.
+type ScheduledEventEntityMetadata {
+  location: string
+}
+
+/// ScheduledEvent represents a Discord guild scheduled event.
+type ScheduledEvent {
+  id: string
+  guild_id: string
+  channel_id: string
+  creator_id: string
+  name: string
+  description: string
+  scheduled_start_time: instant
+  scheduled_end_time: instant
+  privacy_level: PrivacyLevel
+  status: ScheduledEventStatus
+  entity_type: ScheduledEventEntityType
+  entity_id: string
+  entity_metadata: ScheduledEventEntityMetadata
+  user_count: int32
+  image_url: string
+}
+
+/// AutoModTriggerMetadata holds trigger configuration for an auto-moderation rule.
+type AutoModTriggerMetadata {
+  keyword_filter: [string]
+  regex_patterns: [string]
+  /// AutoMod keyword preset values
+  presets: [int32]
+  allow_list: [string]
+  mention_total_limit: int32
+  mention_raid_protection_enabled: bool
+}
+
+/// AutoModAction represents an action taken when an auto-moderation rule is triggered.
+type AutoModAction {
+  type: AutoModActionType
+  /// for SEND_ALERT_MESSAGE actions
+  channel_id: string
+  /// for TIMEOUT actions
+  duration_seconds: int32
+  /// for BLOCK_MESSAGE actions
+  custom_message: string
+}
+
+/// AutoModRule represents an auto-moderation rule.
+type AutoModRule {
+  id: string
+  guild_id: string
+  name: string
+  creator_id: string
+  event_type: AutoModEventType
+  trigger_type: AutoModTriggerType
+  trigger_metadata: AutoModTriggerMetadata
+  actions: [AutoModAction]
+  enabled: bool
+  exempt_role_ids: [string]
+  exempt_channel_ids: [string]
+}
+
+/// Invite represents a Discord guild invite.
+type Invite {
+  code: string
+  channel_id: string
+  inviter_id: string
+  /// seconds; 0 = never expires
+  max_age: int32
+  /// 0 = unlimited
+  max_uses: int32
+  temporary: bool
+  uses: int32
+  created_at: instant
+  revoked: bool
+}
+
+// ---- from message.proto ----
+/// Attachment represents a file attached to a message.
+type Attachment {
+  id: string
+  filename: string
+  description: string
+  content_type: string
+  /// bytes
+  size: int
+  url: string
+  proxy_url: string
+  height: int32
+  width: int32
+  ephemeral: bool
+  duration_secs: float32
+  /// base64-encoded waveform for voice messages
+  waveform: string
+  /// bitmask
+  flags: int
+}
+
+/// EmbedFooter represents the footer of a message embed.
+type EmbedFooter {
+  text: string
+  icon_url: string
+  proxy_icon_url: string
+}
+
+/// EmbedImage represents the image of a message embed.
+type EmbedImage {
+  url: string
+  proxy_url: string
+  height: int32
+  width: int32
+}
+
+/// EmbedThumbnail represents the thumbnail of a message embed.
+type EmbedThumbnail {
+  url: string
+  proxy_url: string
+  height: int32
+  width: int32
+}
+
+/// EmbedVideo represents the video of a message embed.
+type EmbedVideo {
+  url: string
+  proxy_url: string
+  height: int32
+  width: int32
+}
+
+/// EmbedProvider represents the provider of a message embed.
+type EmbedProvider {
+  name: string
+  url: string
+}
+
+/// EmbedAuthor represents the author of a message embed.
+type EmbedAuthor {
+  name: string
+  url: string
+  icon_url: string
+  proxy_icon_url: string
+}
+
+/// EmbedField represents a field within a message embed.
+type EmbedField {
+  name: string
+  value: string
+  inline: bool
+}
+
+/// Embed represents a rich embed attached to a message.
+type Embed {
+  title: string
+  type: EmbedType
+  description: string
+  url: string
+  timestamp: instant
+  /// RGB color value in low 24 bits
+  color: uint32
+  footer: EmbedFooter
+  image: EmbedImage
+  thumbnail: EmbedThumbnail
+  video: EmbedVideo
+  provider: EmbedProvider
+  author: EmbedAuthor
+  fields: [EmbedField]
+}
+
+/// ReactionEmoji represents the emoji used in a reaction.
+type ReactionEmoji {
+  /// empty for unicode emoji
+  id: string
+  /// unicode character or custom emoji name
+  name: string
+  animated: bool
+}
+
+/// Reaction represents a reaction on a message.
+type Reaction {
+  emoji: ReactionEmoji
+  count: int32
+  me: bool
+  count_details_burst: int32
+  count_details_normal: int32
+  /// hex color strings for super-reaction burst colors
+  burst_colors: [string]
+}
+
+/// MentionChannel represents a channel referenced in a message.
+type MentionChannel {
+  id: string
+  guild_id: string
+  type: ChannelType
+  name: string
+}
+
+/// Message represents a Discord message.
+type Message {
+  id: string
+  channel_id: string
+  author_id: string
+  content: string
+  timestamp: instant
+  edited_timestamp: instant
+  tts: bool
+  mention_everyone: bool
+  mention_user_ids: [string]
+  mention_role_ids: [string]
+  mention_channels: [MentionChannel]
+  attachments: [Attachment]
+  embeds: [Embed]
+  reactions: [Reaction]
+  pinned: bool
+  type: MessageType
+  webhook_id: string
+  application_id: string
+  referenced_message_id: string
+  /// bitmask
+  flags: int
+  thread_id: string
+  position: int32
+}
+
+/// ChannelMessages groups messages belonging to a single channel.
+type ChannelMessages {
+  channel_id: string
+  messages: [Message]
+}
+
+// ---- from types.proto ----
+// Note: proto enum integer values in this file do NOT match Discord's raw API
+// integers. Discord uses 0 for real values (e.g. GUILD_TEXT=0, NONE=0) which
+// conflicts with the buf STANDARD requirement for an _UNSPECIFIED=0 zero value.
+// Backup tools must map between Discord's raw integers and these enum values by
+// name, not by number.
+/// ChannelType represents the type of a Discord channel.
+enum ChannelType {
+  GuildText
+  Dm
+  GuildVoice
+  GroupDm
+  GuildCategory
+  GuildAnnouncement
+  AnnouncementThread
+  PublicThread
+  PrivateThread
+  GuildStageVoice
+  GuildDirectory
+  GuildForum
+  GuildMedia
+}
+
+/// VerificationLevel represents the verification level required for a guild.
+enum VerificationLevel { None Low Medium High VeryHigh }
+
+/// ExplicitContentFilter represents the explicit content filter level for a guild.
+enum ExplicitContentFilter { Disabled MembersWithoutRoles AllMembers }
+
+/// DefaultMessageNotifications represents the default notification level for a guild.
+enum DefaultMessageNotifications { AllMessages OnlyMentions }
+
+/// NsfwLevel represents the NSFW level of a guild.
+enum NsfwLevel { Default Explicit Safe AgeRestricted }
+
+/// PremiumTier represents the guild's Nitro boost tier.
+enum PremiumTier { None Tier1 Tier2 Tier3 }
+
+/// OverwriteType represents the type of a permission overwrite target.
+enum OverwriteType { Role Member }
+
+/// ForumLayout represents the layout of a forum channel.
+enum ForumLayout { NotSet ListView GalleryView }
+
+/// SortOrder represents the sort order of a forum or media channel.
+enum SortOrder { LatestActivity CreationDate }
+
+/// VideoQualityMode represents the video quality mode of a voice channel.
+enum VideoQualityMode { Auto Full }
+
+/// PrivacyLevel represents the privacy level of a scheduled event or stage instance.
+enum PrivacyLevel { Public GuildOnly }
+
+/// ScheduledEventStatus represents the status of a scheduled event.
+enum ScheduledEventStatus { Scheduled Active Completed Canceled }
+
+/// ScheduledEventEntityType represents the entity type of a scheduled event.
+enum ScheduledEventEntityType { StageInstance Voice External }
+
+/// AutoModEventType represents the event type that triggers an auto-moderation rule.
+enum AutoModEventType { MessageSend MemberUpdate }
+
+/// AutoModTriggerType represents what triggers an auto-moderation rule.
+enum AutoModTriggerType { Keyword Spam KeywordPreset MentionSpam MemberProfile }
+
+/// AutoModActionType represents the action taken by an auto-moderation rule.
+enum AutoModActionType { BlockMessage SendAlertMessage Timeout BlockMemberInteraction }
+
+/// StickerFormatType represents the format of a sticker.
+enum StickerFormatType { Png Apng Lottie Gif }
+
+/// WebhookType represents the type of a webhook.
+enum WebhookType { Incoming ChannelFollower Application }
+
+/// MessageType represents the type of a message.
+enum MessageType {
+  Default
+  Reply
+  UserJoin
+  GuildBoost
+  ThreadCreated
+  ChannelPinnedMessage
+  GuildBoostTier1
+  GuildBoostTier2
+  GuildBoostTier3
+  ChannelFollowAdd
+  GuildDiscoveryDisqualified
+  GuildDiscoveryRequalified
+  GuildDiscoveryGracePeriodInitialWarning
+  GuildDiscoveryGracePeriodFinalWarning
+  ThreadStarterMessage
+  GuildInviteReminder
+  ContextMenuCommand
+  AutoModerationAction
+  RoleSubscriptionPurchase
+  InteractionPremiumUpsell
+  StageStart
+  StageEnd
+  StageSpeaker
+  StageTopic
+  GuildApplicationPremiumSubscription
+}
+
+/// EmbedType represents the type of a message embed.
+enum EmbedType { Rich Image Video Gifv Article Link PollResult }
+
+/// PermissionOverwrite represents a role or member permission overwrite on a channel.
+type PermissionOverwrite {
+  id: string
+  type: OverwriteType
+  /// bitmask of allowed permissions
+  allow: int
+  /// bitmask of denied permissions
+  deny: int
+}
+
+/// ForumTag represents a tag that can be applied to threads in a forum channel.
+type ForumTag {
+  id: string
+  name: string
+  moderated: bool
+  /// set for custom emoji
+  emoji_id: string
+  /// set for unicode emoji
+  emoji_name: string
+}
+
+/// DefaultReaction represents the default emoji reaction for a forum channel post.
+type DefaultReaction {
+  /// set for custom emoji
+  emoji_id: string
+  /// set for unicode emoji
+  emoji_name: string
+}
+
+/// RoleTag holds metadata about special role types.
+type RoleTag {
+  /// role is managed by this bot
+  bot_id: string
+  /// role is managed by this integration
+  integration_id: string
+  /// role is available for purchase
+  subscription_listing_id: string
+  /// role is the guild's premium subscriber (booster) role
+  premium_subscriber: bool
+  /// role can be purchased
+  available_for_purchase: bool
+  /// role is a guild's linked role
+  guild_connections: bool
+}
+
+/// ThreadMetadata holds archival and locking state for thread channels.
+type ThreadMetadata {
+  archived: bool
+  /// minutes: 60, 1440, 4320, or 10080
+  auto_archive_duration: int32
+  archive_timestamp: instant
+  locked: bool
+  /// only present on private threads
+  invitable: bool
+  create_timestamp: instant
+}
+
+target protobuf for unmango.discord.backup.v1alpha2 {
+  out("proto")
+  PermissionOverwrite => file("types.proto")
+  ForumTag => file("types.proto")
+  DefaultReaction => file("types.proto")
+  RoleTag => file("types.proto")
+  ThreadMetadata => file("types.proto")
+  ChannelType => file("types.proto")
+  VerificationLevel => file("types.proto")
+  ExplicitContentFilter => file("types.proto")
+  DefaultMessageNotifications => file("types.proto")
+  NsfwLevel => file("types.proto")
+  PremiumTier => file("types.proto")
+  OverwriteType => file("types.proto")
+  ForumLayout => file("types.proto")
+  SortOrder => file("types.proto")
+  VideoQualityMode => file("types.proto")
+  PrivacyLevel => file("types.proto")
+  ScheduledEventStatus => file("types.proto")
+  ScheduledEventEntityType => file("types.proto")
+  AutoModEventType => file("types.proto")
+  AutoModTriggerType => file("types.proto")
+  AutoModActionType => file("types.proto")
+  StickerFormatType => file("types.proto")
+  WebhookType => file("types.proto")
+  MessageType => file("types.proto")
+  EmbedType => file("types.proto")
+  Guild => file("guild.proto")
+  Channel => file("guild.proto")
+  Role => file("guild.proto")
+  User => file("guild.proto")
+  Member => file("guild.proto")
+  Emoji => file("guild.proto")
+  Sticker => file("guild.proto")
+  Webhook => file("guild.proto")
+  ScheduledEventEntityMetadata => file("guild.proto")
+  ScheduledEvent => file("guild.proto")
+  AutoModTriggerMetadata => file("guild.proto")
+  AutoModAction => file("guild.proto")
+  AutoModRule => file("guild.proto")
+  Invite => file("guild.proto")
+  Attachment => file("message.proto")
+  EmbedFooter => file("message.proto")
+  EmbedImage => file("message.proto")
+  EmbedThumbnail => file("message.proto")
+  EmbedVideo => file("message.proto")
+  EmbedProvider => file("message.proto")
+  EmbedAuthor => file("message.proto")
+  EmbedField => file("message.proto")
+  Embed => file("message.proto")
+  ReactionEmoji => file("message.proto")
+  Reaction => file("message.proto")
+  MentionChannel => file("message.proto")
+  Message => file("message.proto")
+  ChannelMessages => file("message.proto")
+  BackupMetadata => file("backup.proto")
+  ServerBackup => file("backup.proto")
+  import("google/api/field_behavior.proto")
+  edition("2024")
+  BackupMetadata {
+    backup_id => number(1)
+    created_at => number(2)
+    guild_id => number(3)
+    schema_version => number(4)
+    tool_version {
+      number(5)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  ServerBackup {
+    metadata => number(1)
+    guild => number(2)
+    channels => number(3)
+    roles => number(4)
+    members => number(5)
+    users => number(6)
+    emojis => number(7)
+    stickers => number(8)
+    webhooks => number(9)
+    scheduled_events => number(10)
+    auto_mod_rules => number(11)
+    invites => number(12)
+    channel_messages => number(13)
+  }
+  Guild {
+    id => number(1)
+    name => number(2)
+    description {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    icon_url {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    banner_url {
+      number(5)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    splash_url {
+      number(6)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    discovery_splash_url {
+      number(7)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    region {
+      number(8)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    features => number(9)
+    verification_level => number(10)
+    explicit_content_filter => number(11)
+    default_message_notifications => number(12)
+    system_channel_flags => number(13)
+    preferred_locale => number(14)
+    nsfw_level => number(15)
+    premium_tier => number(16)
+    premium_subscription_count {
+      number(17)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    vanity_url_code {
+      number(18)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    owner_id => number(19)
+    afk_channel_id {
+      number(20)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    afk_timeout => number(21)
+    system_channel_id {
+      number(22)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    rules_channel_id {
+      number(23)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    public_updates_channel_id {
+      number(24)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    safety_alerts_channel_id {
+      number(25)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    max_members {
+      number(26)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    max_presences {
+      number(27)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    max_video_channel_users {
+      number(28)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    widget_enabled => number(29)
+    widget_channel_id {
+      number(30)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    approximate_member_count {
+      number(31)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    approximate_presence_count {
+      number(32)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    joined_at => number(33)
+  }
+  Channel {
+    id => number(1)
+    type => number(2)
+    name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    position => number(4)
+    topic {
+      number(5)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    nsfw => number(6)
+    parent_id {
+      number(7)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    bitrate => number(8)
+    user_limit => number(9)
+    rate_limit_per_user => number(10)
+    permission_overwrites => number(11)
+    default_auto_archive_duration => number(12)
+    flags => number(13)
+    default_forum_layout => number(14)
+    default_sort_order => number(15)
+    available_tags => number(16)
+    default_reaction_emoji => number(17)
+    video_quality_mode => number(18)
+    default_thread_rate_limit_per_user => number(19)
+    thread_metadata => number(20)
+  }
+  Role {
+    id => number(1)
+    name => number(2)
+    color => number(3)
+    hoist => number(4)
+    icon_url {
+      number(5)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    unicode_emoji {
+      number(6)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    position => number(7)
+    permissions => number(8)
+    managed => number(9)
+    mentionable => number(10)
+    tags => number(11)
+    flags => number(12)
+  }
+  User {
+    id => number(1)
+    username => number(2)
+    discriminator {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    global_name {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    avatar_url {
+      number(5)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    bot => number(6)
+    system => number(7)
+  }
+  Member {
+    user_id => number(1)
+    nickname {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    guild_avatar_url {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    role_ids => number(4)
+    joined_at => number(5)
+    premium_since {
+      number(6)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    deaf => number(7)
+    mute => number(8)
+    pending => number(9)
+    flags => number(10)
+    communication_disabled_until {
+      number(11)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  Emoji {
+    id => number(1)
+    name => number(2)
+    role_ids => number(3)
+    user_id {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    require_colons => number(5)
+    managed => number(6)
+    animated => number(7)
+    available => number(8)
+  }
+  Sticker {
+    id => number(1)
+    pack_id {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    name => number(3)
+    description {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    tags => number(5)
+    format_type => number(6)
+    available => number(7)
+    guild_id {
+      number(8)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    user_id {
+      number(9)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    sort_value => number(10)
+  }
+  Webhook {
+    id => number(1)
+    type => number(2)
+    guild_id {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    channel_id {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    user_id {
+      number(5)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    name {
+      number(6)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    avatar_url {
+      number(7)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    token {
+      number(8)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    application_id {
+      number(9)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    url {
+      number(10)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    source_guild_id {
+      number(11)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    source_channel_id {
+      number(12)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  ScheduledEventEntityMetadata {
+    location {
+      number(1)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  ScheduledEvent {
+    id => number(1)
+    guild_id => number(2)
+    channel_id {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    creator_id {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    name => number(5)
+    description {
+      number(6)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    scheduled_start_time => number(7)
+    scheduled_end_time {
+      number(8)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    privacy_level => number(9)
+    status => number(10)
+    entity_type => number(11)
+    entity_id {
+      number(12)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    entity_metadata => number(13)
+    user_count => number(14)
+    image_url {
+      number(15)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  AutoModTriggerMetadata {
+    keyword_filter => number(1)
+    regex_patterns => number(2)
+    presets => number(3)
+    allow_list => number(4)
+    mention_total_limit => number(5)
+    mention_raid_protection_enabled => number(6)
+  }
+  AutoModAction {
+    type => number(1)
+    channel_id {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    duration_seconds => number(3)
+    custom_message {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  AutoModRule {
+    id => number(1)
+    guild_id => number(2)
+    name => number(3)
+    creator_id => number(4)
+    event_type => number(5)
+    trigger_type => number(6)
+    trigger_metadata => number(7)
+    actions => number(8)
+    enabled => number(9)
+    exempt_role_ids => number(10)
+    exempt_channel_ids => number(11)
+  }
+  Invite {
+    code => number(1)
+    channel_id => number(2)
+    inviter_id {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    max_age => number(4)
+    max_uses => number(5)
+    temporary => number(6)
+    uses => number(7)
+    created_at => number(8)
+    revoked => number(9)
+  }
+  Attachment {
+    id => number(1)
+    filename => number(2)
+    description {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    content_type {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    size => number(5)
+    url => number(6)
+    proxy_url => number(7)
+    height {
+      number(8)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    width {
+      number(9)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    ephemeral => number(10)
+    duration_secs {
+      number(11)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    waveform {
+      number(12)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    flags => number(13)
+  }
+  EmbedFooter {
+    text => number(1)
+    icon_url {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    proxy_icon_url {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  EmbedImage {
+    url => number(1)
+    proxy_url {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    height {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    width {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  EmbedThumbnail {
+    url => number(1)
+    proxy_url {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    height {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    width {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  EmbedVideo {
+    url {
+      number(1)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    proxy_url {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    height {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    width {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  EmbedProvider {
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    url {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  EmbedAuthor {
+    name => number(1)
+    url {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    icon_url {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    proxy_icon_url {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  EmbedField {
+    name => number(1)
+    value => number(2)
+    inline => number(3)
+  }
+  Embed {
+    title {
+      number(1)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    type => number(2)
+    description {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    url {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    timestamp => number(5)
+    color => number(6)
+    footer => number(7)
+    image => number(8)
+    thumbnail => number(9)
+    video => number(10)
+    provider => number(11)
+    author => number(12)
+    fields => number(13)
+  }
+  ReactionEmoji {
+    id {
+      number(1)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    name {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    animated => number(3)
+  }
+  Reaction {
+    emoji => number(1)
+    count => number(2)
+    me => number(3)
+    count_details_burst => number(4)
+    count_details_normal => number(5)
+    burst_colors => number(6)
+  }
+  MentionChannel {
+    id => number(1)
+    guild_id => number(2)
+    type => number(3)
+    name => number(4)
+  }
+  Message {
+    id => number(1)
+    channel_id => number(2)
+    author_id => number(3)
+    content => number(4)
+    timestamp => number(5)
+    edited_timestamp {
+      number(6)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    tts => number(7)
+    mention_everyone => number(8)
+    mention_user_ids => number(9)
+    mention_role_ids => number(10)
+    mention_channels => number(11)
+    attachments => number(12)
+    embeds => number(13)
+    reactions => number(14)
+    pinned => number(15)
+    type => number(16)
+    webhook_id {
+      number(17)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    application_id {
+      number(18)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    referenced_message_id {
+      number(19)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    flags => number(20)
+    thread_id {
+      number(21)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    position => number(22)
+  }
+  ChannelMessages {
+    channel_id => number(1)
+    messages => number(2)
+  }
+  ChannelType {
+    GuildText => number(1)
+    Dm => number(2)
+    GuildVoice => number(3)
+    GroupDm => number(4)
+    GuildCategory => number(5)
+    GuildAnnouncement => number(6)
+    AnnouncementThread => number(10)
+    PublicThread => number(11)
+    PrivateThread => number(12)
+    GuildStageVoice => number(13)
+    GuildDirectory => number(14)
+    GuildForum => number(15)
+    GuildMedia => number(16)
+  }
+  PermissionOverwrite {
+    id => number(1)
+    type => number(2)
+    allow => number(3)
+    deny => number(4)
+  }
+  ForumTag {
+    id => number(1)
+    name => number(2)
+    moderated => number(3)
+    emoji_id {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    emoji_name {
+      number(5)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  DefaultReaction {
+    emoji_id {
+      number(1)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    emoji_name {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  RoleTag {
+    bot_id {
+      number(1)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    integration_id {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    subscription_listing_id {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    premium_subscriber => number(4)
+    available_for_purchase => number(5)
+    guild_connections => number(6)
+  }
+  ThreadMetadata {
+    archived => number(1)
+    auto_archive_duration => number(2)
+    archive_timestamp => number(3)
+    locked => number(4)
+    invitable {
+      number(5)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    create_timestamp => number(6)
+  }
+}

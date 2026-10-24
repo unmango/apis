@@ -1,0 +1,379 @@
+package unmango.health.measurement.v1alpha1
+
+import "../../../../shim/google/type.tdl" as _
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+import "../../../uom/v1alpha1/uom.tdl" as uom
+
+// Recorded body and health observations, and the targets set against them:
+//
+//   Goal => Measurement
+//
+// A Goal claims Measurements by label selector rather than owning them. That
+// is the Service -> Pods relationship, and it is the right shape here: a
+// measurement is a fact that exists whether or not anyone is tracking it, and
+// several goals may watch the same series without competing for it.
+//
+// A Measurement carries repeated Components rather than a single value, so
+// blood pressure, which is two numbers, and body weight, which is one, are the
+// same kind. Splitting them into separate kinds per shape would multiply the
+// API for no gain.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum MeasurementType {
+  Weight
+  BodyFat
+  LeanMass
+  BloodPressure
+  RestingHeartRate
+  HeartRateVariability
+  Sleep
+  BloodGlucose
+  Temperature
+  BloodOxygen
+  Circumference
+  Vo2Max
+  LabPanel
+}
+
+/// One number within a Measurement. A weight has one; a blood pressure has
+/// systolic and diastolic; a lab panel has many.
+type Component {
+  /// "systolic", "diastolic", "waist", "hdl".
+  name: string
+  value: float64
+  unit: uom.Unit
+  /// Set only when unit is UNIT_CUSTOM.
+  custom_unit: string
+  /// Healthy range for this component, when one is known.
+  reference_low: float64
+  reference_high: float64
+}
+
+enum GoalDirection {
+  /// Lower is better.
+  Decrease
+  /// Higher is better.
+  Increase
+  /// Stay within a band.
+  Maintain
+}
+
+enum GoalPhase {
+  /// Set, but no matching measurement recorded yet.
+  Pending
+  OnTrack
+  OffTrack
+  Achieved
+  /// Target date passed without being met.
+  Missed
+  Abandoned
+}
+
+// ---------------------------------------------------------------------------
+// Measurement
+// ---------------------------------------------------------------------------
+/// One observation, at one moment. Append-only in practice: a wrong reading is
+/// superseded rather than edited.
+type Measurement: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  /// Also the surface a Goal selector matches against.
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state. Recorded facts, since a Measurement is authored after the
+  // observation.
+  type: MeasurementType
+  observed_time: instant
+  /// The numbers. One entry for a scalar reading, several for a composite.
+  components: [Component]
+  /// What took the reading: a scale, a wearable, a lab, or a person.
+  source: string
+  source_device: ref.ObjectReference
+  notes: string
+  /// Conditions the reading was taken under, which determine whether two
+  /// readings are comparable: "fasted", "post-workout", "morning".
+  context: [string]
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  /// Goals whose selectors currently claim this measurement. Makes the selector
+  /// edge navigable from the measurement side.
+  claimed_by: [ref.ObjectReference]
+  /// Change from the previous comparable reading of the same type.
+  delta: [Component]
+  /// A component fell outside its reference range.
+  out_of_reference_range: bool
+  /// A later reading of the same type and context replaced this one.
+  superseded: bool
+}
+
+// ---------------------------------------------------------------------------
+// Goal
+// ---------------------------------------------------------------------------
+/// A target set against a series of Measurements, claimed by selector.
+type Goal: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Which Measurements count toward this goal. Selection rather than
+  /// ownership: the measurements exist independently and several goals may
+  /// watch the same series.
+  selector: LabelSelector
+  /// Narrows the selector to one kind of reading.
+  measurement_type: MeasurementType
+  /// Which component of the reading the target applies to.
+  component: string
+  direction: GoalDirection
+  target_value: float64
+  /// Acceptable band around the target, for MAINTAIN.
+  tolerance: float64
+  unit: uom.Unit
+  /// Set only when unit is UNIT_CUSTOM.
+  custom_unit: string
+  /// Value at the time the goal was set, so progress is measurable rather than
+  /// only distance-to-target.
+  baseline_value: float64
+  start_date: Date
+  /// Unset means open-ended.
+  target_date: Date
+  /// Readings to average before comparing against the target, which keeps day
+  /// to day noise from flipping the phase.
+  smoothing_window: int32
+  // Observed state.
+  observed_generation: int
+  phase: GoalPhase
+  conditions: [Condition]
+  matched_measurement_count: int32
+  /// Latest claimed reading of the tracked component.
+  current_value: float64
+  /// Smoothed over the window.
+  smoothed_value: float64
+  last_measured_time: instant
+  /// Distance travelled from baseline toward target, 0.0 to 1.0. Above 1.0
+  /// means overshot.
+  progress: float64
+  /// Change per day over the smoothing window. Sign is relative to direction,
+  /// so positive always means improving.
+  rate_per_day: float64
+  /// When the current rate would reach the target. Unset if moving away from
+  /// it.
+  projected_date: Date
+}
+
+target protobuf for unmango.health.measurement.v1alpha1 {
+  out("proto")
+  file("measurement.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Date => foreign("google/type/date.proto", "google.type.Date")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  edition("2024")
+  Component {
+    name => number(1)
+    value => number(2)
+    unit => number(3)
+    custom_unit {
+      number(6)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    reference_low {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    reference_high {
+      number(5)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  Measurement {
+    option("(google.api.resource)", "{ type: \"unmango.health.measurement/Measurement\" pattern: \"measurements/{measurement}\" singular: \"measurement\" plural: \"measurements\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    type => number(11)
+    observed_time => number(12)
+    components => number(13)
+    source => number(14)
+    source_device {
+      number(15)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"*\"")
+    }
+    notes {
+      number(16)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    context => number(17)
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    claimed_by {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.health.measurement/Goal\"")
+    }
+    delta {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    out_of_reference_range {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    superseded {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  Goal {
+    option("(google.api.resource)", "{ type: \"unmango.health.measurement/Goal\" pattern: \"goals/{goal}\" singular: \"goal\" plural: \"goals\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    selector => number(11)
+    measurement_type => number(12)
+    component => number(13)
+    direction => number(14)
+    target_value => number(15)
+    tolerance => number(16)
+    unit => number(17)
+    custom_unit {
+      number(22)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    baseline_value {
+      number(18)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    start_date => number(19)
+    target_date {
+      number(20)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    smoothing_window => number(21)
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    phase {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    matched_measurement_count {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    current_value {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    smoothed_value {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_measured_time {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    progress {
+      number(57)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    rate_per_day {
+      number(58)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    projected_date {
+      number(59)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+}

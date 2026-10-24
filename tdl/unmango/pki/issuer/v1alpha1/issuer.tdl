@@ -1,0 +1,199 @@
+package unmango.pki.issuer.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// A signing mechanism, not the certificates it produces:
+//
+//   pki.certificate CertificateRequest -> pki.certificate CertificateIssuance
+//
+// An Issuer names how certificates get minted: a self-signed root, an
+// existing Issuer's chain acting as an intermediate CA, an ACME account, or a
+// Vault PKI secrets engine mount. It does not declare what to issue, which is
+// pki.certificate CertificateRequest's job, the same split
+// codegen.converter Converter draws from codegen.conversion Conversion and
+// iac.module Module draws from iac.stack Stack.
+//
+// config is a oneof rather than a closed IssuerKind plus per-kind optional
+// fields, the same shape codegen.converter DiscoverySource uses: each
+// mechanism needs different fields, so a field meaningful only for one
+// mechanism does not belong outside its oneof member.
+//
+// AcmeConfig.platform points at a compute.platform Platform for the ACME
+// server's specific provider, Let's Encrypt, ZeroSSL, Google Trust Services,
+// the same argument codegen.converter Converter.platform already makes: a
+// closed enum of providers would bake a fixed vendor list into the schema.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+/// Signs its own certificate. No fields: there is nothing to configure beyond
+/// choosing this mechanism.
+type SelfSignedConfig { }
+
+/// Signs through another Issuer's chain, making this one an intermediate CA.
+type CaConfig {
+  /// The Issuer whose most recent pki.certificate Certificate signs
+  /// certificates issued through this one. Forms the CA chain a
+  /// pki.certificate Certificate's issuer_fingerprint walks.
+  issuer: ref.ObjectReference
+}
+
+/// Where an ACME challenge is answered.
+enum AcmeChallengeKind { Http01 Dns01 }
+
+type AcmeConfig {
+  /// The compute.platform Platform for the ACME server: Let's Encrypt,
+  /// ZeroSSL, Google Trust Services.
+  platform: ref.ObjectReference
+  /// Directory URL, when platform is absent or does not resolve to one.
+  directory_url: string
+  account_email: string
+  challenge_kind: AcmeChallengeKind
+  /// The compute.platform Platform solving challenge_kind: a DNS provider for
+  /// DNS-01. Absent for HTTP-01, solved by whatever already serves the
+  /// requested domain.
+  challenge_solver: ref.ObjectReference
+}
+
+type VaultConfig {
+  address: string
+  /// Mount path of the PKI secrets engine: "pki_int".
+  mount_path: string
+  /// Role used to sign requests against the mount.
+  role: string
+}
+
+// ---------------------------------------------------------------------------
+// Issuer
+// ---------------------------------------------------------------------------
+/// A signing mechanism certificates are requested from.
+type Issuer: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  config: IssuerConfig
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  /// This issuer's own signing credential, set once self_signed or ca has
+  /// minted it. Absent for acme and vault, which sign against a certificate
+  /// this API does not hold.
+  ca_certificate_fingerprint: string
+  /// pki.certificate CertificateRequests naming this issuer.
+  certificate_request_count: int32
+}
+
+// tdl-gap: oneof becomes a separate message
+enum IssuerConfig {
+  SelfSigned { self_signed: SelfSignedConfig }
+  Ca { ca: CaConfig }
+  Acme { acme: AcmeConfig }
+  Vault { vault: VaultConfig }
+}
+
+target protobuf for unmango.pki.issuer.v1alpha1 {
+  out("proto")
+  file("issuer.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  edition("2024")
+  CaConfig {
+    issuer {
+      number(1)
+      option("(google.api.resource_reference).type", "\"unmango.pki.issuer/Issuer\"")
+    }
+  }
+  AcmeConfig {
+    platform {
+      number(1)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
+    }
+    directory_url {
+      number(2)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    account_email => number(3)
+    challenge_kind => number(4)
+    challenge_solver {
+      number(5)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"unmango.compute.platform/Platform\"")
+    }
+  }
+  VaultConfig {
+    address => number(1)
+    mount_path => number(2)
+    role => number(3)
+  }
+  Issuer {
+    option("(google.api.resource)", "{ type: \"unmango.pki.issuer/Issuer\" pattern: \"issuers/{issuer}\" singular: \"issuer\" plural: \"issuers\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    config => oneof
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    ca_certificate_fingerprint {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    certificate_request_count {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  IssuerConfig {
+    SelfSigned => number(11)
+    Ca => number(12)
+    Acme => number(13)
+    Vault => number(14)
+  }
+}

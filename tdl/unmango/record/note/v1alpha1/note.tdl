@@ -1,0 +1,312 @@
+package unmango.record.note.v1alpha1
+
+import "../../../../shim/k8s/meta.tdl" as _
+import "../../../ref/v1alpha1/ref.tdl" as ref
+
+// Written material, and how it is grouped:
+//
+//   Notebook => Note -> Note
+//
+// A Notebook claims Notes by label selector, so a note joins a notebook by
+// being labelled rather than by being moved. A Note nests through owner
+// references to form sub-notes.
+//
+// Note.links is the generic edge into every other domain. A note can point at
+// a finance.transaction Transaction, an asset.maintenance ServiceRecord, or
+// a media.title Title without any of those packages knowing that notes exist.
+// That is the point of a single ObjectReference vocabulary: the graph can grow
+// edges nothing planned for.
+//
+// Note keeps owner_refs, the real Note -> Note sub-note edge, but drops
+// generation, observed_generation, and conditions: nothing declares a Note
+// and reconciles it toward that declaration, so there is nothing for those
+// fields to report on. Notebook, a genuine selector-membership kind, keeps
+// the full band.
+// ---------------------------------------------------------------------------
+// Shared types
+// ---------------------------------------------------------------------------
+enum ContentFormat { Markdown PlainText Html Org Asciidoc Typst }
+
+/// An edge from a Note to anything else in the graph.
+type Link {
+  target: ref.ObjectReference
+  /// How the note relates to the target.
+  relation: LinkRelation
+  /// Human-readable label, so a link survives its target being deleted.
+  label: string
+  /// Set only when relation is LINK_RELATION_OTHER.
+  custom_relation: string
+}
+
+enum LinkRelation { Documents References Supersedes DerivedFrom Other }
+
+/// A file attached to a Note.
+type Attachment {
+  /// Where the bytes live. A plain string so it can address a
+  /// dev.unmango.protofs path without coupling the packages.
+  uri: string
+  filename: string
+  mime_type: string
+  size_bytes: int
+}
+
+// ---------------------------------------------------------------------------
+// Note
+// ---------------------------------------------------------------------------
+/// One piece of written material. Nests to form sub-notes.
+type Note: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  /// Also the surface a Notebook selector matches against.
+  labels: {string -> string}
+  annotations: {string -> string}
+  /// A parent Note for a sub-note. Absent at the top of a document.
+  owner_refs: [OwnerReference]
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  title: string
+  body: string
+  format: ContentFormat
+  /// Edges into any other domain.
+  links: [Link]
+  attachments: [Attachment]
+  /// Where the note came from, when it was captured rather than written: a URL,
+  /// a clipping, an imported file.
+  source_uri: string
+  /// Which sub-notes this Note claims.
+  selector: LabelSelector
+  /// Keep at the top of listings.
+  pinned: bool
+  /// Retained but out of the way. Distinct from deleted.
+  archived: bool
+  /// Position among sibling sub-notes. Lower sorts first.
+  sequence_number: int32
+  // Observed state.
+  /// Notebooks whose selectors currently claim this note. Makes the selector
+  /// edge navigable from the note side.
+  claimed_by: [ref.ObjectReference]
+  child_count: int32
+  link_count: int32
+  /// Other Notes whose links point at this one.
+  backlink_count: int32
+  /// Links whose target no longer resolves.
+  broken_link_count: int32
+  word_count: int32
+  last_edited_time: instant
+}
+
+// ---------------------------------------------------------------------------
+// Notebook
+// ---------------------------------------------------------------------------
+/// A grouping of Notes, claimed by selector.
+type Notebook: Entity {
+  name: string
+  uid: uuid
+  display_name: string
+  labels: {string -> string}
+  annotations: {string -> string}
+  owner_refs: [OwnerReference]
+  generation: int
+  create_time: instant
+  /// Last write, server-stamped.
+  update_time: instant
+  delete_time: instant
+  // Desired state.
+  /// Which Notes belong. An empty selector claims nothing, never everything.
+  selector: LabelSelector
+  summary: string
+  /// Stamped onto notes created through this notebook, which is how a new note
+  /// ends up matching the selector.
+  note_labels: {string -> string}
+  default_format: ContentFormat
+  /// The domain this notebook documents, when it is scoped to one: a Vehicle, a
+  /// Pipeline, a Property.
+  subject: ref.ObjectReference
+  // Observed state.
+  observed_generation: int
+  conditions: [Condition]
+  note_count: int32
+  archived_note_count: int32
+  last_edited_time: instant
+}
+
+target protobuf for unmango.record.note.v1alpha1 {
+  out("proto")
+  file("note.proto")
+  import("google/api/field_behavior.proto")
+  import("google/api/field_info.proto")
+  import("google/api/resource.proto")
+  Condition => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.Condition")
+  LabelSelector => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector")
+  OwnerReference => foreign("k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto", "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference")
+  edition("2024")
+  Link {
+    target {
+      number(1)
+      option("(google.api.resource_reference).type", "\"*\"")
+    }
+    relation => number(2)
+    label {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    custom_relation {
+      number(4)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+  }
+  Attachment {
+    uri => number(1)
+    filename => number(2)
+    mime_type => number(3)
+    size_bytes => number(4)
+  }
+  Note {
+    option("(google.api.resource)", "{ type: \"unmango.record.note/Note\" pattern: \"notes/{note}\" singular: \"note\" plural: \"notes\" }")
+    // tdl-gap: one reserved directive per declaration; proto has two statements
+    // reserved 7: generation: nothing reconciles a Note toward a declared state
+    // reserved 50, 51: observed_generation, conditions: nothing reconciles a Note
+    reserved(7, 50, 51)
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    title => number(11)
+    body => number(12)
+    format => number(13)
+    links => number(14)
+    attachments => number(15)
+    source_uri {
+      number(16)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    selector => number(17)
+    pinned => number(18)
+    archived => number(19)
+    sequence_number => number(20)
+    claimed_by {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.resource_reference).type", "\"unmango.record.note/Notebook\"")
+    }
+    child_count {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    link_count {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    backlink_count {
+      number(55)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    broken_link_count {
+      number(56)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    word_count {
+      number(57)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_edited_time {
+      number(58)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+  Notebook {
+    option("(google.api.resource)", "{ type: \"unmango.record.note/Notebook\" pattern: \"notebooks/{notebook}\" singular: \"notebook\" plural: \"notebooks\" }")
+    name {
+      number(1)
+      option("(google.api.field_behavior)", "IDENTIFIER")
+    }
+    uid {
+      number(2)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+      option("(google.api.field_info).format", "UUID4")
+    }
+    display_name {
+      number(3)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    labels => number(4)
+    annotations => number(5)
+    owner_refs => number(6)
+    generation {
+      number(7)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    create_time {
+      number(8)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    update_time {
+      number(9)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    delete_time {
+      number(10)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    selector => number(11)
+    summary {
+      number(12)
+      option("(google.api.field_behavior)", "OPTIONAL")
+    }
+    note_labels => number(13)
+    default_format => number(14)
+    subject {
+      number(15)
+      option("(google.api.field_behavior)", "OPTIONAL")
+      option("(google.api.resource_reference).type", "\"*\"")
+    }
+    observed_generation {
+      number(50)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    conditions {
+      number(51)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    note_count {
+      number(52)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    archived_note_count {
+      number(53)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+    last_edited_time {
+      number(54)
+      option("(google.api.field_behavior)", "OUTPUT_ONLY")
+    }
+  }
+}

@@ -1,0 +1,37 @@
+package k8s.io.apimachinery.pkg.apis.meta.v1
+
+// Local stand-ins for the three k8s.io/apimachinery meta/v1 messages the API
+// uses. tdl-gap: the protobuf backend cannot reference an external proto
+// message, so every importing package inlines its own copy of these.
+/// Enough information to identify an owning object.
+type OwnerReference {
+  api_version: string
+  kind: string
+  name: string
+  uid: string
+  controller: bool?
+  block_owner_deletion: bool?
+}
+
+/// One aspect of the current state of a resource.
+type Condition {
+  type: string
+  status: string
+  observed_generation: int?
+  last_transition_time: instant
+  reason: string
+  message: string
+}
+
+/// A label query over a set of resources.
+type LabelSelector {
+  match_labels: {string -> string}
+  match_expressions: [LabelSelectorRequirement]
+}
+
+/// A selector that contains values, a key, and an operator.
+type LabelSelectorRequirement {
+  key: string
+  operator: string
+  values: [string]
+}
