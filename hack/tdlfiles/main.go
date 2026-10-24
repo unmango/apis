@@ -11,7 +11,9 @@ package main
 import "C"
 
 import (
+	"errors"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -38,17 +40,29 @@ func tdlFiles(_ string, args []string) string {
 		if !filepath.IsAbs(dir) {
 			dir = filepath.Join(root, dir)
 		}
-		// A missing dir lists nothing, as $(wildcard) would.
-		_ = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-			if err != nil || d.IsDir() || filepath.Ext(path) != ".tdl" {
+		err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() || filepath.Ext(path) != ".tdl" {
 				return nil
 			}
-			if rel, err := filepath.Rel(root, path); err == nil {
-				files = append(files, filepath.ToSlash(rel))
-			}
-			return nil
+			rel, err := filepath.Rel(root, path)
+			files = append(files, filepath.ToSlash(rel))
+			return err
 		})
+		// A missing dir lists nothing, as $(wildcard) would. Any other error
+		// lists nothing at all rather than part of the tree, so the Makefile
+		// falls back to find, which reports it.
+		if err != nil && !(errors.Is(err, fs.ErrNotExist) && errors.Is(statErr(dir), fs.ErrNotExist)) {
+			return ""
+		}
 	}
 	slices.Sort(files)
 	return strings.Join(slices.Compact(files), " ")
+}
+
+func statErr(path string) error {
+	_, err := os.Lstat(path)
+	return err
 }
