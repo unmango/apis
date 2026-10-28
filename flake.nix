@@ -124,6 +124,9 @@
           tdl = {
             enable = true;
             package = inputs'.tdl.packages.default;
+            # This flake's nixpkgs has no tdl overlay, so the option's default
+            # pkgs.tdl-gmk does not exist.
+            make.package = inputs'.tdl.packages.tdl-gmk;
             src = lib.fileset.toSource {
               root = ./.;
               fileset = lib.fileset.unions [
