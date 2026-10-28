@@ -247,11 +247,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792703141,
-        "narHash": "sha256-3X34FaSeMJXMx8CK/BN6sZ9knwNauuiJXQhLM+bQQuI=",
+        "lastModified": 1792896866,
+        "narHash": "sha256-/0tELNnhdSnP+bHSdWiEe6KpfSwi6WrTnT9cm/jNkjA=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "6750249c69969d09d952efaf3fab88a2bdac7ec6",
+        "rev": "c216bf5a1f173b0481bd5c8c489ebe5595ecc68c",
         "type": "github"
       },
       "original": {
@@ -313,11 +313,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792724703,
-        "narHash": "sha256-cV/K+RpiXDUIrPD07wKwogxtW7Bf/Q4rWKcZ4VCC9mw=",
+        "lastModified": 1792761827,
+        "narHash": "sha256-tyFbhsqxOdvyID7sE4Vm0oLx1Pcyef9CbNDzqv6vY/E=",
         "owner": "unmango",
         "repo": "pkgs",
-        "rev": "4eb482154f7c02c9cad3e40b47d4fd4d9b35c855",
+        "rev": "457f3aa321c1e25a6db8b8ecf878eaafcdedf81c",
         "type": "github"
       },
       "original": {
@@ -402,11 +402,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1792502884,
-        "narHash": "sha256-IoNisKcGbUjdd45qCqywGMCYmZ5EnkxezvLII0FWwNA=",
+        "lastModified": 1792773339,
+        "narHash": "sha256-rZLrzrC6i+jnTAlvPZHogKDulY7WWDEv9hJeHieO7Zw=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "02c087f3fe673c9e317f206a627cb6b910336dbe",
+        "rev": "3ec636362e1816bc2f0888fa0fa2c69f1bc9e504",
         "type": "github"
       },
       "original": {
@@ -570,16 +570,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1792801181,
-        "narHash": "sha256-6cP2MP4q3dy2ot/3mrWZJojz9hzdJeBPA2XwePoIfpU=",
+        "lastModified": 1792972698,
+        "narHash": "sha256-39vZ34UAnqo1bXiLmUcJjYEMqEfp8sbsPc2otofrlPs=",
         "owner": "UnstoppableMango",
         "repo": "tdl",
-        "rev": "85c036a49ff7bc5ee753c81cfd264b2269288811",
+        "rev": "0213dd3dba8dc43ff6c319505685f4d3ad0129f6",
         "type": "github"
       },
       "original": {
         "owner": "UnstoppableMango",
-        "ref": "v0.5.1",
+        "ref": "v0.5.3",
         "repo": "tdl",
         "type": "github"
       }
