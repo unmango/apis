@@ -140,6 +140,8 @@
 
           devShells.default = pkgs.mkShellNoCC {
             inputsFrom = [ config.devShells.tdl ];
+            # inputsFrom merges packages and hooks, not variables.
+            inherit (config.devShells.tdl) TDL_GMK;
             packages = with pkgs; [
               api-linter
               buf
