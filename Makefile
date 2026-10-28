@@ -34,7 +34,7 @@ format fmt:
 	nix fmt
 
 clean:
-	rm -rf result *.binpb third_party bin/tdlfiles.so bin/tdlfiles.h
+	rm -rf result *.binpb third_party
 
 # k8s.io imports resolve only inside the nix workspace, so both sides of the
 # comparison are images built from it rather than from proto/ alone.
@@ -47,16 +47,15 @@ breaking:
 tdl:
 	tdl gen $(TDL_FILES)
 
-# hack/tdlfiles is a loadable object defining $(tdl-files dir...), which lists
-# the .tdl files under each dir relative to this Makefile. make builds it before
-# reading further, so it is only loaded for `make tdl`. Without Go, or when the
-# build fails, nothing is loaded, the call expands to nothing, and find takes
-# over.
-ifneq ($(and $(filter tdl,$(MAKECMDGOALS)),$(shell command -v go)),)
--load bin/tdlfiles.so
-
-bin/tdlfiles.so: hack/tdlfiles/main.go hack/tdlfiles/go.mod hack/tdlfiles/go.sum
-	-cd hack/tdlfiles && go build -tags makeplugin -buildmode=c-shared -o $(CURDIR)/$@ .
+# The devShell sets TDL_GMK to tdl's GNU make loadable object, which defines
+# $(tdl-files dir...): the .tdl files under each dir, relative to this
+# Makefile. Outside the devShell, or with a make that cannot load the object,
+# nothing is loaded, the call expands to nothing, and find takes over. make
+# tries to remake an object it failed to load, so the empty rule stops a
+# missing one from failing the build.
+ifdef TDL_GMK
+-load $(TDL_GMK)
+$(TDL_GMK): ;
 endif
 
 TDL_FILES = $(or $(tdl-files tdl/unmango),$(shell find tdl/unmango -name '*.tdl' | sort))

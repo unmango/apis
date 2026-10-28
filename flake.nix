@@ -48,7 +48,7 @@
     # a bump is a regeneration and belongs in its own commit. Its nixpkgs is
     # its own: tdl needs a newer Go than this flake's nixpkgs may carry.
     tdl = {
-      url = "github:UnstoppableMango/tdl/v0.5.1";
+      url = "github:UnstoppableMango/tdl/v0.5.3";
       inputs.systems.follows = "systems";
       inputs.flake-parts.follows = "flake-parts";
       inputs.treefmt-nix.follows = "treefmt-nix";
@@ -124,6 +124,9 @@
           tdl = {
             enable = true;
             package = inputs'.tdl.packages.default;
+            # This flake's nixpkgs has no tdl overlay, so the option's default
+            # pkgs.tdl-gmk does not exist.
+            make.package = inputs'.tdl.packages.tdl-gmk;
             src = lib.fileset.toSource {
               root = ./.;
               fileset = lib.fileset.unions [
@@ -137,6 +140,8 @@
 
           devShells.default = pkgs.mkShellNoCC {
             inputsFrom = [ config.devShells.tdl ];
+            # inputsFrom merges packages and hooks, not variables.
+            inherit (config.devShells.tdl) TDL_GMK;
             packages = with pkgs; [
               api-linter
               buf
